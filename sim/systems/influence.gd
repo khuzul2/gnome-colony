@@ -15,6 +15,15 @@ const SAFETY_SPIKE_BASE := 0.3
 const MAX_CASCADE := 8
 
 
+## Affordance rule [design §2.7b, plan T7.8]: phenomena need terrain to
+## act on — "any" always casts; otherwise the target place must carry the
+## required tag.
+static func affordance_met(world: WorldState, place: String, requirement: String) -> bool:
+	if requirement == "any":
+		return true
+	return requirement in world.affordances.get(place, [])
+
+
 static func cast(
 	colony: Colony,
 	world: WorldState,
@@ -24,6 +33,8 @@ static func cast(
 	valence_potency: float = 1.0,
 	handlers: Dictionary = {},
 ) -> Dictionary:
+	if not affordance_met(world, target, definition.get("affordance_req", "any")):
+		return {}
 	var intensity: float = definition["base_intensity"] * magnitude * valence_potency
 	var stimulus := {
 		"type": definition["id"],

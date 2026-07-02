@@ -30,6 +30,7 @@ func _setup() -> Array:
 		g.stage = Enums.LifeStage.ADULT
 		g.location = "eastern_ridge" if i < 10 else "village"
 	var world := WorldState.new()
+	world.affordances["eastern_ridge"] = ["slope"]
 	world.sites["eastern_ridge"] = ResourceNode.new("stone", 10.0, 10.0, 0.1, 1.0)
 	world.hidden_resources["eastern_ridge"] = [ResourceNode.new("iron", 30.0, 30.0, 0.0, 1.0)]
 	world.paths["eastern_ridge_path"] = true

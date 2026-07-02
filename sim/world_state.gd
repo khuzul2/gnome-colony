@@ -10,6 +10,9 @@ var sites := {}
 var hidden_resources := {}
 ## path name → passable (false = buried/blocked)
 var paths := {}
+## place → hazard affordance tags [algo §15] (slope, drought, farmland,
+## built_up, crowded, wilds…) — phenomena need terrain to act on (T7.8).
+var affordances := {}
 
 
 ## Surface every hidden resource at `site_id` as a real site named
