@@ -31,7 +31,7 @@ human records GO here.
 
 ## Phase 3 — Needs & utility decision
 - [x] T3.1 Needs decay — §17 rates + stage mods; safety recovers −0.06/day toward 0.
-- [ ] T3.2 Action catalog
+- [x] T3.2 Action catalog — 7 §6 actions, exact relief vectors + stage/ctx gates; "create" = §6's create/explore row.
 - [ ] T3.3 Utility scoring
 - [ ] T3.4 Decide & act loop
 - [ ] T3.5 Hardship link
