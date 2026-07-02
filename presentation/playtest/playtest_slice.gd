@@ -139,7 +139,7 @@ func _science() -> float:
 	for id in TechGraph.defs():
 		if known.has(id):
 			hits += 1
-	return float(hits) / TechGraph.defs().size()
+	return float(hits) / maxi(1, TechGraph.defs().size())
 
 
 ## At the resistance stage their first ward rises over the hollow —
