@@ -27,7 +27,7 @@ human records GO here.
 - [x] T2.2 Aging & stage transitions — Aging.stage_for_age + tick; exact §17 bands; emits stage_changed.
 - [x] T2.3 Mortality — Gompertz + hardship + accident, per-component rolls give cause attribution; hard cap 115. PUBLIC API: GnomeData.hardship_rate added (T3.5 writes it); Serializer updated accordingly.
 - [x] T2.4 Birth scaffold — Birth.spawn_infant placeholder (sex via Rng, born event); inheritance/fertility deferred to Phase 5.
-- [ ] Phase-Exit 2: seeded 50-year run; lifespans within [algo §4] bounds; every death emits one event → tag phase-2-complete
+- [x] Phase-Exit 2: seeded 50-year elder-cohort run; lifespans in §4 bounds (mean ∈ [85,100], cap 115); one gnome_died per gnome → tagged phase-2-complete
 
 ## Phase 3 — Needs & utility decision
 - [ ] T3.1 Needs decay
