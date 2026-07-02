@@ -60,6 +60,9 @@ static func cast(
 	var intensity: float = definition["base_intensity"] * magnitude * valence_potency
 	var stimulus := {
 		"type": definition["id"],
+		# §18 category rides along so downstream gates (prophet seeding,
+		# T9.1, reads Omens ⑤ / Visions ⑥) can check the stimulus itself.
+		"category": definition["category"],
 		"place": target,
 		"intensity": intensity,
 		"drama": definition["event_drama"],
