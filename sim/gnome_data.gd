@@ -22,6 +22,9 @@ var memory: Array = []
 var notability := 0.0
 var partner_id := -1
 var home_settlement := 0
+## Extra death probability per day from sustained hardship [algo §3–§4].
+## Written by the needs system (T3.5), consumed by Mortality (T2.3).
+var hardship_rate := 0.0
 
 
 func _init(gnome_id: int = 0) -> void:

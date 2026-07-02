@@ -25,7 +25,7 @@ human records GO here.
 ## Phase 2 — Life cycle
 - [x] T2.1 `EventBus` — autoload with the 6 core signals; world_ended deferred to T11.4 as planned.
 - [x] T2.2 Aging & stage transitions — Aging.stage_for_age + tick; exact §17 bands; emits stage_changed.
-- [ ] T2.3 Mortality
+- [x] T2.3 Mortality — Gompertz + hardship + accident, per-component rolls give cause attribution; hard cap 115. PUBLIC API: GnomeData.hardship_rate added (T3.5 writes it); Serializer updated accordingly.
 - [ ] T2.4 Birth scaffold
 - [ ] Phase-Exit 2: seeded 50-year run; lifespans within [algo §4] bounds; every death emits one event → tag phase-2-complete
 
