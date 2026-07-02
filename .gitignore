@@ -1,0 +1,13 @@
+# Godot 4 editor/import cache (regenerated)
+.godot/
+# Exported builds
+/build/
+/export/
+*.pck
+*.exe
+*.zip
+# OS / editor junk
+.DS_Store
+*~
+# Agent loop log (regenerated; keep out of history)
+ralph.log
