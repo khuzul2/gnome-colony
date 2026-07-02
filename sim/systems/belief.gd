@@ -17,6 +17,8 @@ const FEAR_MULT := 1.5
 const CRYSTALLIZE_STRENGTH := 0.7
 const MIN_HOLDERS_FLOOR := 5
 const MIN_HOLDERS_FRACTION := 0.03
+const TRANSMISSION_MUTATION := 0.03
+const SUBCULTURE_DISTANCE := 0.5
 const HABITUATION_STEP := 0.15
 const HABITUATION_RECOVERY_PER_DAY := 0.02
 const FEELING_BASELINE := 0.0
@@ -137,6 +139,63 @@ static func place_mod(colony: Colony, place: String) -> float:
 	if tags.has("blessed"):
 		mod *= 1.0 + 0.8 * clampf(tags["blessed"], 0.0, 1.0)
 	return mod
+
+
+## Transmission of a crystallized object to a new holder [plan T6.5,
+## algo §9]: 3% chance the tradition mutates in the telling (variant
+## bumps — a rite's details shift, a taboo's scope widens).
+static func transmit(colony: Colony, belief_index: int, to_id: int) -> void:
+	var obj: Dictionary = colony.beliefs[belief_index]
+	if to_id in obj["holders"]:
+		return
+	obj["holders"].append(to_id)
+	if Rng.chance(TRANSMISSION_MUTATION):
+		obj["variant"] += 1
+
+
+## Subculture detection [plan T6.5, algo §9]: greedy seed clustering over
+## sorted living ids — a gnome joins the first cluster whose seed sits
+## within belief-vector distance < 0.5, else founds a new one. Distance =
+## mean |Δfeeling| over the union of (subject, axis) keys. The spec names
+## the 0.5 threshold but no algorithm; greedy-by-id is deterministic.
+static func subcultures(colony: Colony) -> Array:
+	var living := colony.living()
+	living.sort_custom(func(a: GnomeData, b: GnomeData) -> bool: return a.id < b.id)
+	var clusters := []
+	var seeds := []
+	for g in living:
+		var placed := false
+		for i in seeds.size():
+			if _belief_distance(seeds[i], g) < SUBCULTURE_DISTANCE:
+				clusters[i].append(g.id)
+				placed = true
+				break
+		if not placed:
+			seeds.append(g)
+			clusters.append([g.id])
+	return clusters
+
+
+static func _belief_distance(a: GnomeData, b: GnomeData) -> float:
+	var keys := {}
+	for subject in a.feelings:
+		for axis in a.feelings[subject]:
+			keys["%s|%s" % [subject, axis]] = true
+	for subject in b.feelings:
+		for axis in b.feelings[subject]:
+			keys["%s|%s" % [subject, axis]] = true
+	if keys.is_empty():
+		return 0.0
+	var total := 0.0
+	for key in keys:
+		var parts: PackedStringArray = key.split("|")
+		total += absf(
+			(
+				a.get_feeling(String(parts[0]), String(parts[1]))
+				- b.get_feeling(String(parts[0]), String(parts[1]))
+			)
+		)
+	return total / keys.size()
 
 
 static func _has_object(colony: Colony, kind: String, subject: String) -> bool:
