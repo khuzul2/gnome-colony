@@ -97,7 +97,7 @@ human records GO here.
 - [x] Phase-Exit 9: full pipeline — omen casts charge the flock until the same omen that fell flat catches a vessel past the 0.5 line; two congregations crystallize rival creeds ⇒ schism due; 4 spam prophets erode faith + breed unrest vs an orthodox control → tagged phase-9-complete (318 tests, lint clean). Test premise: a prophet believes their own creed (their faith counts among holders).
 
 ## Phase 10 — Technology & magic discovery
-- [ ] T10.1 Knowledge graph & prereqs
+- [x] T10.1 Knowledge graph & prereqs — TechGraph: 10-id starter catalog, prereqs_met/candidates; techs are ordinary knowledge ids (Phase-4 lifecycle: teach/decay/extinction/records apply unchanged; "writing" is the same id T4.5 already consumes). §7 fixes the rule + the smithing←fire+stoneworking edge; §13 fixes the six tech ids. INTERPRETIVE (documented in tech_graph.gd): all other edges (irrigation←agriculture, writing←agriculture, metallurgy←smithing, construction←stoneworking, medicine←writing, sail←construction) follow design §4's necessity hints. Effects data lands in T10.3.
 - [ ] T10.2 Discovery process
 - [ ] T10.3 Tech effects
 - [ ] T10.4 Magic understanding ladder
