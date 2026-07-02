@@ -29,8 +29,8 @@ func test_desperate_hunger_makes_eat_win():
 
 func test_need_squared_makes_urgent_dominate():
 	var g := _hungry_adult(0.9, 0.5)
-	# eat: 0.81·0.9 = 0.729 · socialize: 0.25·0.7 − tiny purpose term — the
-	# margin (>0.4) dwarfs the 0.05 jitter cap, so base scores decide.
+	# eat: 0.81·0.9 = 0.729 · socialize: 0.25·0.7 = 0.175 (purpose need is 0
+	# here, so its term vanishes) — the margin dwarfs the 0.05 jitter cap.
 	assert_true(
 		Utility.base_score(g, "eat") > Utility.base_score(g, "socialize") + 0.05,
 		"squared urgency beats linear moderate needs by more than max jitter"
