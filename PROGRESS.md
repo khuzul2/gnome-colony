@@ -16,7 +16,7 @@ human records GO here.
 
 ## Phase 1 — Core data model & time
 - [x] T1.1 Enums & constants — Enums class (LifeStage + trait/need/belief-axis catalogs). KNOWLEDGE_CATEGORIES ids "craft/tech/magic" are a naming choice for §7's prose, not spec-literal strings.
-- [ ] T1.2 `GnomeData`
+- [x] T1.2 `GnomeData` — full §1 state + clamp helpers; add_knowledge() enforces set semantics. MEMORY_CAP=16 is a structural constant (spec says only "small"), not a gameplay number.
 - [ ] T1.3 `Colony` registry
 - [ ] T1.4 `TimeService`
 - [ ] T1.5 Serialization round-trip (data only)
