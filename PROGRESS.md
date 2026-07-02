@@ -58,7 +58,7 @@ human records GO here.
 
 ## Phase 6 — Culture & belief (hybrid)
 - [x] T6.1 Scalar substrate — appraise (intensity·susceptibility − habituation, never inverted), habituation +0.15/−0.02/day, relaxation −0.03/day. susceptibility 0.5+0.5·trait (interpretive; fear→timid faith→devout awe→curious reverence→devout). PUBLIC API: GnomeData.habituation added (serializer covers).
-- [ ] T6.2 Batched propagation
+- [x] T6.2 Batched propagation — 0.04·tie·gap daily (R3-H1: NOT every 4 ticks), fear ×1.5, two-pass batched (one edge/day max), dead excluded.
 - [ ] T6.3 Crystallization
 - [ ] T6.4 Behavioral effects
 - [ ] T6.5 Drift & subcultures
