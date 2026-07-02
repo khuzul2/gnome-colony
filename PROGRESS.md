@@ -59,7 +59,7 @@ human records GO here.
 ## Phase 6 — Culture & belief (hybrid)
 - [x] T6.1 Scalar substrate — appraise (intensity·susceptibility − habituation, never inverted), habituation +0.15/−0.02/day, relaxation −0.03/day. susceptibility 0.5+0.5·trait (interpretive; fear→timid faith→devout awe→curious reverence→devout). PUBLIC API: GnomeData.habituation added (serializer covers).
 - [x] T6.2 Batched propagation — 0.04·tie·gap daily (R3-H1: NOT every 4 ticks), fear ×1.5, two-pass batched (one edge/day max), dead excluded.
-- [x] T6.3 Crystallization — min holders max(5, 3%·pop), ≥0.7 sustained a season (dip resets), strength = mean feeling × holder fraction; axis-primary kind map (interpretive — §9 rows overlap); cursed/blessed tags = mean feeling. PUBLIC API: Colony.beliefs/place_tags/belief_tracker added (serializer covers); BeliefObject factory class.
+- [x] T6.3 Crystallization — min holders max(5, ceil(3%·pop)) (rounding interpretive), ≥0.7 sustained a season (dip resets), strength = mean feeling × holder fraction. REVIEW FIX: §9 triggers overlap and ALL fire (taboo←fear/reverence, rite←awe/faith, place_reverence←reverence, theology←faith); taboo avoidance bites via the object (cursed tags reserved for Phase-7 phenomena chains); blessed tag = mean feeling. PUBLIC API: Colony.beliefs/place_tags/belief_tracker (serializer covers); BeliefObject factory.
 - [ ] T6.4 Behavioral effects
 - [ ] T6.5 Drift & subcultures
 - [ ] Phase-Exit 6: seeded scenario crystallizes a place-taboo; utility for acting there drops → tag phase-6-complete

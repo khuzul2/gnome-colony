@@ -2,11 +2,12 @@ extends GutTest
 
 ## T6.3 — Layer B crystallization [algo §9]: a feeling held by
 ## ≥ max(5, 3% of settlement) gnomes at ≥ 0.7 for ≥ 1 season crystallizes
-## into a named belief-object; strength = backing feeling × holder
-## fraction; emits belief_formed. Axis→kind: fear→taboo, awe→rite,
-## reverence→place_reverence, faith→theology (axis-primary reading of the
-## §9 table, whose rows overlap). Taboo writes a cursed place-tag,
-## place-reverence a blessed one.
+## into named belief-objects; strength = backing feeling × holder
+## fraction; emits belief_formed. The §9 triggers OVERLAP and all fire:
+## taboo ← fear/reverence · rite ← awe/faith · place_reverence ← reverence
+## · theology ← faith. Place-reverence blesses the place-tag; taboo
+## avoidance bites through the object itself (cursed tags come from
+## phenomena chains in Phase 7).
 
 const SEASON := 24
 
@@ -48,7 +49,7 @@ func test_sustained_shared_fear_crystallizes_a_taboo():
 	assert_eq(events[0]["subject"], "eastern_ridge")
 	assert_eq(c.beliefs.size(), 1)
 	assert_almost_eq(c.beliefs[0]["strength"], 0.8 * 1.0, 0.0001, "feeling × holder fraction")
-	assert_almost_eq(c.place_tags["eastern_ridge"]["cursed"], 0.8, 0.0001)
+	assert_lt(Belief.place_mod(c, "eastern_ridge"), 1.0, "the taboo object itself drives avoidance")
 
 
 func test_below_strength_never_crystallizes():
@@ -73,18 +74,25 @@ func test_duration_must_be_sustained():
 	assert_eq(_run_days(c, SEASON - 4).size(), 0, "the dip reset the clock")
 
 
-func test_axis_kind_mapping_and_blessed_tag():
+func test_overlapping_triggers_all_fire():
 	var c := _colony(8)
 	_feel_all(c, "spring", "reverence", 0.9)
 	var events := _run_days(c, SEASON)
-	assert_eq(events[0]["kind"], "place_reverence")
+	var kinds := events.map(func(e: Dictionary) -> String: return e["kind"])
+	assert_eq(
+		kinds, ["taboo", "place_reverence"], "reverence is both sacred ground AND do-not-disturb"
+	)
 	assert_almost_eq(c.place_tags["spring"]["blessed"], 0.9, 0.0001)
 	var c2 := _colony(8)
 	_feel_all(c2, "harvest_feast", "awe", 0.8)
-	assert_eq(_run_days(c2, SEASON)[0]["kind"], "rite")
+	assert_eq(_run_days(c2, SEASON).map(func(e: Dictionary) -> String: return e["kind"]), ["rite"])
 	var c3 := _colony(8)
 	_feel_all(c3, "unseen_will", "faith", 0.8)
-	assert_eq(_run_days(c3, SEASON)[0]["kind"], "theology")
+	assert_eq(
+		_run_days(c3, SEASON).map(func(e: Dictionary) -> String: return e["kind"]),
+		["rite", "theology"],
+		"faith feeds both worship-in-practice and the image of you"
+	)
 
 
 func test_no_duplicate_objects():
@@ -102,3 +110,4 @@ func test_belief_objects_round_trip_through_serializer():
 	var restored := Serializer.colony_from_dict(Serializer.colony_to_dict(c))
 	assert_eq(restored.beliefs, c.beliefs)
 	assert_eq(restored.place_tags, c.place_tags)
+	assert_eq(restored.belief_tracker, c.belief_tracker)

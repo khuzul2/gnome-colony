@@ -2,17 +2,17 @@ class_name BeliefObject
 extends RefCounted
 ## Layer B belief-object schema & factory [plan T6.3, algo §9]. Objects are
 ## plain Dictionaries (serializer-friendly, value-comparable); this class
-## owns their shape and the axis→kind mapping. The §9 table's rows overlap
-## (fear/reverence both list taboo); the axis-PRIMARY reading is used:
-##   fear → taboo · awe → rite · reverence → place_reverence ·
-##   faith → theology  (interpretive, noted in PROGRESS.md).
-## Taboos curse a place-tag; place-reverence blesses one [algo §9].
+## owns their shape and the axis→kinds mapping, which preserves the §9
+## table's OVERLAPPING triggers: taboo ← fear/reverence, rite ← awe/faith,
+## place_reverence ← reverence, theology ← faith. One sustained axis can
+## crystallize several objects (a revered ridge becomes both sacred ground
+## and a thing one must not disturb).
 
-const AXIS_KIND := {
-	"fear": "taboo",
-	"awe": "rite",
-	"reverence": "place_reverence",
-	"faith": "theology",
+const AXIS_KINDS := {
+	"fear": ["taboo"],
+	"awe": ["rite"],
+	"reverence": ["taboo", "place_reverence"],
+	"faith": ["rite", "theology"],
 }
 
 
@@ -29,5 +29,5 @@ static func make(
 	}
 
 
-static func kind_for_axis(axis: String) -> String:
-	return AXIS_KIND.get(axis, "")
+static func kinds_for_axis(axis: String) -> Array:
+	return AXIS_KINDS.get(axis, [])

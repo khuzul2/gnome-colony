@@ -105,20 +105,38 @@ static func crystallize_tick(colony: Colony, dt_days: float) -> void:
 		var parts: PackedStringArray = key.split("|")
 		var subject := String(parts[0])
 		var axis := String(parts[1])
-		var kind := BeliefObject.kind_for_axis(axis)
-		if kind == "" or _has_object(colony, kind, subject):
-			continue
-		var strength: float = (
-			qualifying[key]["total"] / holders.size() * (float(holders.size()) / pop)
-		)
-		colony.beliefs.append(BeliefObject.make(kind, subject, axis, strength, holders))
-		if kind == "taboo":
-			_tag_place(colony, subject, "cursed", strength / (float(holders.size()) / pop))
-		elif kind == "place_reverence":
-			_tag_place(colony, subject, "blessed", strength / (float(holders.size()) / pop))
-		EventBus.belief_formed.emit(
-			{"kind": kind, "subject": subject, "axis": axis, "strength": strength}
-		)
+		var mean_feeling: float = qualifying[key]["total"] / holders.size()
+		var strength: float = mean_feeling * (float(holders.size()) / pop)
+		for kind in BeliefObject.kinds_for_axis(axis):
+			if _has_object(colony, kind, subject):
+				continue
+			colony.beliefs.append(BeliefObject.make(kind, subject, axis, strength, holders))
+			if kind == "place_reverence":
+				_tag_place(colony, subject, "blessed", mean_feeling)
+			EventBus.belief_formed.emit(
+				{"kind": kind, "subject": subject, "axis": axis, "strength": strength}
+			)
+
+
+## Behavioral effect of beliefs about a place [plan T6.4, algo §6/§9]:
+## the belief_mod multiplier for acting there. Sources multiply:
+##   · a taboo OBJECT on the place → ×(1 − 0.5·strength)  (avoidance)
+##   · a "cursed" tag (written by phenomena/chains, Phase 7) → same map
+##   · a "blessed" tag (place-reverence) → ×(1 + 0.8·strength)
+## §6 bounds belief_mod to ~[0.5, 1.8]; the linear maps reach exactly those
+## endpoints at full strength (interpretive). Contested ground pulls both
+## ways.
+static func place_mod(colony: Colony, place: String) -> float:
+	var mod := 1.0
+	for b in colony.beliefs:
+		if b["kind"] == "taboo" and b["subject"] == place:
+			mod *= 1.0 - 0.5 * clampf(b["strength"], 0.0, 1.0)
+	var tags: Dictionary = colony.place_tags.get(place, {})
+	if tags.has("cursed"):
+		mod *= 1.0 - 0.5 * clampf(tags["cursed"], 0.0, 1.0)
+	if tags.has("blessed"):
+		mod *= 1.0 + 0.8 * clampf(tags["blessed"], 0.0, 1.0)
+	return mod
 
 
 static func _has_object(colony: Colony, kind: String, subject: String) -> bool:
