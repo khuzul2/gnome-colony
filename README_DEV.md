@@ -18,7 +18,7 @@ and again whenever `.godot/` is deleted)
 
 ## Run the test suite
 ```
-godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://test -gexit -gexit_on_success
+godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit -gexit_on_success
 ```
 Exit code 0 = green.
 

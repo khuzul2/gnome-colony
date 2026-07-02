@@ -5,6 +5,6 @@ tools: Read, Bash, Grep
 model: sonnet
 ---
 You are the test runner. Steps:
-1. Run: godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://test -gexit -gexit_on_success
+1. Run: godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit -gexit_on_success
 2. Run: gdformat --check . && gdlint .
 Report: PASS or FAIL. On FAIL, list each failing test name and its assertion message, and the lint errors. Never modify files. Return a concise report only.

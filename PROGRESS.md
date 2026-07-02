@@ -20,7 +20,7 @@ human records GO here.
 - [x] T1.3 `Colony` registry — id map, next_id, living(), remove. Delivered full §5 vitals (not just a stub) + spawn()/population() helpers; public API: spawn/add/remove/living/population/vitals.
 - [x] T1.4 `TimeService` — 1 tick = 1 day per algo §17 (plan's "ticks/day=4" is a pre-review fossil; §17 wins). Reminder for T6.2: propagation runs DAILY (design-review R3-H1), not every 4 ticks.
 - [x] T1.5 Serialization round-trip — Serializer static to_dict/from_dict for GnomeData/Colony/WorldConfig, deep-copied (no aliasing). Full save-game serializer deferred to T12.1 as planned.
-- [ ] Phase-Exit 1: colony of 4, 100 ticks, time/calendar correct, state intact → tag phase-1-complete
+- [x] Phase-Exit 1: colony of 4, 100 ticks, calendar exact, state intact (test/integration/test_phase1_exit.gd) → tagged phase-1-complete. NOTE: canonical test command now includes -ginclude_subdirs (integration tests live in test/integration/).
 
 ## Phase 2 — Life cycle
 - [ ] T2.1 `EventBus`
