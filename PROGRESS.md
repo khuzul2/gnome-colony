@@ -7,7 +7,7 @@ Tasks are listed in plan order; do the FIRST unchecked task whose deps are check
 human records GO here.
 
 ## Phase 0 — Scaffold & test harness
-- [ ] T0.1 Project skeleton
+- [x] T0.1 Project skeleton — project.godot (main scene presentation/main.tscn), dir tree, test_smoke.gd; boot exit 0
 - [ ] T0.2 Install GUT + test command (GUT is pre-vendored at addons/gut/ — wire it up, don't download)
 - [ ] T0.3 Lint/format gate
 - [ ] T0.4 `Rng` singleton (seeded determinism)
