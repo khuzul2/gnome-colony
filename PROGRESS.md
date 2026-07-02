@@ -67,7 +67,7 @@ human records GO here.
 ## Phase 7 — Influence system: phenomena & appraisal (= prototype Milestone 2)
 - [x] T7.1 Phenomenon schema — validate() with all §11 fields; social number-or-"=culture"; taint benevolent-only; target kinds = §11 ∪ §18 (adds "region" — §18's long_dark needs it).
 - [x] T7.2 Phenomenon runner + stimulus — Influence.cast (handler registry, one stimulus per cast; magnitude/potency stubs 1.0 until T8.3). PUBLIC API: WorldState added (minimal sites/hidden/paths container; region-graph comes with Phase 11/13).
-- [ ] T7.3 The `landslide`
+- [x] T7.3 The `landslide` — buries site, reveals ore, blocks "<site>_path", casualties at |effects.population|·intensity per present gnome (interpretive lethality dial). PUBLIC API: GnomeData.location added (serializer covers).
 - [ ] T7.4 Appraisal
 - [ ] T7.5 Tail-risk & chaining
 - [ ] T7.7 Phenomenon valence + toolbox balance
