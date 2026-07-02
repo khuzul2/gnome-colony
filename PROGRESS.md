@@ -104,6 +104,7 @@ human records GO here.
 - [x] Phase-Exit 10: drought can't teach irrigation before agriculture (gating), then necessity finds both in order; mu climbs superstition → prediction (omen impact drops, ward attempt fizzles) → resistance (first ward rises; warded cast lands at exactly ×(1−ward) vs open ground) → tagged phase-10-complete (351 tests, lint clean)
 
 ## 🎮 FUN CHECK 2 — Emergence: culture, prophets, tech & god-vs-mages (HUMAN — HALT)
+- [x] Slice extended with Phase 9–10 systems — ungated omen button (documented playtest bypass: 6-gnome bands can't reach Tier IV), prophet seeding/preaching/corruption live, seasonal research (flat frontier need — slice glue), magic accrual + auto-ward at resistance, HUD reads prophets/creeds/schism/tech/mu/outliers.
 - [ ] Human GO recorded here
 
 ## Phase 11 — Hierarchical simulation (scale)

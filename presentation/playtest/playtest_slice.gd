@@ -4,7 +4,11 @@ extends Node2D
 ##   godot res://presentation/playtest/playtest_slice.tscn
 ## A top-down dot view of one band, buttons for the unlocked phenomena, and
 ## a mood/belief/devotion readout — just enough for a human to judge the
-## nudge → response → belief → consequence loop. The sim stays pure: this
+## nudge → response → belief → consequence loop. Extended for 🎮 Fun
+## Check 2 with the Phase 9–10 systems: an ungated omen button seeds
+## prophets, Prophet.tick preaches daily, research/magic advance each
+## season/day, and the HUD reads prophets, creeds, tech, mu, and
+## outliers. The sim stays pure: this
 ## scene only READS state and feeds legitimate inputs (seed, config,
 ## influence acts). Two slice-only pieces of glue, both documented below:
 ## day-trip staging (gnomes need locations before Phase 11/13 movement
@@ -16,11 +20,14 @@ const HOLLOW := "the_hollow"
 const RIDGE := "eastern_ridge"
 const SITE_POS := {HOLLOW: Vector2(430, 340), RIDGE: Vector2(800, 170)}
 const SITE_RADIUS := 105.0
-## The 2–3 acts the gate asks for: one of each face, tier-gated live.
+## One act of each face, tier-gated live — plus an UNGATED omen (marked
+## debug) so Fun Check 2 can play the prophet loop without grinding a
+## 6-gnome band to the Tier-IV pop floor. Entry: [id, target, ungated].
 const ACTS := [
-	["still_air", HOLLOW],
-	["standing_stones", HOLLOW],
-	["landslide", RIDGE],
+	["still_air", HOLLOW, false],
+	["standing_stones", HOLLOW, false],
+	["landslide", RIDGE, false],
+	["birds_silent", HOLLOW, true],
 ]
 const SPEEDS := [["pause", 0.0], ["1 d/s", 1.0], ["7 d/s", 7.0], ["30 d/s", 30.0]]
 const FEED_CAP := 8
@@ -34,6 +41,10 @@ var handlers := Catalog.handlers()
 var _days_per_sec := 1.0
 var _accum := 0.0
 var _day := 0
+var _last_season := -1
+## Slice-glue exposure signal for Magic.accrue: spikes to 1 on a cast,
+## decays 2%/day (display-side shape, not a sim number).
+var _exposure := 0.0
 var _feed: Array = []
 var _hud: Label
 var _act_buttons := {}
@@ -81,15 +92,65 @@ func _advance_day() -> void:
 	_day += 1
 	_stage_locations()
 	runner.tick()
-	# Slice-only composition of the Phase 6/8 daily ticks (the sim's real
-	# orchestrator arrives with Phases 11–12); numbers all live in-system.
+	# Slice-only composition of the Phase 6/8/9/10 daily ticks (the sim's
+	# real orchestrator arrives with Phases 11–12); numbers live in-system.
 	Belief.propagate_tick(runner.colony, 1.0)
 	Belief.decay_tick(runner.colony, 1.0)
 	Belief.crystallize_tick(runner.colony, 1.0)
 	Devotion.update_unlocks(runner.colony)
 	Devotion.unrest_tick(runner.colony, 1.0)
+	Prophet.tick(runner.colony, 1.0)
+	Magic.accrue(
+		runner.colony,
+		0,
+		runner.colony.vitals()["mean_traits"]["curious"],
+		_exposure,
+		_science(),
+		1.0
+	)
+	_exposure *= 0.98
+	if runner.time.season() != _last_season:
+		_last_season = runner.time.season()
+		_research_season()
+	_ward_watch()
 	_refresh_hud()
 	queue_redraw()
+
+
+## Slice glue: a flat need of 1.0 on the whole discoverable frontier plus
+## food surplus — enough to watch the tech arc move; the environment tier
+## (T11.x) will author real per-need pressures.
+func _research_season() -> void:
+	var known: Array = runner.colony.settlement_knowledge.get(0, {}).keys()
+	var needs := {}
+	for id in TechGraph.candidates(known):
+		needs[id] = 1.0
+	var pop := maxf(1.0, runner.colony.population())
+	var surplus: float = clampf(runner.food.current / pop, 0.0, 1.0)
+	for id in Research.season_tick(runner.colony, 0, needs, surplus):
+		_push_feed("💡 discovered: %s" % id)
+
+
+## Display-side science level: fraction of the TechGraph the settlement
+## holds (slice glue; T11.2 brings real aggregate levels).
+func _science() -> float:
+	var known: Dictionary = runner.colony.settlement_knowledge.get(0, {})
+	var hits := 0
+	for id in TechGraph.defs():
+		if known.has(id):
+			hits += 1
+	return float(hits) / TechGraph.defs().size()
+
+
+## At the resistance stage their first ward rises over the hollow —
+## visible proof the co-evolution turned (mage behavior proper is later).
+func _ward_watch() -> void:
+	if world.wards.has(HOLLOW):
+		return
+	var mu := Magic.mu(runner.colony, 0)
+	if Magic.stage(mu) == "resistance":
+		Magic.place_ward(world, HOLLOW, mu)
+		_push_feed("🛡 the hollow is warded — your acts land softer here")
 
 
 ## Slice-only staging: a third of the adults (by id rotation) day-trip to
@@ -101,10 +162,11 @@ func _stage_locations() -> void:
 		g.location = RIDGE if trip else HOLLOW
 
 
-func _on_cast(act_id: String, target: String) -> void:
+func _on_cast(act_id: String, target: String, ungated: bool = false) -> void:
 	var def: Dictionary = defs[act_id]
-	if def["tier"] > runner.colony.unlocked_tier:
+	if not ungated and def["tier"] > runner.colony.unlocked_tier:
 		return
+	var mu := Magic.mu(runner.colony, 0)
 	var stimuli := Influence.cast_with_cascade(
 		runner.colony,
 		world,
@@ -115,15 +177,27 @@ func _on_cast(act_id: String, target: String) -> void:
 		Devotion.valence_potency(def["valence"]),
 		handlers
 	)
+	_exposure = 1.0
 	for stim in stimuli:
-		Influence.appraise_witnesses(runner.colony, stim)
+		var present := []
+		for g in runner.colony.living():
+			if g.location == stim["place"]:
+				present.append(g)
+		# Prediction dulls expected portents; literacy explains you away.
+		Influence.appraise_witnesses(
+			runner.colony, stim, present, Magic.impact_mult_for(runner.colony, 0, stim)
+		)
 		if stim.get("drama", 0.0) > 0.0:
-			var present := []
-			for g in runner.colony.living():
-				if g.location == stim["place"]:
-					present.append(g)
-			Devotion.attribute(runner.colony, stim["drama"], 0.0, stim["valence"], present)
+			Devotion.attribute(runner.colony, stim["drama"], mu, stim["valence"], present)
 		_push_feed("· %s at %s (intensity %.2f)" % [stim["type"], stim["place"], stim["intensity"]])
+		var caught := Prophet.try_seed(present, stim)
+		if caught != null:
+			_push_feed(
+				(
+					"⚡ #%d caught the calling — a %s creed"
+					% [caught.id, caught.prophet["message"]["flavor"]]
+				)
+			)
 	Devotion.update_unlocks(runner.colony)
 	_refresh_hud()
 	queue_redraw()
@@ -165,10 +239,14 @@ func _build_ui() -> void:
 	for act in ACTS:
 		var def: Dictionary = defs[act[0]]
 		var btn := Button.new()
-		btn.text = "%s (Tier %d, %s) → %s" % [act[0], def["tier"], def["valence"], act[1]]
-		btn.pressed.connect(_on_cast.bind(act[0], act[1]))
+		var gate_tag: String = " [ungated for playtest]" if act[2] else ""
+		btn.text = (
+			"%s (Tier %d, %s) → %s%s" % [act[0], def["tier"], def["valence"], act[1], gate_tag]
+		)
+		btn.pressed.connect(_on_cast.bind(act[0], act[1], act[2]))
 		vbox.add_child(btn)
-		_act_buttons[act[0]] = btn
+		if not act[2]:
+			_act_buttons[act[0]] = btn
 	var hbox := HBoxContainer.new()
 	vbox.add_child(hbox)
 	for entry in SPEEDS:
@@ -207,6 +285,44 @@ func _refresh_hud() -> void:
 			lines.append("  %s of %s · strength %.2f" % [b["kind"], b["subject"], b["strength"]])
 	for place in c.place_tags:
 		lines.append("tags @ %s: %s" % [place, c.place_tags[place]])
+	var prophet_lines := []
+	for g in c.living():
+		if g.prophet.is_empty():
+			continue
+		(
+			prophet_lines
+			. append(
+				(
+					"  #%d · %s creed · voice %.2f%s"
+					% [
+						g.id,
+						g.prophet["message"]["flavor"],
+						g.prophet.get("charisma", 0.0) * Prophet.arc(g),
+						" · CORRUPTED" if g.prophet["corrupted"] else "",
+					]
+				)
+			)
+		)
+	if not prophet_lines.is_empty():
+		lines.append("prophets:")
+		lines.append_array(prophet_lines)
+		if Prophet.check_schism(c)["due"]:
+			lines.append("  ⚠ SCHISM BREWING — two strong creeds")
+	var known: Dictionary = c.settlement_knowledge.get(0, {})
+	lines.append("tech: %s" % (", ".join(known.keys()) if not known.is_empty() else "none"))
+	var mu := Magic.mu(c, 0)
+	lines.append(
+		(
+			"magic: %.3f (%s)%s"
+			% [mu, Magic.stage(mu), " · hollow warded" if world.wards.has(HOLLOW) else ""]
+		)
+	)
+	var outliers := {}
+	for g in c.living():
+		if g.outlier_type != "":
+			outliers[g.outlier_type] = outliers.get(g.outlier_type, 0) + 1
+	if not outliers.is_empty():
+		lines.append("outliers: %s" % outliers)
 	if not _feed.is_empty():
 		lines.append("— acts & signs —")
 		lines.append_array(_feed)

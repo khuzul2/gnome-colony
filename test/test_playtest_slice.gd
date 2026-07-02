@@ -35,6 +35,30 @@ func test_casting_seeds_witnessed_faith():
 	assert_gt(Devotion.total(slice.runner.colony), 0.0, "a witnessed act writes faith toward you")
 
 
+func test_the_omen_is_ungated_for_the_fun_check():
+	var slice := _slice()
+	assert_eq(slice.runner.colony.unlocked_tier, 1)
+	slice._on_cast("birds_silent", slice.HOLLOW, true)
+	assert_gt(
+		Devotion.total(slice.runner.colony), 0.0, "the Tier-IV omen lands via the playtest gate"
+	)
+
+
+func test_a_charged_flock_births_a_prophet():
+	var slice := _slice()
+	for g in slice.runner.colony.living():
+		g.set_feeling(Devotion.YOU, "awe", 0.7)
+	slice._on_cast("birds_silent", slice.HOLLOW, true)
+	var prophets := 0
+	for g in slice.runner.colony.living():
+		if not g.prophet.is_empty():
+			prophets += 1
+	assert_eq(prophets, 1, "the omen found its vessel in the slice")
+	for i in 3:
+		slice._advance_day()
+	assert_gt(slice.runner.colony.population(), 0, "prophet/research/magic ticks hold together")
+
+
 func test_locked_act_does_nothing():
 	var slice := _slice()
 	assert_eq(slice.runner.colony.unlocked_tier, 1, "fresh colony holds Tier I only")
