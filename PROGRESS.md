@@ -86,7 +86,7 @@ human records GO here.
 - [x] Phase-Exit 8: dramatic casts → attribution → D rises each event; Tier II opens exactly at the first d̄ ≥ 0.15 crossing; equal D slices (0/10/20/30) buy strictly shrinking intensity steps (log10 sub-linearity) → tagged phase-8-complete (282 tests, lint clean)
 
 ## 🎮 PLAYTEST GATE 1 — Vertical Slice & Fun Check (HUMAN go/no-go — HALT)
-- [ ] Throwaway minimal interactive view built (top-down render + 2–3 phenomena buttons + mood/belief readout)
+- [x] Throwaway minimal interactive view built (top-down render + 2–3 phenomena buttons + mood/belief readout) — presentation/playtest/playtest_slice.tscn; slice-only glue documented in-file (day-trip staging writes GnomeData.location pending Phase 11/13 movement; daily Belief/Devotion composition mirrors integration tests pending the Phase 11–12 orchestrator). Only still_air is live at boot (Tier I); standing_stones/landslide open when d̄_peak crosses 0.15 — the unlock loop IS the demo.
 - [ ] Human GO recorded here
 
 ## Phase 9 — Prophets
