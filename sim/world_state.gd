@@ -13,6 +13,9 @@ var paths := {}
 ## place → hazard affordance tags [algo §15] (slope, drought, farmland,
 ## built_up, crowded, wilds…) — phenomena need terrain to act on (T7.8).
 var affordances := {}
+## place → ward reduction [0,1] [algo §13] (T10.4): resistance-stage
+## settlements blunt incoming phenomena on warded tiles.
+var wards := {}
 
 
 ## Surface every hidden resource at `site_id` as a real site named

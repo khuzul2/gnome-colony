@@ -25,6 +25,9 @@ var unlocked_tier := 1
 ## Terror-faith instability [algo §10] (T8.4): fed by negative flavor,
 ## relieved by quiet; 0.8 is the fracture line.
 var unrest := 0.0
+## Per-settlement magic_understanding [algo §13] (T10.4): sid → [0,1] —
+## how far they've gotten in studying you.
+var magic_understanding := {}
 
 
 func spawn() -> GnomeData:

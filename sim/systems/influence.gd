@@ -57,7 +57,10 @@ static func cast(
 ) -> Dictionary:
 	if not affordance_met(world, target, definition.get("affordance_req", "any")):
 		return {}
-	var intensity: float = definition["base_intensity"] * magnitude * valence_potency
+	# Warded tiles blunt the act [algo §13] (T10.4): resistance-stage
+	# settlements answer you — reduction up to 0.7 on the target place.
+	var ward_mult: float = 1.0 - world.wards.get(target, 0.0)
+	var intensity: float = definition["base_intensity"] * magnitude * valence_potency * ward_mult
 	var stimulus := {
 		"type": definition["id"],
 		# §18 category rides along so downstream gates (prophet seeding,
@@ -161,7 +164,11 @@ static func cast_with_cascade(
 			var tail := {
 				"type": "tail:%s" % id,
 				"place": target,
-				"intensity": def["base_intensity"] * magnitude,
+				# A tail lands on the same tile, so a ward blunts it too
+				# (T10.4) — only valence potency is excluded (tails are
+				# neutral aftershocks).
+				"intensity":
+				def["base_intensity"] * magnitude * (1.0 - world.wards.get(target, 0.0)),
 				"drama": def["event_drama"],
 				"valence": "neutral",
 				"effects": def["effects"],
@@ -176,8 +183,13 @@ static func cast_with_cascade(
 ## AND the phenomenon type (one habituation bump per event), spikes safety
 ## by intensity·(0.3+timid) — the prototype-spec formula — and, if curious
 ## enough, banks a discovery memory instead of only dread.
+## `belief_impact_mult` carries §13's prediction damp (T10.4): callers
+## pass Magic.impact_mult_for(...) so an expected portent doesn't awe.
 static func appraise_witnesses(
-	colony: Colony, stimulus: Dictionary, witnesses: Variant = null
+	colony: Colony,
+	stimulus: Dictionary,
+	witnesses: Variant = null,
+	belief_impact_mult: float = 1.0,
 ) -> void:
 	var present: Array = witnesses if witnesses != null else []
 	if witnesses == null:
@@ -190,7 +202,7 @@ static func appraise_witnesses(
 	# particular phenomenon bites on belief.
 	# .get() guard: consequence markers carry empty effects (reviewer note).
 	var belief_axis: float = absf(stimulus["effects"].get("belief", 0.0))
-	var felt: float = stimulus["intensity"] * belief_axis
+	var felt: float = stimulus["intensity"] * belief_axis * belief_impact_mult
 	for g in present:
 		Belief.appraise(g, stimulus["place"], "fear", felt, stimulus["type"], false)
 		Belief.appraise(g, stimulus["type"], "fear", felt, stimulus["type"], true)

@@ -34,6 +34,7 @@ func _populated_colony() -> Colony:
 	c.add(_populated_gnome(0))
 	c.add(_populated_gnome(4))
 	c.gnomes[4].stage = Enums.LifeStage.DEAD
+	c.magic_understanding = {0: 0.35}
 	return c
 
 
