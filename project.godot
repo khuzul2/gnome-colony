@@ -13,3 +13,7 @@ run/main_scene="res://presentation/main.tscn"
 [debug]
 
 gdscript/warnings/untyped_declaration=1
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
