@@ -22,6 +22,7 @@ func _populated_gnome(id: int) -> GnomeData:
 	g.constitutional_traits = ["curious"]
 	g.outlier_type = "genius"
 	g.prophet_affinity = 0.5
+	g.habituation = {"landslide": 0.3}
 	return g
 
 

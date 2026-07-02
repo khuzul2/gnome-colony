@@ -39,6 +39,9 @@ var constitutional_traits: Array = []
 var outlier_type := ""
 ## 1.0 for the touched — prime prophet seed material [algo §8/§12] (T9.1).
 var prophet_affinity := 0.0
+## Per-phenomenon-type habituation counters [algo §9] (T6.1): repeats of
+## the same act land weaker; recovers −0.02/day.
+var habituation := {}
 
 
 func _init(gnome_id: int = 0) -> void:

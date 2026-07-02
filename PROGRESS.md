@@ -57,7 +57,7 @@ human records GO here.
 - [x] Phase-Exit 5 (Milestone 1): 4-gnome colony, default WorldConfig — 17/20 seeded runs reached gen 5 (failures 3/20 ≤ 40%) → tagged phase-5-complete
 
 ## Phase 6 — Culture & belief (hybrid)
-- [ ] T6.1 Scalar substrate
+- [x] T6.1 Scalar substrate — appraise (intensity·susceptibility − habituation, never inverted), habituation +0.15/−0.02/day, relaxation −0.03/day. susceptibility 0.5+0.5·trait (interpretive; fear→timid faith→devout awe→curious reverence→devout). PUBLIC API: GnomeData.habituation added (serializer covers).
 - [ ] T6.2 Batched propagation
 - [ ] T6.3 Crystallization
 - [ ] T6.4 Behavioral effects
