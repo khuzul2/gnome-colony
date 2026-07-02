@@ -33,7 +33,7 @@ human records GO here.
 - [x] T3.1 Needs decay — §17 rates + stage mods; safety recovers −0.06/day toward 0.
 - [x] T3.2 Action catalog — 7 §6 actions, exact relief vectors + stage/ctx gates; "create" = §6's create/explore row.
 - [x] T3.3 Utility scoring — need²·relief with side costs subtracting; work trait_mod 0.7+0.6·industrious; culture/belief mods are ctx hooks (T6.4 wires them); jitter U(0,0.05) via Rng. SIGN CONVENTION: catalog deltas are signed (negative reduces a need); Utility scores with −delta; Act (T3.4) must apply raw deltas via adjust_need.
-- [ ] T3.4 Decide & act loop
+- [x] T3.4 Decide & act loop — Decide.choose (max utility, idle fallback), Act.apply (signed deltas; eat draws MEAL_UNITS=1.0 — implementation unit). ResourceNode (§15) pulled forward, constructor-parameterized, no invented defaults.
 - [ ] T3.5 Hardship link
 - [ ] T3.6 Projects (multi-tick goals)
 - [ ] Phase-Exit 3: hungry colony with a food source recovers over seeded ticks, no scripting → tag phase-3-complete
