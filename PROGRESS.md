@@ -50,7 +50,7 @@ human records GO here.
 - [x] T5.1 Relationship edges — 0.05·sign·compat symmetric step, idle decay 0.001/day. compat = 1 − mean|Δtrait| (interpretive; spec says only "rises with similarity").
 - [x] T5.2 Partnership — mutual mate ≥0.6, Adults, unpartnered; culture-permitted hook (Callable, default allow) for T6 norms; deterministic sorted matching.
 - [x] T5.3 Fertility & births — 0.15·food·(1−crowding)/season per fertile pair; bearer = sex 0 aged 20–50 (arbitrary tag, documented); kin edges start at 0 weight (no spec value). PUBLIC API: GnomeData.generation added; Birth.spawn_infant takes optional parents.
-- [ ] T5.4 Genetic inheritance
+- [x] T5.4 Genetic inheritance — per-trait blend + N(0,0.05), 2% extra N(0,0.2) (per-trait reading of §8, reviewer-confirmed); skills never inherited.
 - [ ] T5.5 Trait plasticity
 - [ ] T5.7 Outlier births (divergence engine)
 - [ ] T5.6 Milestone integration test (test_milestone1.gd)

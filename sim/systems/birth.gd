@@ -11,6 +11,12 @@ const BEARER_MIN_AGE := 20.0
 const BEARER_MAX_AGE := 50.0
 const BEARER_SEX := 0
 
+# Inheritance [algo §8/§17] (T5.4), per trait:
+#   child = clamp(0.5·(p1+p2) + N(0, 0.05)); 2% chance extra +N(0, 0.2).
+const MUTATION_SD := 0.05
+const LARGE_MUTATION_CHANCE := 0.02
+const LARGE_MUTATION_SD := 0.2
+
 
 ## Placeholder direct spawn (T2.4) — also the shared tail of a fertile
 ## birth when parents are given.
@@ -22,6 +28,7 @@ static func spawn_infant(colony: Colony, p1: GnomeData = null, p2: GnomeData = n
 	if p1 != null and p2 != null:
 		infant.generation = maxi(p1.generation, p2.generation) + 1
 		infant.home_settlement = p1.home_settlement
+		_inherit_traits(infant, p1, p2)
 		# Kin edges start at neutral 0 weight (no spec value; interactions
 		# grow them) — the type marker is what matters for culture flow.
 		infant.set_relationship(p1.id, "kin", 0.0)
@@ -46,6 +53,16 @@ static func season_tick(colony: Colony, food_factor: float, crowding: float) -> 
 			continue
 		if Rng.chance(chance):
 			spawn_infant(colony, bearer, partner)
+
+
+## Per-trait blend + mutation [algo §8]. Skills/knowledge are NOT touched:
+## they must be taught (that is why culture matters).
+static func _inherit_traits(infant: GnomeData, p1: GnomeData, p2: GnomeData) -> void:
+	for key in Enums.TRAIT_KEYS:
+		var value: float = 0.5 * (p1.traits[key] + p2.traits[key]) + Rng.gauss(0.0, MUTATION_SD)
+		if Rng.chance(LARGE_MUTATION_CHANCE):
+			value += Rng.gauss(0.0, LARGE_MUTATION_SD)
+		infant.set_trait(key, value)
 
 
 static func _is_fertile_bearer(g: GnomeData) -> bool:
