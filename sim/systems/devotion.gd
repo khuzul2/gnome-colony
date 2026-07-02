@@ -10,6 +10,12 @@ const YOU := "unseen_will"
 const MAGNITUDE_K := 0.9
 const VALENCE_DELTA := 0.4
 
+# Attribution seed [algo §9/§17] (T8.5)
+const ATTRIBUTION_ALPHA := 0.25
+const ATTRIBUTION_BASE := 0.3
+const ATTRIBUTION_DEVOUT := 0.7
+const ATTRIBUTION_MAGIC := 0.8
+
 # Terror instability [algo §10/§17] (T8.4)
 const UNREST_RATE := 0.02
 const UNREST_RELIEF_PER_DAY := 0.01
@@ -92,6 +98,39 @@ static func flavor_balance(colony: Colony) -> float:
 	for g in living:
 		sum += g.get_feeling(YOU, "awe") - g.get_feeling(YOU, "fear")
 	return sum / living.size()
+
+
+## The attribution seed [plan T8.5, algo §9]: a dramatic/inexplicable event
+## writes a small faith toward "an unseen will" per witness:
+##   faith += α·attribution·event_drama, α = 0.25 (the ramp dial)
+##   attribution = clamp(0.3 + 0.7·devout − 0.8·magic_understanding)
+## Primitive colonies invent you; magic-literate ones explain you away.
+## Flavor rides along (interpretive: §9 says "awe/fear toward you"):
+## malevolent drama seeds fear of you, everything else seeds awe.
+static func attribute(
+	colony: Colony,
+	event_drama: float,
+	magic_understanding: float,
+	valence: String,
+	witnesses: Variant = null,
+) -> void:
+	var present: Array = witnesses if witnesses != null else colony.living()
+	var flavor_axis := "fear" if valence == "malevolent" else "awe"
+	for g in present:
+		var attribution: float = clampf(
+			(
+				ATTRIBUTION_BASE
+				+ ATTRIBUTION_DEVOUT * g.traits["devout"]
+				- ATTRIBUTION_MAGIC * magic_understanding
+			),
+			0.0,
+			1.0
+		)
+		var delta := ATTRIBUTION_ALPHA * attribution * event_drama
+		if delta <= 0.0:
+			continue
+		g.adjust_feeling(YOU, "faith", delta)
+		g.adjust_feeling(YOU, flavor_axis, delta)
 
 
 ## The tyranny brake [plan T8.4, algo §10]: terror-flavored devotion levies
