@@ -15,6 +15,27 @@ const SAFETY_SPIKE_BASE := 0.3
 const MAX_CASCADE := 8
 
 
+## The devout cast [plan T8.3]: derive magnitude from the colony's social
+## mass and potency from the act's valence — the full §10/§11 resolved
+## intensity, replacing the Phase-7 stubs.
+static func cast_act(
+	colony: Colony,
+	world: WorldState,
+	definition: Dictionary,
+	target: String,
+	handlers: Dictionary = {},
+) -> Dictionary:
+	return cast(
+		colony,
+		world,
+		definition,
+		target,
+		Devotion.magnitude_multiplier(colony),
+		Devotion.valence_potency(definition["valence"]),
+		handlers
+	)
+
+
 ## Affordance rule [design §2.7b, plan T7.8]: phenomena need terrain to
 ## act on — "any" always casts; otherwise the target place must carry the
 ## required tag.

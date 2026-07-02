@@ -7,6 +7,8 @@ extends RefCounted
 ## as the subject "unseen_will" [algo §9's attribution wording].
 
 const YOU := "unseen_will"
+const MAGNITUDE_K := 0.9
+const VALENCE_DELTA := 0.4
 
 ## Tier ladder [algo §10/§17] (T8.2): thresholds on d̄_peak, with
 ## population/era floors on the top tiers checked at unlock time.
@@ -50,6 +52,26 @@ static func update_unlocks(colony: Colony) -> void:
 			colony.unlocked_tier = rung["tier"]
 		else:
 			break
+
+
+## Social-mass magnitude [algo §10/§17] (T8.3):
+##   multiplier = 1 + 0.9·log10(1 + M), M = Σ faith.
+## Log-scaled so power is FELT but never unbounded.
+static func magnitude_multiplier(colony: Colony) -> float:
+	return 1.0 + MAGNITUDE_K * (log(1.0 + total(colony)) / log(10.0))
+
+
+## Valence potency [algo §11/§17] (T8.3): cruelty lands harder (×1+δ),
+## kindness gentler (×1−δ), δ = 0.4 — the temptation that terror-faith's
+## instability (T8.4) is priced against.
+static func valence_potency(valence: String) -> float:
+	match valence:
+		"malevolent":
+			return 1.0 + VALENCE_DELTA
+		"benevolent":
+			return 1.0 - VALENCE_DELTA
+		_:
+			return 1.0
 
 
 static func flavor_balance(colony: Colony) -> float:

@@ -79,7 +79,7 @@ human records GO here.
 ## Phase 8 — Devotion & social mass
 - [x] T8.1 Devotion compute — D=Σ faith toward "unseen_will", d̄=D/pop, flavor_balance=mean(awe−fear).
 - [x] T8.2 Tier unlocks — d̄_peak ratchet, §17 thresholds, pop floors (gen≥5 alternative for VI); ladder never skips a gated rung. PUBLIC API: Colony.devotion_peak + unlocked_tier (serializer covers).
-- [ ] T8.3 Social-mass magnitude + valence potency
+- [x] T8.3 Magnitude + valence potency — 1+0.9·log10(1+M), δ=0.4; Influence.cast_act wires both (Phase-7 stubs retired).
 - [ ] T8.4 Terror instability + secularization
 - [ ] T8.5 Attribution seed (bootstrap)
 - [ ] T8.6 Notability growth
