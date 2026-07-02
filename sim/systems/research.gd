@@ -90,6 +90,11 @@ static func _discover(colony: Colony, sid: int, id: String, capable: Array) -> v
 		var tie: bool = g.traits["curious"] == discoverer.traits["curious"] and g.id < discoverer.id
 		if more_curious or tie:
 			discoverer = g
+	# The idea is born at the teachable proficiency line — knowledge and
+	# skill stay consistent, so Phase 4's teach/decay actually operate on
+	# a discovery (reviewer catch: a bare id with 0 proficiency would make
+	# Skills.teach a silent no-op).
+	discoverer.set_skill(id, Skills.TEACHABLE_AT)
 	discoverer.add_knowledge(id)
 	if not colony.settlement_knowledge.has(sid):
 		colony.settlement_knowledge[sid] = {}

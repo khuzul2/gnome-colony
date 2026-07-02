@@ -100,8 +100,18 @@ func test_discovery_becomes_held_teachable_knowledge():
 			break
 	assert_has(found, "fire")
 	assert_true(c.settlement_knowledge[0].has("fire"), "the settlement knows it [§13]")
-	var holder_exists := false
+	var discoverer: GnomeData = null
 	for g in c.living():
 		if "fire" in g.knowledge:
-			holder_exists = true
-	assert_true(holder_exists, "…and a living discoverer HOLDS it (teachable, losable, §7)")
+			discoverer = g
+	assert_not_null(discoverer, "…and a living discoverer HOLDS it")
+	assert_gte(
+		discoverer.skills.get("fire", 0.0),
+		Skills.TEACHABLE_AT,
+		"held at the teachable line — knowledge and proficiency consistent"
+	)
+	var pupil: GnomeData = c.living()[0] if c.living()[0] != discoverer else c.living()[1]
+	Skills.teach(discoverer, pupil, "fire", 10.0)
+	assert_gt(
+		pupil.skills.get("fire", 0.0), 0.0, "…and it actually TEACHES onward [§7/§13 lifecycle]"
+	)
