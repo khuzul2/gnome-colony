@@ -98,7 +98,7 @@ human records GO here.
 
 ## Phase 10 — Technology & magic discovery
 - [x] T10.1 Knowledge graph & prereqs — TechGraph: 10-id starter catalog, prereqs_met/candidates; techs are ordinary knowledge ids (Phase-4 lifecycle: teach/decay/extinction/records apply unchanged; "writing" is the same id T4.5 already consumes). §7 fixes the rule + the smithing←fire+stoneworking edge; §13 fixes the six tech ids. INTERPRETIVE (documented in tech_graph.gd): all other edges (irrigation←agriculture, writing←agriculture, metallurgy←smithing, construction←stoneworking, medicine←writing, sail←construction) follow design §4's necessity hints. Effects data lands in T10.3.
-- [ ] T10.2 Discovery process
+- [x] T10.2 Discovery process — pressure = need·(0.3+cur̄)·surplus·(1+ln minds)·institution; p_discover/season = clamp01(0.01·pressure) (§17); season_tick rolls every TechGraph candidate; discovery lands as HELD knowledge (gnome add_knowledge + settlement record → full Phase-4 lifecycle). need_pressures & institution_factors are per-id INPUT dicts (environment/player phenomena author necessity — absent id = 0 need / 1.0 institution). INTERPRETIVE (documented in research.gd): natural log; minds = settlement's living adults+elders; discoverer = most curious capable mind (deterministic, tie by id).
 - [ ] T10.3 Tech effects
 - [ ] T10.4 Magic understanding ladder
 - [ ] Phase-Exit 10: prereqs gate discovery; pressure raises rate; magic thresholds unlock prediction then wards; warded tile reduces intensity → tag phase-10-complete
