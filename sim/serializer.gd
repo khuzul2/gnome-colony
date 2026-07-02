@@ -26,6 +26,7 @@ static func gnome_to_dict(g: GnomeData) -> Dictionary:
 		"hardship_days": g.hardship_days.duplicate(true),
 		"project": g.project.duplicate(true),
 		"generation": g.generation,
+		"constitutional_traits": g.constitutional_traits.duplicate(true),
 	}
 
 
@@ -48,6 +49,7 @@ static func gnome_from_dict(d: Dictionary) -> GnomeData:
 	g.hardship_days = d["hardship_days"].duplicate(true)
 	g.project = d["project"].duplicate(true)
 	g.generation = d["generation"]
+	g.constitutional_traits = d["constitutional_traits"].duplicate(true)
 	return g
 
 

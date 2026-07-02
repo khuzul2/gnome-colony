@@ -32,6 +32,9 @@ var hardship_days := {"hunger": 0.0, "safety": 0.0}
 var project := {}
 ## Founder = 0; child = max(parent generations) + 1 (T5.3).
 var generation := 0
+## Trait names pinned by an outlier birth [algo §2/§8] (T5.7): exempt from
+## plasticity, and (for mutants) inherited unclamped.
+var constitutional_traits: Array = []
 
 
 func _init(gnome_id: int = 0) -> void:
