@@ -116,6 +116,8 @@ static func cast_with_cascade(
 				"effects": {},
 				"consequence": true,
 			}
+			if handlers.has(id):
+				handlers[id].call(colony, world, marker)
 			EventBus.phenomenon.emit(marker)
 			stimuli.append(marker)
 			continue
@@ -161,7 +163,8 @@ static func appraise_witnesses(
 	# acts as the relevance weight on the §9 appraisal write — §9's formula
 	# names intensity·susceptibility only; effects.belief is how hard this
 	# particular phenomenon bites on belief.
-	var belief_axis: float = absf(stimulus["effects"]["belief"])
+	# .get() guard: consequence markers carry empty effects (reviewer note).
+	var belief_axis: float = absf(stimulus["effects"].get("belief", 0.0))
 	var felt: float = stimulus["intensity"] * belief_axis
 	for g in present:
 		Belief.appraise(g, stimulus["place"], "fear", felt, stimulus["type"], false)

@@ -41,7 +41,18 @@ const UNIVERSAL_TAIL := 0.03
 
 
 static func handlers() -> Dictionary:
-	return Landslide.handlers()
+	var out := Landslide.handlers()
+	out["cursed_place"] = _handle_cursed_place
+	return out
+
+
+## §18's "cursed-place" chain ("the spot turns taboo in memory"): the
+## consequence writes the cursed tag straight onto the place, at the
+## parent act's resolved intensity.
+static func _handle_cursed_place(colony: Colony, _world: WorldState, marker: Dictionary) -> void:
+	if not colony.place_tags.has(marker["place"]):
+		colony.place_tags[marker["place"]] = {}
+	colony.place_tags[marker["place"]]["cursed"] = marker["intensity"]
 
 
 static func defs() -> Dictionary:
