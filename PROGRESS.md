@@ -18,7 +18,7 @@ human records GO here.
 - [x] T1.1 Enums & constants — Enums class (LifeStage + trait/need/belief-axis catalogs). KNOWLEDGE_CATEGORIES ids "craft/tech/magic" are a naming choice for §7's prose, not spec-literal strings.
 - [x] T1.2 `GnomeData` — full §1 state + clamp helpers; add_knowledge() enforces set semantics. MEMORY_CAP=16 is a structural constant (spec says only "small"), not a gameplay number.
 - [x] T1.3 `Colony` registry — id map, next_id, living(), remove. Delivered full §5 vitals (not just a stub) + spawn()/population() helpers; public API: spawn/add/remove/living/population/vitals.
-- [ ] T1.4 `TimeService`
+- [x] T1.4 `TimeService` — 1 tick = 1 day per algo §17 (plan's "ticks/day=4" is a pre-review fossil; §17 wins). Reminder for T6.2: propagation runs DAILY (design-review R3-H1), not every 4 ticks.
 - [ ] T1.5 Serialization round-trip (data only)
 - [ ] Phase-Exit 1: colony of 4, 100 ticks, time/calendar correct, state intact → tag phase-1-complete
 
