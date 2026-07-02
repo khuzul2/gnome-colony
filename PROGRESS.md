@@ -47,7 +47,7 @@ human records GO here.
 - [x] Phase-Exit 4: sole holder dies untaught ⇒ extinction; taught apprentice or writing prevents it; craft restorable from record → tagged phase-4-complete
 
 ## Phase 5 — Relationships, reproduction, genetics (= prototype Milestone 1)
-- [ ] T5.1 Relationship edges
+- [x] T5.1 Relationship edges — 0.05·sign·compat symmetric step, idle decay 0.001/day. compat = 1 − mean|Δtrait| (interpretive; spec says only "rises with similarity").
 - [ ] T5.2 Partnership
 - [ ] T5.3 Fertility & births
 - [ ] T5.4 Genetic inheritance
