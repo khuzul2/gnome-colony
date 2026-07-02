@@ -54,10 +54,26 @@ func test_non_adults_do_not_pair():
 
 func test_already_partnered_stay_loyal():
 	var c := _colony_pair(0.9, 0.9)
+	# A real, LIVING spouse — a dead or missing partner would (correctly)
+	# free the slot via the widowhood sweep added with T5.6.
+	var spouse := _adult(5)
+	spouse.partner_id = 0
+	c.add(spouse)
 	c.gnomes[0].partner_id = 5
 	Social.form_partnerships(c)
 	assert_eq(c.gnomes[1].partner_id, -1, "no pairing with someone already partnered")
 	assert_eq(c.gnomes[0].partner_id, 5, "the existing partnership is untouched")
+
+
+func test_widowhood_frees_the_slot():
+	var c := _colony_pair(0.9, 0.9)
+	var late_spouse := _adult(5)
+	late_spouse.partner_id = 0
+	late_spouse.stage = Enums.LifeStage.DEAD
+	c.add(late_spouse)
+	c.gnomes[0].partner_id = 5
+	Social.form_partnerships(c)
+	assert_eq(c.gnomes[0].partner_id, 1, "a widowed adult may pair again")
 
 
 func test_culture_veto_blocks_pairing():

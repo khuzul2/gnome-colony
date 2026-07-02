@@ -36,6 +36,15 @@ static func interact(a: GnomeData, b: GnomeData, type: String, sign_value: float
 static func form_partnerships(colony: Colony, permitted: Callable = Callable()) -> void:
 	var ids := colony.gnomes.keys()
 	ids.sort()
+	# Widowhood frees the slot (interpretive: §8 says only "two unpartnered
+	# Adults" — a dead partner cannot hold one). Without this, widows are
+	# locked out of re-pairing forever.
+	for id in ids:
+		var g: GnomeData = colony.gnomes[id]
+		if g.is_alive() and g.partner_id != -1:
+			var partner: GnomeData = colony.gnomes.get(g.partner_id)
+			if partner == null or not partner.is_alive():
+				g.partner_id = -1
 	for i in ids.size():
 		var a: GnomeData = colony.gnomes[ids[i]]
 		if not _eligible(a):

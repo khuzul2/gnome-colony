@@ -53,8 +53,8 @@ human records GO here.
 - [x] T5.4 Genetic inheritance — per-trait blend + N(0,0.05), 2% extra N(0,0.2) (per-trait reading of §8, reviewer-confirmed); skills never inherited.
 - [x] T5.5 Trait plasticity — Culture stub: young drift 0.02·(env−trait)/day, linear taper 14→20 (interpretive curve), constitutional traits exempt. PUBLIC API: GnomeData.constitutional_traits added (T5.7 populates; serializer covers).
 - [x] T5.7 Outlier births — p=0.01/birth, uniform type pick (interpretive); mutant traits out-of-band (edge ± U(0.1,0.5), interpretive magnitude), raw-written and inherited unclamped w/ marker; touched prophet_affinity=1. PUBLIC API: GnomeData.outlier_type + prophet_affinity added (serializer covers).
-- [ ] T5.6 Milestone integration test (test_milestone1.gd)
-- [ ] Phase-Exit 5 (Milestone 1): 4-gnome colony, default WorldConfig, ≥5 generations across 20 seeded runs, dying out ≤40% → tag phase-5-complete
+- [x] T5.6 Milestone integration test — 17/20 seeded runs reach gen 5 (bar: ≥12); chronicle logs births/deaths. PUBLIC API: SimRunner added (headless orchestrator; company picks implement §8 assortative mating); Social.form_partnerships now frees widowed slots (interpretive — dead partners can't hold one; test_partnership updated with real-spouse premise + widowhood test). NOTE: the milestone test adds ~5 min to every full-suite run.
+- [x] Phase-Exit 5 (Milestone 1): 4-gnome colony, default WorldConfig — 17/20 seeded runs reached gen 5 (failures 3/20 ≤ 40%) → tagged phase-5-complete
 
 ## Phase 6 — Culture & belief (hybrid)
 - [ ] T6.1 Scalar substrate
