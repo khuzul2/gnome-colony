@@ -66,7 +66,7 @@ human records GO here.
 
 ## Phase 7 — Influence system: phenomena & appraisal (= prototype Milestone 2)
 - [x] T7.1 Phenomenon schema — validate() with all §11 fields; social number-or-"=culture"; taint benevolent-only; target kinds = §11 ∪ §18 (adds "region" — §18's long_dark needs it).
-- [ ] T7.2 Phenomenon runner + stimulus
+- [x] T7.2 Phenomenon runner + stimulus — Influence.cast (handler registry, one stimulus per cast; magnitude/potency stubs 1.0 until T8.3). PUBLIC API: WorldState added (minimal sites/hidden/paths container; region-graph comes with Phase 11/13).
 - [ ] T7.3 The `landslide`
 - [ ] T7.4 Appraisal
 - [ ] T7.5 Tail-risk & chaining
