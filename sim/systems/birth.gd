@@ -59,7 +59,9 @@ static func season_tick(colony: Colony, food_factor: float, crowding: float) -> 
 ## Per-trait blend + mutation [algo §8]. Skills/knowledge are NOT touched:
 ## they must be taught (that is why culture matters). A trait that is
 ## constitutional in either parent (mutant lineage) inherits UNCLAMPED and
-## carries the constitutional marker onward [algo §8: mutants heritable].
+## carries the constitutional marker onward. §8 says mutants are "partly
+## heritable" without a probability — full heritability of the marked trait
+## is the interpretive reading here (blending still dilutes the value).
 static func _inherit_traits(infant: GnomeData, p1: GnomeData, p2: GnomeData) -> void:
 	for key in Enums.TRAIT_KEYS:
 		var value: float = 0.5 * (p1.traits[key] + p2.traits[key]) + Rng.gauss(0.0, MUTATION_SD)
