@@ -10,6 +10,9 @@ extends RefCounted
 
 const CURIOUS_DISCOVERY_THRESHOLD := 0.6
 const SAFETY_SPIKE_BASE := 0.3
+## Structural runaway guard for chain cascades — not a spec number; chain
+## probabilities are small, this only stops pathological prob-1.0 cycles.
+const MAX_CASCADE := 8
 
 
 static func cast(
@@ -36,6 +39,46 @@ static func cast(
 	return stimulus
 
 
+## Cascades [plan T7.5, algo §11]: cast the root phenomenon, then roll its
+## chain_hooks (children land at the same place) and the universal tail
+## risk (0.03/act, from the definition) — a hit emits an unscripted
+## "tail:<id>" stimulus whose size Phase 8 scales with social mass.
+## Returns every stimulus emitted, root first.
+static func cast_with_cascade(
+	colony: Colony,
+	world: WorldState,
+	catalog: Dictionary,
+	root_id: String,
+	target: String,
+	magnitude: float = 1.0,
+	valence_potency: float = 1.0,
+	handlers: Dictionary = {},
+) -> Array:
+	var stimuli := []
+	var queue := [root_id]
+	while not queue.is_empty() and stimuli.size() < MAX_CASCADE:
+		var id: String = queue.pop_front()
+		if not catalog.has(id):
+			continue
+		var def: Dictionary = catalog[id]
+		stimuli.append(cast(colony, world, def, target, magnitude, valence_potency, handlers))
+		for hook in def.get("chain_hooks", []):
+			if Rng.chance(hook["prob"]):
+				queue.append(hook["phenom"])
+		if Rng.chance(def.get("tail_risk", 0.0)):
+			var tail := {
+				"type": "tail:%s" % id,
+				"place": target,
+				"intensity": def["base_intensity"] * magnitude,
+				"drama": def["event_drama"],
+				"valence": "neutral",
+				"effects": def["effects"],
+			}
+			EventBus.phenomenon.emit(tail)
+			stimuli.append(tail)
+	return stimuli
+
+
 ## Per-witness appraisal [plan T7.4, algo §11/§9]: witnesses default to the
 ## living gnomes AT the stimulus place. Each writes fear toward the place
 ## AND the phenomenon type (one habituation bump per event), spikes safety
@@ -49,6 +92,10 @@ static func appraise_witnesses(
 		for g in colony.living():
 			if g.location == stimulus["place"]:
 				present.append(g)
+	# Interpretive reading of §9/§11: the definition's belief-effects axis
+	# acts as the relevance weight on the §9 appraisal write — §9's formula
+	# names intensity·susceptibility only; effects.belief is how hard this
+	# particular phenomenon bites on belief.
 	var belief_axis: float = absf(stimulus["effects"]["belief"])
 	var felt: float = stimulus["intensity"] * belief_axis
 	for g in present:

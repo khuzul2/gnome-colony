@@ -69,7 +69,7 @@ human records GO here.
 - [x] T7.2 Phenomenon runner + stimulus — Influence.cast (handler registry, one stimulus per cast; magnitude/potency stubs 1.0 until T8.3). PUBLIC API: WorldState added (minimal sites/hidden/paths container; region-graph comes with Phase 11/13).
 - [x] T7.3 The `landslide` — buries site, reveals ore, blocks "<site>_path", casualties at |effects.population|·intensity per present gnome (interpretive lethality dial). PUBLIC API: GnomeData.location added (serializer covers).
 - [x] T7.4 Appraisal — witnesses (at place) write fear to place AND phenomenon type (one habituation bump/event — Belief.appraise gained bump_habituation param, back-compatible); safety spike intensity·(0.3+timid) (prototype formula); curious>0.6 bank discovery memories.
-- [ ] T7.5 Tail-risk & chaining
+- [x] T7.5 Tail-risk & chaining — cast_with_cascade: BFS chain_hooks at the parent's place; 0.03 tail roll per act emits "tail:<id>"; MAX_CASCADE=8 structural guard (non-spec, documented).
 - [ ] T7.7 Phenomenon valence + toolbox balance
 - [ ] T7.8 Seed catalog loader (15 phenomena, [algo §18])
 - [ ] T7.9 Culture-resolved social + boon taint
