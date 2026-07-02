@@ -67,6 +67,19 @@ func test_tail_risk_fires_at_spec_frequency():
 	assert_between(tails, 10, 60, "≈30 misfires expected in 1000 casts at 0.03")
 
 
+func test_gated_act_neither_chains_nor_misfires():
+	Rng.seed_with(7504)
+	var colony := Colony.new()
+	var world := WorldState.new()
+	var gated := _def("gated", [{"phenom": "flood", "prob": 1.0}])
+	gated["affordance_req"] = "slope"
+	var catalog := {"gated": gated, "flood": _def("flood", [])}
+	watch_signals(EventBus)
+	var stimuli := Influence.cast_with_cascade(colony, world, catalog, "gated", "flatland")
+	assert_eq(stimuli, [], "an act that never happened leaves no trace")
+	assert_signal_not_emitted(EventBus, "phenomenon")
+
+
 func test_cascade_depth_is_bounded():
 	Rng.seed_with(7503)
 	var colony := Colony.new()

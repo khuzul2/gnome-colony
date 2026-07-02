@@ -6,11 +6,17 @@ extends RefCounted
 ## (2 clean / 2 tainted) · 7 malevolent · 4 neutral — the documented dark
 ## tilt. Chain targets that are not catalog entries are consequence
 ## markers (CONSEQUENCES) consumed by later systems/the aftermath UI.
-## Encoding notes (interpretive, flagged inline): ground_remembers' §18
-## material effect reads "+0.2 / −0.1" (reveal or bury) — encoded as the
-## reveal (+0.2); day_twice's "elevated tail-risk" is encoded as 2× the
-## universal 0.03; its "touched-births echo next generation" chain has no
-## spec probability and stays a comment until Phase 9+ owns it.
+## Encoding notes (interpretive, all disclosed here):
+##  · ground_remembers' §18 material effect reads "+0.2 / −0.1" (reveal or
+##    bury) — encoded as the reveal (+0.2); the bury branch is DROPPED for
+##    now, not modelled (future task).
+##  · day_twice's "elevated tail-risk" → 2× the universal 0.03; its §18
+##    affordance "Tier VI, rare" → "any" (no rarity tag exists yet); the
+##    "touched-births echo next generation" chain has no spec probability
+##    and waits for Phase 9.
+##  · birds_silent's §18 chain "raises local |awe−fear| (seeds prophets)"
+##    is a belief-lever effect, NOT a probability chain — it has no hook
+##    here and is implemented by §12's prophet-seeding (T9.1).
 
 const CONSEQUENCES := [
 	"unease",
@@ -25,7 +31,6 @@ const CONSEQUENCES := [
 	"medicine",
 	"predator_follows",
 	"hunt_heroism",
-	"omen_charge",
 	"rite_crystallizes",
 	"schism_seed",
 	"mass_conversion",
@@ -294,7 +299,7 @@ static func _entries() -> Array:
 				"social": "=culture"
 			},
 			"any",
-			[{"phenom": "omen_charge", "prob": 1.0}],
+			[],
 			"an ill-omened day"
 		),
 		_entry(

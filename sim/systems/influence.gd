@@ -43,11 +43,45 @@ static func cast(
 		"drama": definition["event_drama"],
 		"valence": definition["valence"],
 		"effects": definition["effects"],
+		"social_effect": resolve_social(colony, definition, intensity),
 	}
+	if definition.has("taint"):
+		stimulus["taint"] = definition["taint"]
 	if handlers.has(definition["id"]):
 		handlers[definition["id"]].call(colony, world, stimulus)
 	EventBus.phenomenon.emit(stimulus)
 	return stimulus
+
+
+## Culture-resolved social outcome [plan T7.9, algo §11]:
+##   social_effect = swing · (cohesion − fear_level − fracture)
+## The spec names the terms without closed forms; interpretive wiring:
+##   swing      = the resolved intensity (the event's force)
+##   cohesion   = mean(social, nurturing)/1 + 0.5/№subcultures
+##                (shared belief bonus: one culture = full bonus)
+##   fear_level = mean fear toward this phenomenon type
+##   fracture   = 0.5 · (№subcultures − 1), capped at 1
+## So the same disaster bonds a tight people and shatters a divided one —
+## the reaction is theirs, not yours.
+static func resolve_social(colony: Colony, definition: Dictionary, intensity: float) -> float:
+	var declared: Variant = definition["effects"]["social"]
+	if not declared is String:
+		return declared
+	var living := colony.living()
+	if living.is_empty():
+		return 0.0
+	var vitals: Dictionary = colony.vitals()
+	var subculture_count := maxi(1, Belief.subcultures(colony).size())
+	var cohesion: float = (
+		0.5 * (vitals["mean_traits"]["social"] + vitals["mean_traits"]["nurturing"])
+		+ 0.5 / subculture_count
+	)
+	var fear_total := 0.0
+	for g in living:
+		fear_total += g.get_feeling(definition["id"], "fear")
+	var fear_level := fear_total / living.size()
+	var fracture := minf(1.0, 0.5 * (subculture_count - 1))
+	return intensity * (cohesion - fear_level - fracture)
 
 
 ## Cascades [plan T7.5, algo §11]: cast the root phenomenon, then roll its
@@ -70,9 +104,29 @@ static func cast_with_cascade(
 	while not queue.is_empty() and stimuli.size() < MAX_CASCADE:
 		var id: String = queue.pop_front()
 		if not catalog.has(id):
+			# A consequence marker (famine, cursed_place, flood…): surface
+			# it as a traceable stimulus so appraisal/aftermath can react;
+			# it chains no further (T7.9).
+			var marker := {
+				"type": id,
+				"place": target,
+				"intensity": stimuli[0]["intensity"] if not stimuli.is_empty() else 0.0,
+				"drama": stimuli[0]["drama"] if not stimuli.is_empty() else 0.0,
+				"valence": "neutral",
+				"effects": {},
+				"consequence": true,
+			}
+			EventBus.phenomenon.emit(marker)
+			stimuli.append(marker)
 			continue
 		var def: Dictionary = catalog[id]
-		stimuli.append(cast(colony, world, def, target, magnitude, valence_potency, handlers))
+		var stim := cast(colony, world, def, target, magnitude, valence_potency, handlers)
+		if stim.is_empty():
+			# Affordance-gated: the act never happened, so it neither
+			# chains nor misfires (reviewer catch — a blocked landslide
+			# must not roll dam_flood or a tail).
+			continue
+		stimuli.append(stim)
 		for hook in def.get("chain_hooks", []):
 			if Rng.chance(hook["prob"]):
 				queue.append(hook["phenom"])
