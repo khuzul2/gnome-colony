@@ -19,14 +19,17 @@ static func age_curve(age_years: float) -> float:
 	return GOMPERTZ_A * exp(GOMPERTZ_B * (age_years - ELDER_PIVOT))
 
 
-static func tick(colony: Colony, dt_days: float) -> void:
+## `medicine_mult` scales the age curve AND hardship [algo §13: medicine
+## "lowers mortality a & hardship"] — default 1.0 keeps pre-tech behavior
+## (T10.3; callers pass TechEffects.mortality_mult(level)).
+static func tick(colony: Colony, dt_days: float, medicine_mult: float = 1.0) -> void:
 	for g in colony.living():
 		if g.age >= AGE_HARD_CAP:
 			_die(g, "age")
 			continue
-		if Rng.chance(age_curve(g.age) * dt_days):
+		if Rng.chance(age_curve(g.age) * medicine_mult * dt_days):
 			_die(g, "age")
-		elif Rng.chance(g.hardship_rate * dt_days):
+		elif Rng.chance(g.hardship_rate * medicine_mult * dt_days):
 			_die(g, "hardship")
 		elif Rng.chance(ACCIDENT_BASE * dt_days):
 			_die(g, "accident")

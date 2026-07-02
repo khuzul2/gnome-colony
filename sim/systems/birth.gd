@@ -40,9 +40,13 @@ static func spawn_infant(colony: Colony, p1: GnomeData = null, p2: GnomeData = n
 	return infant
 
 
-## Roll every fertile pair once per season [algo §8].
-static func season_tick(colony: Colony, food_factor: float, crowding: float) -> void:
-	var chance := SEASON_BIRTH_CHANCE * food_factor * (1.0 - crowding)
+## Roll every fertile pair once per season [algo §8]. `fertility_mult`
+## carries agriculture's "+birth rate" [algo §13] — default 1.0 keeps
+## pre-tech behavior (T10.3; callers pass TechEffects.fertility_mult).
+static func season_tick(
+	colony: Colony, food_factor: float, crowding: float, fertility_mult: float = 1.0
+) -> void:
+	var chance := SEASON_BIRTH_CHANCE * food_factor * (1.0 - crowding) * fertility_mult
 	var ids := colony.gnomes.keys()
 	ids.sort()
 	for id in ids:
