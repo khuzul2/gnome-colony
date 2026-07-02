@@ -10,6 +10,13 @@ const YOU := "unseen_will"
 const MAGNITUDE_K := 0.9
 const VALENCE_DELTA := 0.4
 
+# Terror instability [algo §10/§17] (T8.4)
+const UNREST_RATE := 0.02
+const UNREST_RELIEF_PER_DAY := 0.01
+const FRACTURE_LINE := 0.8
+const SCHISM_PRESSURE := 0.01
+const SECULARIZATION_RATE := 0.0005
+
 ## Tier ladder [algo §10/§17] (T8.2): thresholds on d̄_peak, with
 ## population/era floors on the top tiers checked at unlock time.
 const TIER_LADDER := [
@@ -38,6 +45,9 @@ static func per_capita(colony: Colony) -> float:
 static func update_unlocks(colony: Colony) -> void:
 	colony.devotion_peak = maxf(colony.devotion_peak, per_capita(colony))
 	var pop := colony.population()
+	# Lineage age counts dead ancestors too — an era floor, not a living
+	# stat. And the ladder never SKIPS a gated rung: Wonders presuppose
+	# Omens and Visions (interpretive reading of §10's tier table).
 	var max_gen := 0
 	for g in colony.gnomes.values():
 		max_gen = maxi(max_gen, g.generation)
@@ -82,3 +92,42 @@ static func flavor_balance(colony: Colony) -> float:
 	for g in living:
 		sum += g.get_feeling(YOU, "awe") - g.get_feeling(YOU, "fear")
 	return sum / living.size()
+
+
+## The tyranny brake [plan T8.4, algo §10]: terror-flavored devotion levies
+## a continuous instability tax — unrest += 0.02·max(0,−flavor)·log10 M per
+## day — while quiet time relieves −0.01/day. Love-faith pays nothing.
+static func unrest_tick(colony: Colony, dt_days: float) -> void:
+	var terror := maxf(0.0, -flavor_balance(colony))
+	var mass_log := log(1.0 + total(colony)) / log(10.0)
+	var tax := UNREST_RATE * terror * mass_log
+	# §10 relief ("benevolent acts, met needs, quiet time") applies when the
+	# terror tax is silent — a boiling pot doesn't cool while the fire burns.
+	var delta := tax if tax > 0.0 else -UNREST_RELIEF_PER_DAY
+	colony.unrest = clampf(colony.unrest + delta * dt_days, 0.0, 1.0)
+
+
+## At unrest ≥ 0.8 a fracture/revolt is due [algo §10] — the hard cap on
+## how large a terror-state can grow. The event itself lands with the
+## settlement tier (T11.x); this is the trigger.
+static func fracture_due(colony: Colony) -> bool:
+	return colony.unrest >= FRACTURE_LINE
+
+
+## Extra schism probability per season contributed by unrest [algo §10];
+## consumed by the civilization tier (T11.4).
+static func schism_pressure_per_season(colony: Colony) -> float:
+	return SCHISM_PRESSURE * colony.unrest
+
+
+## Mild secularization [plan T8.4, algo §10]: faith drifts down by
+## 0.0005·science_level/day — advanced colonies believe a little less,
+## never catastrophically (devout mages stay possible).
+static func secularize_tick(colony: Colony, science_level: float, dt_days: float) -> void:
+	var drift := SECULARIZATION_RATE * science_level * dt_days
+	if drift <= 0.0:
+		return
+	for g in colony.living():
+		var faith: float = g.get_feeling(YOU, "faith")
+		if faith > 0.0:
+			g.set_feeling(YOU, "faith", maxf(0.0, faith - drift))

@@ -48,6 +48,16 @@ func test_generation_alternative_for_tier_six():
 	assert_eq(old_line.unlocked_tier, 6, "gen ≥ 5 stands in for the pop-1000 floor")
 
 
+func test_ladder_never_skips_a_gated_rung():
+	# Pins the interpretation: a tiny, ancient, fanatic line cannot leap
+	# past the pop-gated middle tiers to Wonders — VI's gen alternative
+	# only matters once IV and V are honestly earned.
+	var hermits := Colony.new()
+	_flock(hermits, 10, 0.9, 8)
+	Devotion.update_unlocks(hermits)
+	assert_eq(hermits.unlocked_tier, 3, "gen 8 alone cannot skip the pop-50 rung")
+
+
 func test_baby_boom_never_strips_a_power():
 	var c := Colony.new()
 	_flock(c, 8, 0.35)

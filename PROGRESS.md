@@ -80,7 +80,7 @@ human records GO here.
 - [x] T8.1 Devotion compute — D=Σ faith toward "unseen_will", d̄=D/pop, flavor_balance=mean(awe−fear).
 - [x] T8.2 Tier unlocks — d̄_peak ratchet, §17 thresholds, pop floors (gen≥5 alternative for VI); ladder never skips a gated rung. PUBLIC API: Colony.devotion_peak + unlocked_tier (serializer covers).
 - [x] T8.3 Magnitude + valence potency — 1+0.9·log10(1+M), δ=0.4; Influence.cast_act wires both (Phase-7 stubs retired).
-- [ ] T8.4 Terror instability + secularization
+- [x] T8.4 Terror instability + secularization — unrest tax 0.02·|flavor|·log10(1+M)/day; INTERPRETIVE: tax and relief are mutually exclusive (relief only in quiet time — reproduces §17's 30–40-day fracture sanity figure; additive reading would miss it); fracture at 0.8; schism +0.01·unrest/season; secularization −0.0005·science/day on faith. PUBLIC API: Colony.unrest (serializer covers). Also pinned T8.2's no-skip ladder with a hermit test.
 - [ ] T8.5 Attribution seed (bootstrap)
 - [ ] T8.6 Notability growth
 - [ ] Phase-Exit 8: belief raises D; tier unlocks at threshold; magnitude grows sub-linearly with D → tag phase-8-complete

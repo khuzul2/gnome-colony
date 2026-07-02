@@ -75,6 +75,7 @@ static func colony_to_dict(c: Colony) -> Dictionary:
 		"belief_tracker": c.belief_tracker.duplicate(true),
 		"devotion_peak": c.devotion_peak,
 		"unlocked_tier": c.unlocked_tier,
+		"unrest": c.unrest,
 	}
 
 
@@ -90,6 +91,7 @@ static func colony_from_dict(d: Dictionary) -> Colony:
 	c.belief_tracker = d["belief_tracker"].duplicate(true)
 	c.devotion_peak = d["devotion_peak"]
 	c.unlocked_tier = d["unlocked_tier"]
+	c.unrest = d["unrest"]
 	return c
 
 
