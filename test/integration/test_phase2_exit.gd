@@ -31,9 +31,14 @@ func test_fifty_year_run_lifespans_in_bounds_one_event_per_death():
 	for e in death_events:
 		ids[e["id"]] = true
 		total_age += e["age"]
+		# 115.1 is the §17 cap (115) + 0.1 tolerance for float dt accumulation
+		# over ~4800 aging steps — the tolerance is not a spec number.
 		assert_between(e["age"], 65.0, 115.1, "lifespan within §4 bounds")
 	assert_eq(ids.size(), COHORT, "no id died twice")
 
+	# Statistical bound under THIS fixed seed (analytic mean ≈93, sd-of-mean
+	# ≈1.2 at N=100 → [85,100] is a >5σ margin). If this ever reds, re-derive
+	# the margin from the hazard model — do not just widen it.
 	var mean_age := total_age / COHORT
 	assert_between(
 		mean_age, 85.0, 100.0, "mean lifespan consistent with N(90,12) given survival to 65"
