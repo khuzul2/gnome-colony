@@ -45,6 +45,16 @@ const CORRUPTION_LIFETIME := 0.10
 const DOOM_MIN_YEARS := 1.0
 const DOOM_MAX_YEARS := 20.0
 
+## Rivals & schism (T9.4). §12 names the dynamics without numbers —
+## interpretive, documented in PROGRESS.md: a creed is "strong" at
+## strength ≥ 0.3 (two creeds splitting a flock 50/50 at the 0.7
+## crystallization line each score ≈ 0.35); each living prophet beyond
+## the first taxes unrest 0.01/day and erodes shared faith 0.005/day
+## (spam fractures — the §12 anti-spam brake).
+const RIVAL_STRENGTH := 0.3
+const SPAM_UNREST_PER_DAY := 0.01
+const SPAM_EROSION_PER_DAY := 0.005
+
 
 ## Local emotional charge [§12]: mean per-witness |awe−fear| toward the
 ## unseen will. Polarization either way counts — terror is charge too.
@@ -98,14 +108,51 @@ static func arc(g: GnomeData) -> float:
 	return maxf(ARC_FLOOR, lerpf(1.0, ARC_FLOOR, t / ARC_FADE_YEARS))
 
 
-## Daily prophet pass (T9.3): every living prophet faces their fated hour,
-## then preaches at charisma · arc influence.
+## Daily prophet pass (T9.3/T9.4): every living prophet faces their fated
+## hour and preaches at charisma · arc influence; then the spam tax —
+## competing voices breed unrest and erode the shared faith.
 static func tick(colony: Colony, dt_days: float) -> void:
+	var voices := 0
 	for g in colony.living():
 		if g.prophet.is_empty():
 			continue
+		voices += 1
 		_corruption_check(g)
 		preach(colony, g, dt_days)
+	_spam_tick(colony, voices, dt_days)
+
+
+## Schism trigger [§12: rival prophets' competing belief-objects → schism
+## if BOTH strong]: due when two or more living prophets' creeds stand at
+## strength ≥ 0.3; factions are the rival creeds' holder lists. Like
+## T8.4's fracture_due this is the TRIGGER — the split itself lands with
+## the civilization tier (T11.4).
+static func check_schism(colony: Colony) -> Dictionary:
+	var factions := []
+	for b in colony.beliefs:
+		if not b.has("prophet_id"):
+			continue
+		var author: GnomeData = colony.gnomes.get(b["prophet_id"])
+		if author == null or not author.is_alive():
+			continue
+		if b["strength"] < RIVAL_STRENGTH:
+			continue
+		factions.append(b["holders"])
+	return {"due": factions.size() >= 2, "factions": factions}
+
+
+## The §12 anti-spam brake: every voice beyond the first taxes unrest and
+## erodes everyone's shared faith — fractured, not multiplied.
+static func _spam_tick(colony: Colony, voices: int, dt_days: float) -> void:
+	if voices < 2:
+		return
+	var extra := voices - 1
+	colony.unrest = clampf(colony.unrest + SPAM_UNREST_PER_DAY * extra * dt_days, 0.0, 1.0)
+	var erosion := SPAM_EROSION_PER_DAY * extra * dt_days
+	for g in colony.living():
+		var faith: float = g.get_feeling(Devotion.YOU, "faith")
+		if faith > 0.0:
+			g.set_feeling(Devotion.YOU, "faith", maxf(0.0, faith - erosion))
 
 
 ## Who the prophet converts [§12]: social-graph BFS from the prophet,

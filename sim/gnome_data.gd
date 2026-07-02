@@ -46,7 +46,7 @@ var outlier_type := ""
 ## 1.0 for the touched — prime prophet seed material [algo §8/§12] (T9.1).
 var prophet_affinity := 0.0
 ## {} for ordinary gnomes; a caught prophet carries {message, caught_age,
-## corrupted} [algo §12] (T9.1; charisma joins in T9.2).
+## corrupted, charisma, doom_at} [algo §12] (T9.1–T9.3).
 var prophet := {}
 ## Per-phenomenon-type habituation counters [algo §9] (T6.1): repeats of
 ## the same act land weaker; recovers −0.02/day.
