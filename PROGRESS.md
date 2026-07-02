@@ -30,7 +30,7 @@ human records GO here.
 - [x] Phase-Exit 2: seeded 50-year elder-cohort run; lifespans in §4 bounds (mean ∈ [85,100], cap 115); one gnome_died per gnome → tagged phase-2-complete
 
 ## Phase 3 — Needs & utility decision
-- [ ] T3.1 Needs decay
+- [x] T3.1 Needs decay — §17 rates + stage mods; safety recovers −0.06/day toward 0.
 - [ ] T3.2 Action catalog
 - [ ] T3.3 Utility scoring
 - [ ] T3.4 Decide & act loop
