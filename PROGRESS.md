@@ -32,7 +32,7 @@ human records GO here.
 ## Phase 3 — Needs & utility decision
 - [x] T3.1 Needs decay — §17 rates + stage mods; safety recovers −0.06/day toward 0.
 - [x] T3.2 Action catalog — 7 §6 actions, exact relief vectors + stage/ctx gates; "create" = §6's create/explore row.
-- [ ] T3.3 Utility scoring
+- [x] T3.3 Utility scoring — need²·relief with side costs subtracting; work trait_mod 0.7+0.6·industrious; culture/belief mods are ctx hooks (T6.4 wires them); jitter U(0,0.05) via Rng.
 - [ ] T3.4 Decide & act loop
 - [ ] T3.5 Hardship link
 - [ ] T3.6 Projects (multi-tick goals)
