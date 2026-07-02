@@ -15,7 +15,7 @@ human records GO here.
 - [x] Phase-Exit 0: test_smoke.gd passes headless; Rng reproduces a fixed sequence from a seed → tagged phase-0-complete (14/14 tests, 428 asserts, lint clean, verified from a wiped .godot/ cache)
 
 ## Phase 1 — Core data model & time
-- [ ] T1.1 Enums & constants
+- [x] T1.1 Enums & constants — Enums class (LifeStage + trait/need/belief-axis catalogs). KNOWLEDGE_CATEGORIES ids "craft/tech/magic" are a naming choice for §7's prose, not spec-literal strings.
 - [ ] T1.2 `GnomeData`
 - [ ] T1.3 `Colony` registry
 - [ ] T1.4 `TimeService`
