@@ -23,7 +23,7 @@ human records GO here.
 - [x] Phase-Exit 1: colony of 4, 100 ticks, calendar exact, state intact (test/integration/test_phase1_exit.gd) → tagged phase-1-complete. NOTE: canonical test command now includes -ginclude_subdirs (integration tests live in test/integration/).
 
 ## Phase 2 — Life cycle
-- [ ] T2.1 `EventBus`
+- [x] T2.1 `EventBus` — autoload with the 6 core signals; world_ended deferred to T11.4 as planned.
 - [ ] T2.2 Aging & stage transitions
 - [ ] T2.3 Mortality
 - [ ] T2.4 Birth scaffold

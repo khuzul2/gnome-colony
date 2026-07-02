@@ -13,6 +13,7 @@ run/main_scene="res://presentation/main.tscn"
 [autoload]
 
 Rng="*res://sim/rng.gd"
+EventBus="*res://sim/event_bus.gd"
 
 [debug]
 
