@@ -121,7 +121,7 @@ static func crystallize_tick(colony: Colony, dt_days: float) -> void:
 				continue
 			colony.beliefs.append(BeliefObject.make(kind, subject, axis, strength, holders))
 			if kind == "place_reverence":
-				_tag_place(colony, subject, "blessed", mean_feeling)
+				tag_place(colony, subject, "blessed", mean_feeling)
 			EventBus.belief_formed.emit(
 				{"kind": kind, "subject": subject, "axis": axis, "strength": strength}
 			)
@@ -212,7 +212,9 @@ static func _has_object(colony: Colony, kind: String, subject: String) -> bool:
 	return false
 
 
-static func _tag_place(colony: Colony, subject: String, tag: String, strength: float) -> void:
+## Write a world-facing belief tag; shared by crystallization and by
+## phenomenon consequences (T7.6's cursed-place handler).
+static func tag_place(colony: Colony, subject: String, tag: String, strength: float) -> void:
 	if not colony.place_tags.has(subject):
 		colony.place_tags[subject] = {}
 	colony.place_tags[subject][tag] = strength

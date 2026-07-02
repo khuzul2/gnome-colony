@@ -47,12 +47,11 @@ static func handlers() -> Dictionary:
 
 
 ## §18's "cursed-place" chain ("the spot turns taboo in memory"): the
-## consequence writes the cursed tag straight onto the place, at the
-## parent act's resolved intensity.
+## consequence writes the cursed tag onto the place at the CASCADE ROOT's
+## resolved intensity (markers inherit stimuli[0]'s intensity — identical
+## to the parent for single-level chains like landslide's).
 static func _handle_cursed_place(colony: Colony, _world: WorldState, marker: Dictionary) -> void:
-	if not colony.place_tags.has(marker["place"]):
-		colony.place_tags[marker["place"]] = {}
-	colony.place_tags[marker["place"]]["cursed"] = marker["intensity"]
+	Belief.tag_place(colony, marker["place"], "cursed", marker["intensity"])
 
 
 static func defs() -> Dictionary:
