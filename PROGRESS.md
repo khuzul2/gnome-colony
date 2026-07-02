@@ -68,7 +68,7 @@ human records GO here.
 - [x] T7.1 Phenomenon schema — validate() with all §11 fields; social number-or-"=culture"; taint benevolent-only; target kinds = §11 ∪ §18 (adds "region" — §18's long_dark needs it).
 - [x] T7.2 Phenomenon runner + stimulus — Influence.cast (handler registry, one stimulus per cast; magnitude/potency stubs 1.0 until T8.3). PUBLIC API: WorldState added (minimal sites/hidden/paths container; region-graph comes with Phase 11/13).
 - [x] T7.3 The `landslide` — buries site, reveals ore, blocks "<site>_path", casualties at |effects.population|·intensity per present gnome (interpretive lethality dial). PUBLIC API: GnomeData.location added (serializer covers).
-- [ ] T7.4 Appraisal
+- [x] T7.4 Appraisal — witnesses (at place) write fear to place AND phenomenon type (one habituation bump/event — Belief.appraise gained bump_habituation param, back-compatible); safety spike intensity·(0.3+timid) (prototype formula); curious>0.6 bank discovery memories.
 - [ ] T7.5 Tail-risk & chaining
 - [ ] T7.7 Phenomenon valence + toolbox balance
 - [ ] T7.8 Seed catalog loader (15 phenomena, [algo §18])

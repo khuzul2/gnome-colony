@@ -34,15 +34,22 @@ static func susceptibility(g: GnomeData, axis: String) -> float:
 
 ## One witnessed stimulus: write the feeling through the gnome's traits,
 ## dampened by habituation to that phenomenon type (never inverted), then
-## deepen the habituation.
+## deepen the habituation. Pass bump_habituation=false for secondary
+## writes of the SAME event (e.g. the place write alongside the
+## phenomenon-type write, T7.4) so one event habituates once.
 static func appraise(
-	g: GnomeData, subject: String, axis: String, intensity: float, phenomenon_type: String = ""
+	g: GnomeData,
+	subject: String,
+	axis: String,
+	intensity: float,
+	phenomenon_type: String = "",
+	bump_habituation: bool = true,
 ) -> void:
 	var dampening: float = g.habituation.get(phenomenon_type, 0.0) if phenomenon_type != "" else 0.0
 	var delta := maxf(0.0, intensity * susceptibility(g, axis) - dampening)
 	if delta > 0.0:
 		g.adjust_feeling(subject, axis, delta)
-	if phenomenon_type != "":
+	if phenomenon_type != "" and bump_habituation:
 		g.habituation[phenomenon_type] = dampening + HABITUATION_STEP
 
 
