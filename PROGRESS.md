@@ -39,7 +39,7 @@ human records GO here.
 - [x] Phase-Exit 3: hungry colony + food node self-recovers via Needs→Decide→Act (mean hunger 0.8 → <0.3 in 14 days, no deaths) → tagged phase-3-complete
 
 ## Phase 4 — Skills, knowledge, teaching, extinction
-- [ ] T4.1 Proficiency & practice
+- [x] T4.1 Proficiency & practice — asymptotic practice gain; knowledge id tracks the 0.2 teachability line both directions (reviewer made me strip teach/decay back out to T4.2/T4.3 — good catch).
 - [ ] T4.2 Teaching transfer
 - [ ] T4.3 Decay & un-teachable
 - [ ] T4.4 Extinction (per-settlement)
