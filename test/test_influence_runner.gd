@@ -42,6 +42,10 @@ func test_registered_handler_mutates_world():
 	var handlers := {
 		"test_quake":
 		func(_c: Colony, w: WorldState, stim: Dictionary) -> void:
+## T7.2 — phenomenon runner [algo §11]: casting applies the world-state
+## mutation (per-phenomenon handler) and emits one `phenomenon` stimulus.
+## Magnitude and valence potency are STUBS at 1.0 until Phase 8 (T8.3).
+
 			w.sites["quarry"].current -= 5.0 * stim["intensity"]
 	}
 	Influence.cast(colony, world, _def, "quarry", 1.0, 1.0, handlers)
