@@ -10,7 +10,7 @@ human records GO here.
 - [x] T0.1 Project skeleton — project.godot (main scene presentation/main.tscn), dir tree, test_smoke.gd; boot exit 0
 - [x] T0.2 Install GUT + test command — plugin enabled in project.godot, commands documented in README_DEV.md (GUT pre-vendored; upstream gut_loader.gd:35 prints a benign SCRIPT ERROR, doesn't affect results)
 - [x] T0.3 Lint/format gate — .gdlintrc (defaults + addons/.godot excluded), ./lint.sh gate; CLAUDE.md lint command now ./lint.sh
-- [ ] T0.4 `Rng` singleton (seeded determinism)
+- [x] T0.4 `Rng` singleton — sim/rng.gd autoload (extends Node is the Godot autoload requirement, mandated by the plan; no scene state); mixed-API replay, gauss mean, bounds, chance extremes proven in test_rng.gd
 - [ ] T0.5 `WorldConfig` resource
 - [ ] Phase-Exit 0: test_smoke.gd passes headless; Rng reproduces a fixed sequence from a seed → tag phase-0-complete
 
