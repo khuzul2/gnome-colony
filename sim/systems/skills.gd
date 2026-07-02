@@ -57,8 +57,12 @@ static func study_record(colony: Colony, g: GnomeData, skill: String, dt_days: f
 	practice(g, skill, dt_days)
 
 
+## Every proficiency write funnels through here, so this is also where a
+## craft crossing §14's 0.9 mastery line earns its once-per-craft fame
+## (T8.6 — Notability guards the threshold and the double-credit itself).
 static func _update_teachability(g: GnomeData, skill: String) -> void:
 	if g.skills.get(skill, 0.0) >= TEACHABLE_AT:
 		g.add_knowledge(skill)
 	else:
 		g.knowledge.erase(skill)
+	Notability.on_mastery(g, skill)

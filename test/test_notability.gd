@@ -90,6 +90,18 @@ func test_leader_score_falls_back_to_best_skill():
 	assert_almost_eq(Notability.leader_score(g), 0.5 * 0.4 + 0.3 * 1.0 + 0.2 * 0.9, 0.0001)
 
 
+func test_practicing_across_the_line_awards_mastery():
+	# The live wiring (reviewer catch): crossing 0.9 through ordinary
+	# practice must credit fame without anyone calling on_mastery by hand.
+	var g := _gnome()
+	g.set_skill("smithing", 0.899)
+	Skills.practice(g, "smithing", 1.0)
+	assert_gte(g.skills["smithing"], 0.9, "premise: this practice tick crosses the line")
+	assert_almost_eq(g.notability, Notability.MASTERY, 0.0001, "the craft-master becomes known")
+	Skills.practice(g, "smithing", 1.0)
+	assert_almost_eq(g.notability, Notability.MASTERY, 0.0001, "still once per craft")
+
+
 func test_mastery_credit_round_trips():
 	var g := _gnome()
 	g.set_skill("smithing", 0.95)
