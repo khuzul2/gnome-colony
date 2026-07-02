@@ -29,6 +29,7 @@ static func spawn_infant(colony: Colony, p1: GnomeData = null, p2: GnomeData = n
 		infant.generation = maxi(p1.generation, p2.generation) + 1
 		infant.home_settlement = p1.home_settlement
 		_inherit_traits(infant, p1, p2)
+		Outliers.maybe_mark(infant)
 		# Kin edges start at neutral 0 weight (no spec value; interactions
 		# grow them) — the type marker is what matters for culture flow.
 		infant.set_relationship(p1.id, "kin", 0.0)
@@ -56,13 +57,19 @@ static func season_tick(colony: Colony, food_factor: float, crowding: float) -> 
 
 
 ## Per-trait blend + mutation [algo §8]. Skills/knowledge are NOT touched:
-## they must be taught (that is why culture matters).
+## they must be taught (that is why culture matters). A trait that is
+## constitutional in either parent (mutant lineage) inherits UNCLAMPED and
+## carries the constitutional marker onward [algo §8: mutants heritable].
 static func _inherit_traits(infant: GnomeData, p1: GnomeData, p2: GnomeData) -> void:
 	for key in Enums.TRAIT_KEYS:
 		var value: float = 0.5 * (p1.traits[key] + p2.traits[key]) + Rng.gauss(0.0, MUTATION_SD)
 		if Rng.chance(LARGE_MUTATION_CHANCE):
 			value += Rng.gauss(0.0, LARGE_MUTATION_SD)
-		infant.set_trait(key, value)
+		if key in p1.constitutional_traits or key in p2.constitutional_traits:
+			infant.traits[key] = value
+			infant.constitutional_traits.append(key)
+		else:
+			infant.set_trait(key, value)
 
 
 static func _is_fertile_bearer(g: GnomeData) -> bool:

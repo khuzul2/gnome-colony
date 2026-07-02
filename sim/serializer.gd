@@ -27,6 +27,8 @@ static func gnome_to_dict(g: GnomeData) -> Dictionary:
 		"project": g.project.duplicate(true),
 		"generation": g.generation,
 		"constitutional_traits": g.constitutional_traits.duplicate(true),
+		"outlier_type": g.outlier_type,
+		"prophet_affinity": g.prophet_affinity,
 	}
 
 
@@ -50,6 +52,8 @@ static func gnome_from_dict(d: Dictionary) -> GnomeData:
 	g.project = d["project"].duplicate(true)
 	g.generation = d["generation"]
 	g.constitutional_traits = d["constitutional_traits"].duplicate(true)
+	g.outlier_type = d["outlier_type"]
+	g.prophet_affinity = d["prophet_affinity"]
 	return g
 
 

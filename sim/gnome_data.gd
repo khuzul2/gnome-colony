@@ -35,6 +35,10 @@ var generation := 0
 ## Trait names pinned by an outlier birth [algo §2/§8] (T5.7): exempt from
 ## plasticity, and (for mutants) inherited unclamped.
 var constitutional_traits: Array = []
+## "" for ordinary gnomes; else genius/touched/mutant/longlived (T5.7).
+var outlier_type := ""
+## 1.0 for the touched — prime prophet seed material [algo §8/§12] (T9.1).
+var prophet_affinity := 0.0
 
 
 func _init(gnome_id: int = 0) -> void:

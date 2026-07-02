@@ -52,7 +52,7 @@ human records GO here.
 - [x] T5.3 Fertility & births — 0.15·food·(1−crowding)/season per fertile pair; bearer = sex 0 aged 20–50 (arbitrary tag, documented); kin edges start at 0 weight (no spec value). PUBLIC API: GnomeData.generation added; Birth.spawn_infant takes optional parents.
 - [x] T5.4 Genetic inheritance — per-trait blend + N(0,0.05), 2% extra N(0,0.2) (per-trait reading of §8, reviewer-confirmed); skills never inherited.
 - [x] T5.5 Trait plasticity — Culture stub: young drift 0.02·(env−trait)/day, linear taper 14→20 (interpretive curve), constitutional traits exempt. PUBLIC API: GnomeData.constitutional_traits added (T5.7 populates; serializer covers).
-- [ ] T5.7 Outlier births (divergence engine)
+- [x] T5.7 Outlier births — p=0.01/birth, uniform type pick (interpretive); mutant traits out-of-band (edge ± U(0.1,0.5), interpretive magnitude), raw-written and inherited unclamped w/ marker; touched prophet_affinity=1. PUBLIC API: GnomeData.outlier_type + prophet_affinity added (serializer covers).
 - [ ] T5.6 Milestone integration test (test_milestone1.gd)
 - [ ] Phase-Exit 5 (Milestone 1): 4-gnome colony, default WorldConfig, ≥5 generations across 20 seeded runs, dying out ≤40% → tag phase-5-complete
 
