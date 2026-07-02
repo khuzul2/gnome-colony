@@ -43,6 +43,40 @@ static func validate(d: Dictionary) -> Array:
 	return errors
 
 
+## Count definitions per valence [plan T7.7].
+static func valence_spread(defs: Array) -> Dictionary:
+	var spread := {"benevolent": 0, "malevolent": 0, "neutral": 0}
+	for d in defs:
+		spread[d["valence"]] += 1
+	return spread
+
+
+## Balance rule [plan T7.7, algo §11, design §3.1]: every category stocked
+## with ≥2 acts must carry both a kind and a cruel face, and the overall
+## arsenal must span all three valences. Presence, not parity — the §18
+## seed set is deliberately dark-tilted (4/7/4) to match the register.
+static func balance_report(defs: Array) -> Array:
+	var errors := []
+	var by_category := {}
+	for d in defs:
+		if not by_category.has(d["category"]):
+			by_category[d["category"]] = []
+		by_category[d["category"]].append(d["valence"])
+	for category in by_category:
+		var valences: Array = by_category[category]
+		if valences.size() < 2:
+			continue
+		if not "benevolent" in valences:
+			errors.append("category %d offers no kind face" % category)
+		if not "malevolent" in valences:
+			errors.append("category %d offers no cruel face" % category)
+	var overall := valence_spread(defs)
+	for valence in overall:
+		if overall[valence] == 0:
+			errors.append("no %s act anywhere in the arsenal" % valence)
+	return errors
+
+
 static func _validate_effects(d: Dictionary) -> Array:
 	var errors := []
 	if not d.has("effects"):

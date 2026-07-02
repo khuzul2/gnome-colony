@@ -70,7 +70,7 @@ human records GO here.
 - [x] T7.3 The `landslide` — buries site, reveals ore, blocks "<site>_path", casualties at |effects.population|·intensity per present gnome (interpretive lethality dial). PUBLIC API: GnomeData.location added (serializer covers).
 - [x] T7.4 Appraisal — witnesses (at place) write fear to place AND phenomenon type (one habituation bump/event — Belief.appraise gained bump_habituation param, back-compatible); safety spike intensity·(0.3+timid) (prototype formula); curious>0.6 bank discovery memories.
 - [x] T7.5 Tail-risk & chaining — cast_with_cascade: BFS chain_hooks at the parent's place; 0.03 tail roll per act emits "tail:<id>"; MAX_CASCADE=8 structural guard (non-spec, documented).
-- [ ] T7.7 Phenomenon valence + toolbox balance
+- [x] T7.7 Valence + toolbox balance — valence was in the T7.1 schema; balance_report enforces kind+cruel face per stocked category and all-valences overall (presence, not parity — §18 tilts 4/7/4). The plan's "docs/ content" edit doesn't apply (docs are read-only; content lands as data in T7.8).
 - [ ] T7.8 Seed catalog loader (15 phenomena, [algo §18])
 - [ ] T7.9 Culture-resolved social + boon taint
 - [ ] T7.6 Iron-irony integration (test_iron_irony.gd)
