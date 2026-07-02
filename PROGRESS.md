@@ -77,7 +77,7 @@ human records GO here.
 - [x] Phase-Exit 7 (Milestone 2 + iron-irony): test_iron_irony.gd walks the whole cause→tragedy→belief→ironic-obstacle loop → tagged phase-7-complete
 
 ## Phase 8 — Devotion & social mass
-- [ ] T8.1 Devotion compute
+- [x] T8.1 Devotion compute — D=Σ faith toward "unseen_will", d̄=D/pop, flavor_balance=mean(awe−fear).
 - [ ] T8.2 Tier unlocks (per-capita, ratcheting)
 - [ ] T8.3 Social-mass magnitude + valence potency
 - [ ] T8.4 Terror instability + secularization
