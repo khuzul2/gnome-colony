@@ -72,7 +72,7 @@ human records GO here.
 - [x] T7.5 Tail-risk & chaining — cast_with_cascade: BFS chain_hooks at the parent's place; 0.03 tail roll per act emits "tail:<id>"; MAX_CASCADE=8 structural guard (non-spec, documented).
 - [x] T7.7 Valence + toolbox balance — valence was in the T7.1 schema; balance_report enforces kind+cruel face per stocked category and all-valences overall (presence, not parity — §18 tilts 4/7/4). The plan's "docs/ content" edit doesn't apply (docs are read-only; content lands as data in T7.8).
 - [x] T7.8 Seed catalog loader — all 15 §18 entries as data (4/7/4, 2 clean/2 tainted); CONSEQUENCES markers for abstract chain targets; affordance gating enforced in Influence.cast (WorldState.affordances added). Interpretive: ground_remembers m=+0.2 (of "+0.2/−0.1"), day_twice tail=2×0.03 ("elevated"), touched-births echo left to Phase 9 (no spec prob).
-- [ ] T7.9 Culture-resolved social + boon taint
+- [x] T7.9 Culture-resolved social + boon taint — resolve_social: swing(=intensity)·(cohesion − fear_level − fracture), interpretive closed forms documented; stimuli carry taint markers; consequence chain targets surface as traceable stimuli. T7.8 review fixes folded in (omen_charge hook removed, cascade honors gating).
 - [ ] T7.6 Iron-irony integration (test_iron_irony.gd)
 - [ ] Phase-Exit 7 (Milestone 2 + iron-irony): landslide kills, exposes iron, cursed tag crystallizes, survivors avoid the iron tile → tag phase-7-complete
 
