@@ -43,7 +43,7 @@ human records GO here.
 - [x] T4.2 Teaching transfer — 0.03·(t−l)·q·dt; id at 0.2, chain teaches onward. teacher_quality q: spec leaves undefined → explicit param default 1.0. The t≤l no-op guard is an interpretive addition (the raw §17 formula would DECREASE a better learner) — teaching only pulls up.
 - [x] T4.3 Decay & un-teachable — unused −0.002/day (used_skills exempt); below 0.2 forfeits the id; practice re-earns it.
 - [x] T4.4 Extinction (per-settlement) — Knowledge.sync/check_extinction; regional loss with knowledge_lost events. PUBLIC API: Colony.settlement_knowledge + durable_records added (serializer covers them). No orchestrator yet — systems still composed by tests, per phase design.
-- [ ] T4.5 Writing durability
+- [x] T4.5 Writing durability — snapshot_records where "writing" is known; durable ids extinction-proof; study_record re-teaches from the page at the practice rate (spec defines no separate record rate — interpretive choice).
 - [ ] Phase-Exit 4: sole holder dies untaught ⇒ extinction event; with writing ⇒ no extinction → tag phase-4-complete
 
 ## Phase 5 — Relationships, reproduction, genetics (= prototype Milestone 1)

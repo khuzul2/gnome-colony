@@ -48,6 +48,15 @@ static func decay(g: GnomeData, dt_days: float, used_skills: Array = []) -> void
 		_update_teachability(g, skill)
 
 
+## Study from a durable record [plan T4.5]: self-teaching from notes, at
+## the practice rate (the spec defines no separate record rate — noted in
+## PROGRESS.md). Requires the id in the settlement's durable records.
+static func study_record(colony: Colony, g: GnomeData, skill: String, dt_days: float) -> void:
+	if not colony.durable_records.get(g.home_settlement, {}).has(skill):
+		return
+	practice(g, skill, dt_days)
+
+
 static func _update_teachability(g: GnomeData, skill: String) -> void:
 	if g.skills.get(skill, 0.0) >= TEACHABLE_AT:
 		g.add_knowledge(skill)

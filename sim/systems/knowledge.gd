@@ -18,6 +18,19 @@ static func sync(colony: Colony) -> void:
 			colony.settlement_knowledge[sid][id] = true
 
 
+## Writing durability [plan T4.5, algo §7]: in every settlement where
+## `writing` is currently known, snapshot ALL known ids into durable
+## records — they become extinction-proof and studyable from the record.
+static func snapshot_records(colony: Colony) -> void:
+	for sid in colony.settlement_knowledge:
+		if not colony.settlement_knowledge[sid].has("writing"):
+			continue
+		if not colony.durable_records.has(sid):
+			colony.durable_records[sid] = {}
+		for id in colony.settlement_knowledge[sid]:
+			colony.durable_records[sid][id] = true
+
+
 ## Remove ids with no living local holder (unless durable) and emit
 ## knowledge_lost per loss.
 static func check_extinction(colony: Colony) -> void:
