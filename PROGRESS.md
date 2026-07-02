@@ -36,7 +36,7 @@ human records GO here.
 - [x] T3.4 Decide & act loop — Decide.choose (max utility, idle fallback), Act.apply (signed deltas; eat draws MEAL_UNITS=1.0 — implementation unit). ResourceNode (§15) pulled forward, constructor-parameterized, no invented defaults.
 - [x] T3.5 Hardship link — sustained ≥0.9 hunger/safety >5 days ⇒ hardship_rate 0.15/day. Tracking placed in needs.gd (owns need updates) rather than the plan's "edit mortality.gd" — Mortality already consumes hardship_rate. PUBLIC API: GnomeData.hardship_days added; serializer covers it.
 - [x] T3.6 Projects — persist unless a need ≥0.9 (reuses HARDSHIP_THRESHOLD); completion applies §6 create relief. PUBLIC API: Decide.choose can now return "project:<kind>"; GnomeData.project added; serializer covers it.
-- [ ] Phase-Exit 3: hungry colony with a food source recovers over seeded ticks, no scripting → tag phase-3-complete
+- [x] Phase-Exit 3: hungry colony + food node self-recovers via Needs→Decide→Act (mean hunger 0.8 → <0.3 in 14 days, no deaths) → tagged phase-3-complete
 
 ## Phase 4 — Skills, knowledge, teaching, extinction
 - [ ] T4.1 Proficiency & practice

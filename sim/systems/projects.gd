@@ -8,6 +8,9 @@ extends RefCounted
 ## the project's days were that work.
 
 
+## Callers own the stage gate: projects are long-horizon work, so only
+## gnomes eligible for the §6 create/explore action (Adult) should start
+## one. Nothing auto-starts projects yet — that wiring comes later.
 static func start(g: GnomeData, kind: String, duration_days: float) -> void:
 	g.project = {"kind": kind, "progress": 0.0, "duration": duration_days}
 

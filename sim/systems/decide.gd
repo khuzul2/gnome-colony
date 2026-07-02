@@ -2,7 +2,9 @@ class_name Decide
 extends RefCounted
 ## Decision step [plan T3.4, algo §6]: score every stage/context-available
 ## action (Utility, with jitter) and pick the max. "idle" is the fallback
-## when nothing is available — a no-op, not a catalog action.
+## when nothing is available — a no-op, not a catalog action. An active,
+## non-urgent project short-circuits scoring and returns "project:<kind>"
+## (T3.6).
 
 
 static func choose(g: GnomeData, ctx: Dictionary = {}) -> String:
