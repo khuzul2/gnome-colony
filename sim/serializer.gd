@@ -68,6 +68,9 @@ static func colony_to_dict(c: Colony) -> Dictionary:
 		"gnomes": gnome_dicts,
 		"settlement_knowledge": c.settlement_knowledge.duplicate(true),
 		"durable_records": c.durable_records.duplicate(true),
+		"beliefs": c.beliefs.duplicate(true),
+		"place_tags": c.place_tags.duplicate(true),
+		"belief_tracker": c.belief_tracker.duplicate(true),
 	}
 
 
@@ -78,6 +81,9 @@ static func colony_from_dict(d: Dictionary) -> Colony:
 	c.next_id = d["next_id"]
 	c.settlement_knowledge = d["settlement_knowledge"].duplicate(true)
 	c.durable_records = d["durable_records"].duplicate(true)
+	c.beliefs = d["beliefs"].duplicate(true)
+	c.place_tags = d["place_tags"].duplicate(true)
+	c.belief_tracker = d["belief_tracker"].duplicate(true)
 	return c
 
 

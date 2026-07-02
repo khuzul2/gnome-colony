@@ -14,6 +14,9 @@ extends RefCounted
 const RELAX_PER_DAY := 0.03
 const PROPAGATION_PER_DAY := 0.04
 const FEAR_MULT := 1.5
+const CRYSTALLIZE_STRENGTH := 0.7
+const MIN_HOLDERS_FLOOR := 5
+const MIN_HOLDERS_FRACTION := 0.03
 const HABITUATION_STEP := 0.15
 const HABITUATION_RECOVERY_PER_DAY := 0.02
 const FEELING_BASELINE := 0.0
@@ -66,6 +69,69 @@ static func propagate_tick(colony: Colony, dt_days: float) -> void:
 					deltas.append([nbr, subject, axis, rate * tie * gap * dt_days])
 	for d in deltas:
 		d[0].adjust_feeling(d[1], d[2], d[3])
+
+
+## Crystallization [plan T6.3, algo §9 Layer B]: when ≥ max(5, 3% of the
+## settlement) living gnomes hold a (subject, axis) feeling at ≥ 0.7 for a
+## full season, it crystallizes into a named belief-object. Strength =
+## mean backing feeling × holder fraction. Taboos curse the place-tag,
+## place-reverence blesses it; belief_formed fires once per object.
+static func crystallize_tick(colony: Colony, dt_days: float) -> void:
+	var living := colony.living()
+	var pop := living.size()
+	if pop == 0:
+		return
+	var min_holders := maxi(MIN_HOLDERS_FLOOR, ceili(MIN_HOLDERS_FRACTION * pop))
+	var qualifying := {}
+	for g in living:
+		for subject in g.feelings:
+			for axis in g.feelings[subject]:
+				if g.feelings[subject][axis] >= CRYSTALLIZE_STRENGTH:
+					var key := "%s|%s" % [subject, axis]
+					if not qualifying.has(key):
+						qualifying[key] = {"holders": [], "total": 0.0}
+					qualifying[key]["holders"].append(g.id)
+					qualifying[key]["total"] += g.feelings[subject][axis]
+	for key in colony.belief_tracker.keys():
+		if not qualifying.has(key) or qualifying[key]["holders"].size() < min_holders:
+			colony.belief_tracker.erase(key)
+	for key in qualifying:
+		var holders: Array = qualifying[key]["holders"]
+		if holders.size() < min_holders:
+			continue
+		colony.belief_tracker[key] = colony.belief_tracker.get(key, 0.0) + dt_days
+		if colony.belief_tracker[key] < TimeService.DAYS_PER_SEASON:
+			continue
+		var parts: PackedStringArray = key.split("|")
+		var subject := String(parts[0])
+		var axis := String(parts[1])
+		var kind := BeliefObject.kind_for_axis(axis)
+		if kind == "" or _has_object(colony, kind, subject):
+			continue
+		var strength: float = (
+			qualifying[key]["total"] / holders.size() * (float(holders.size()) / pop)
+		)
+		colony.beliefs.append(BeliefObject.make(kind, subject, axis, strength, holders))
+		if kind == "taboo":
+			_tag_place(colony, subject, "cursed", strength / (float(holders.size()) / pop))
+		elif kind == "place_reverence":
+			_tag_place(colony, subject, "blessed", strength / (float(holders.size()) / pop))
+		EventBus.belief_formed.emit(
+			{"kind": kind, "subject": subject, "axis": axis, "strength": strength}
+		)
+
+
+static func _has_object(colony: Colony, kind: String, subject: String) -> bool:
+	for b in colony.beliefs:
+		if b["kind"] == kind and b["subject"] == subject:
+			return true
+	return false
+
+
+static func _tag_place(colony: Colony, subject: String, tag: String, strength: float) -> void:
+	if not colony.place_tags.has(subject):
+		colony.place_tags[subject] = {}
+	colony.place_tags[subject][tag] = strength
 
 
 ## Daily relaxation of feelings toward baseline + habituation recovery.

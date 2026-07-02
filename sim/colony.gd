@@ -9,6 +9,15 @@ var next_id := 0
 var settlement_knowledge := {}
 ## Per-settlement durable (written) records exempt from extinction (T4.5).
 var durable_records := {}
+## Crystallized belief-objects [algo §9 Layer B] (T6.3) — plain dicts, see
+## BeliefObject.make().
+var beliefs: Array = []
+## World-facing belief tags {subject: {"cursed"/"blessed": strength}} that
+## bias utility at those places (T6.3/T6.4).
+var place_tags := {}
+## Consecutive days each (subject, axis) has met the crystallization
+## condition (T6.3 internal state).
+var belief_tracker := {}
 
 
 func spawn() -> GnomeData:
