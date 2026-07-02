@@ -87,7 +87,7 @@ human records GO here.
 
 ## 🎮 PLAYTEST GATE 1 — Vertical Slice & Fun Check (HUMAN go/no-go — HALT)
 - [x] Throwaway minimal interactive view built (top-down render + 2–3 phenomena buttons + mood/belief readout) — presentation/playtest/playtest_slice.tscn; slice-only glue documented in-file (day-trip staging writes GnomeData.location pending Phase 11/13 movement; daily Belief/Devotion composition mirrors integration tests pending the Phase 11–12 orchestrator). Only still_air is live at boot (Tier I); standing_stones/landslide open when d̄_peak crosses 0.15 — the unlock loop IS the demo.
-- [ ] Human GO recorded here
+- [x] Human GO recorded here — 2026-07-02, user: "GO (faith based, can't test but we can change later)". Provisional GO: the fun check was waived, not passed — revisit the core feel at 🎮 FUN CHECK 2 with extra scrutiny.
 
 ## Phase 9 — Prophets
 - [ ] T9.1 Prophet entity & seeding
