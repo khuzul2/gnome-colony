@@ -10,7 +10,7 @@ extends RefCounted
 ## prophet_affinity + devout (§8 calls the touched "prime prophet seed");
 ## and the message's flavor follows the flock's charge (love → mercy,
 ## terror → wrath) nudged by the vessel's own temperament.
-## Charisma/reach arrive in T9.2, the life-arc & corruption in T9.3.
+## Charisma/reach/amplification are T9.2; the life-arc & corruption T9.3.
 
 const RIPENESS_LINE := 0.5  # §17: "prophet catches: local mean(|awe−fear|) ≥ 0.5"
 ## §18 catalog categories that can seed a prophet [§12 "via an Omen/Vision"].
@@ -27,6 +27,23 @@ const CHARISMA_SD := 0.2
 ## edges only.
 const REACH_DEPTH_MAX := 5
 const PREACH_RATE := 0.12
+
+## Life-arc (T9.3): influence = charisma · arc(age) [§12]. §12 names only
+## the shape (rise→peak→decline) — the timings are interpretive, noted in
+## PROGRESS.md: a fast rise (1 y — prophets catch fire), a long peak
+## (10 y), a slow fade (15 y), and a remnant-flock floor (0.3) so an old
+## voice never falls fully silent.
+const ARC_RISE_YEARS := 1.0
+const ARC_PEAK_YEARS := 10.0
+const ARC_FADE_YEARS := 15.0
+const ARC_FLOOR := 0.3
+
+## Corruption (T9.3): 0.10 over the lifetime (§17) — rolled once at the
+## catch; a doomed prophet flips mercy→madness at a fated hour drawn
+## U(1, 20) years into the career (interpretive window: mid-career).
+const CORRUPTION_LIFETIME := 0.10
+const DOOM_MIN_YEARS := 1.0
+const DOOM_MAX_YEARS := 20.0
 
 
 ## Local emotional charge [§12]: mean per-witness |awe−fear| toward the
@@ -56,6 +73,7 @@ static func try_seed(witnesses: Array, stimulus: Dictionary) -> GnomeData:
 		"caught_age": vessel.age,
 		"corrupted": false,
 		"charisma": clampf(Rng.gauss(CHARISMA_MEAN, CHARISMA_SD), 0.0, 1.0),
+		"doom_at": _roll_doom(vessel.age),
 	}
 	Notability.award(vessel, Notability.PROPHET_LEADER)
 	return vessel
@@ -63,6 +81,31 @@ static func try_seed(witnesses: Array, stimulus: Dictionary) -> GnomeData:
 
 static func is_prophet(g: GnomeData) -> bool:
 	return g.is_alive() and not g.prophet.is_empty()
+
+
+## The career curve [§12: rise→peak→decline]: 0 at no prophet; else a
+## piecewise-linear arc over years since the catch.
+static func arc(g: GnomeData) -> float:
+	if g.prophet.is_empty():
+		return 0.0
+	var t: float = g.age - g.prophet["caught_age"]
+	if t < ARC_RISE_YEARS:
+		return lerpf(ARC_FLOOR, 1.0, t / ARC_RISE_YEARS)
+	t -= ARC_RISE_YEARS
+	if t < ARC_PEAK_YEARS:
+		return 1.0
+	t -= ARC_PEAK_YEARS
+	return maxf(ARC_FLOOR, lerpf(1.0, ARC_FLOOR, t / ARC_FADE_YEARS))
+
+
+## Daily prophet pass (T9.3): every living prophet faces their fated hour,
+## then preaches at charisma · arc influence.
+static func tick(colony: Colony, dt_days: float) -> void:
+	for g in colony.living():
+		if g.prophet.is_empty():
+			continue
+		_corruption_check(g)
+		preach(colony, g, dt_days)
 
 
 ## Who the prophet converts [§12]: social-graph BFS from the prophet,
@@ -103,7 +146,7 @@ static func preach(colony: Colony, prophet_g: GnomeData, dt_days: float) -> void
 	if not is_prophet(prophet_g):
 		return
 	var message: Dictionary = prophet_g.prophet["message"]
-	var influence: float = prophet_g.prophet.get("charisma", 0.0)
+	var influence: float = prophet_g.prophet.get("charisma", 0.0) * arc(prophet_g)
 	var flavor_axis: String = "awe" if message["flavor"] == "mercy" else "fear"
 	var flock := reach(colony, prophet_g)
 	for g in flock:
@@ -161,6 +204,24 @@ static func _pick_vessel(witnesses: Array) -> GnomeData:
 			best_score = score
 			best = g
 	return best
+
+
+## Rolled once at the catch [§17: "corruption 0.10/life"]: −1 = dies true;
+## else the age at which mercy turns to madness.
+static func _roll_doom(caught_age: float) -> float:
+	if not Rng.chance(CORRUPTION_LIFETIME):
+		return -1.0
+	return caught_age + Rng.randf_range(DOOM_MIN_YEARS, DOOM_MAX_YEARS)
+
+
+## The flip [§12: "mercy→madness (e.g. demands sacrifice)"]: the message
+## keeps its subject but its flavor turns to madness — preached as dread.
+static func _corruption_check(g: GnomeData) -> void:
+	var doom: float = g.prophet.get("doom_at", -1.0)
+	if g.prophet["corrupted"] or doom < 0.0 or g.age < doom:
+		return
+	g.prophet["corrupted"] = true
+	g.prophet["message"]["flavor"] = "madness"
 
 
 ## The message [§12: "derived from theology + triggering event + traits"]:
