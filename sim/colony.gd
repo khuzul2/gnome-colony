@@ -18,6 +18,10 @@ var place_tags := {}
 ## Consecutive days each (subject, axis) has met the crystallization
 ## condition (T6.3 internal state).
 var belief_tracker := {}
+## Highest per-capita devotion ever reached [algo §10] (T8.2).
+var devotion_peak := 0.0
+## Ratcheting toolbox tier — once earned, never stripped (T8.2).
+var unlocked_tier := 1
 
 
 func spawn() -> GnomeData:

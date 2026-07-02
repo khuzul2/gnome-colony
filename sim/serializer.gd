@@ -73,6 +73,8 @@ static func colony_to_dict(c: Colony) -> Dictionary:
 		"beliefs": c.beliefs.duplicate(true),
 		"place_tags": c.place_tags.duplicate(true),
 		"belief_tracker": c.belief_tracker.duplicate(true),
+		"devotion_peak": c.devotion_peak,
+		"unlocked_tier": c.unlocked_tier,
 	}
 
 
@@ -86,6 +88,8 @@ static func colony_from_dict(d: Dictionary) -> Colony:
 	c.beliefs = d["beliefs"].duplicate(true)
 	c.place_tags = d["place_tags"].duplicate(true)
 	c.belief_tracker = d["belief_tracker"].duplicate(true)
+	c.devotion_peak = d["devotion_peak"]
+	c.unlocked_tier = d["unlocked_tier"]
 	return c
 
 
