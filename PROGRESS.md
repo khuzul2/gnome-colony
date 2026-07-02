@@ -62,7 +62,7 @@ human records GO here.
 - [x] T6.3 Crystallization — min holders max(5, ceil(3%·pop)) (rounding interpretive), ≥0.7 sustained a season (dip resets), strength = mean feeling × holder fraction. REVIEW FIX: §9 triggers overlap and ALL fire (taboo←fear/reverence, rite←awe/faith, place_reverence←reverence, theology←faith); taboo avoidance bites via the object (cursed tags reserved for Phase-7 phenomena chains); blessed tag = mean feeling. PUBLIC API: Colony.beliefs/place_tags/belief_tracker (serializer covers); BeliefObject factory.
 - [x] T6.4 Behavioral effects — Belief.place_mod: taboo objects & cursed tags ×(1−0.5·s), blessed ×(1+0.8·s), multiplying; linear maps hit §6's [0.5,1.8] endpoints (interpretive). Wired into Utility via ctx belief_mods.
 - [x] T6.5 Drift & subcultures — 3% transmission mutation (variant bump); greedy per-GNOME clustering at distance ≥0.5 (spec names threshold, not algorithm; §14 schism will need settlement-level clustering ON TOP — not done yet).
-- [ ] Phase-Exit 6: seeded scenario crystallizes a place-taboo; utility for acting there drops → tag phase-6-complete
+- [x] Phase-Exit 6: sustained VARIED dread crystallizes a ridge taboo (single shocks fade by design — vary or escalate); work-at-ridge utility drops → tagged phase-6-complete
 
 ## Phase 7 — Influence system: phenomena & appraisal (= prototype Milestone 2)
 - [ ] T7.1 Phenomenon schema
