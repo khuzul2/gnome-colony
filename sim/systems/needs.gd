@@ -37,8 +37,10 @@ static func tick(colony: Colony, dt_days: float) -> void:
 static func _track_hardship(g: GnomeData, dt_days: float) -> void:
 	var suffering := false
 	for need in HARDSHIP_NEEDS:
+		# .get() keeps this safe if HARDSHIP_NEEDS ever grows beyond the
+		# defaults in GnomeData.hardship_days — keep the two in sync.
 		if g.needs[need] >= HARDSHIP_THRESHOLD:
-			g.hardship_days[need] += dt_days
+			g.hardship_days[need] = g.hardship_days.get(need, 0.0) + dt_days
 		else:
 			g.hardship_days[need] = 0.0
 		if g.hardship_days[need] > HARDSHIP_SUSTAIN_DAYS:
