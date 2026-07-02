@@ -5,6 +5,10 @@ extends RefCounted
 
 var gnomes := {}
 var next_id := 0
+## Per-settlement known knowledge ids [algo §7] (T4.4): sid → {id: true}.
+var settlement_knowledge := {}
+## Per-settlement durable (written) records exempt from extinction (T4.5).
+var durable_records := {}
 
 
 func spawn() -> GnomeData:

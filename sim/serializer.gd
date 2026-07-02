@@ -53,7 +53,12 @@ static func colony_to_dict(c: Colony) -> Dictionary:
 	var gnome_dicts := {}
 	for gnome_id in c.gnomes:
 		gnome_dicts[gnome_id] = gnome_to_dict(c.gnomes[gnome_id])
-	return {"next_id": c.next_id, "gnomes": gnome_dicts}
+	return {
+		"next_id": c.next_id,
+		"gnomes": gnome_dicts,
+		"settlement_knowledge": c.settlement_knowledge.duplicate(true),
+		"durable_records": c.durable_records.duplicate(true),
+	}
 
 
 static func colony_from_dict(d: Dictionary) -> Colony:
@@ -61,6 +66,8 @@ static func colony_from_dict(d: Dictionary) -> Colony:
 	for gnome_id in d["gnomes"]:
 		c.add(gnome_from_dict(d["gnomes"][gnome_id]))
 	c.next_id = d["next_id"]
+	c.settlement_knowledge = d["settlement_knowledge"].duplicate(true)
+	c.durable_records = d["durable_records"].duplicate(true)
 	return c
 
 

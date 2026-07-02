@@ -1,0 +1,37 @@
+class_name Knowledge
+extends RefCounted
+## Per-settlement knowledge & extinction [plan T4.4, algo §7]: a settlement
+## loses an id when no living local gnome holds it at prof ≥ 0.2 (i.e. has
+## the teachable id) — a REGIONAL dark age; other settlements may keep the
+## craft and later re-spread it. Durable records (writing, T4.5) exempt ids
+## from loss. State lives on Colony (settlement_knowledge / durable_records).
+
+
+## Register every id currently held by living gnomes to their settlements.
+## Call after teaching/practice phases so newly-earned ids are on record.
+static func sync(colony: Colony) -> void:
+	for g in colony.living():
+		var sid: int = g.home_settlement
+		if not colony.settlement_knowledge.has(sid):
+			colony.settlement_knowledge[sid] = {}
+		for id in g.knowledge:
+			colony.settlement_knowledge[sid][id] = true
+
+
+## Remove ids with no living local holder (unless durable) and emit
+## knowledge_lost per loss.
+static func check_extinction(colony: Colony) -> void:
+	var holders := {}
+	for g in colony.living():
+		for id in g.knowledge:
+			if not holders.has(g.home_settlement):
+				holders[g.home_settlement] = {}
+			holders[g.home_settlement][id] = true
+	for sid in colony.settlement_knowledge:
+		for id in colony.settlement_knowledge[sid].keys():
+			if holders.get(sid, {}).has(id):
+				continue
+			if colony.durable_records.get(sid, {}).has(id):
+				continue
+			colony.settlement_knowledge[sid].erase(id)
+			EventBus.knowledge_lost.emit({"id": id, "settlement": sid})
