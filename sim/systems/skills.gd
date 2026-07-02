@@ -10,6 +10,7 @@ extends RefCounted
 const PRACTICE_RATE := 0.01
 const TEACH_RATE := 0.03
 const TEACHABLE_AT := 0.2
+const DECAY_PER_DAY := 0.002
 
 
 static func practice(g: GnomeData, skill: String, dt_days: float) -> void:
@@ -35,6 +36,16 @@ static func teach(
 		return
 	learner.set_skill(skill, l_prof + TEACH_RATE * (t_prof - l_prof) * teacher_quality * dt_days)
 	_update_teachability(learner, skill)
+
+
+## Unused-skill decay [algo §7] (T4.3): every skill NOT in `used_skills`
+## loses 0.002/day; falling below 0.2 forfeits the teachable id.
+static func decay(g: GnomeData, dt_days: float, used_skills: Array = []) -> void:
+	for skill in g.skills:
+		if skill in used_skills:
+			continue
+		g.set_skill(skill, g.skills[skill] - DECAY_PER_DAY * dt_days)
+		_update_teachability(g, skill)
 
 
 static func _update_teachability(g: GnomeData, skill: String) -> void:

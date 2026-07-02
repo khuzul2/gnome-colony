@@ -41,7 +41,7 @@ human records GO here.
 ## Phase 4 — Skills, knowledge, teaching, extinction
 - [x] T4.1 Proficiency & practice — asymptotic practice gain; knowledge id tracks the 0.2 teachability line both directions (reviewer made me strip teach/decay back out to T4.2/T4.3 — good catch).
 - [x] T4.2 Teaching transfer — 0.03·(t−l)·q·dt; id at 0.2, chain teaches onward. teacher_quality q: spec leaves undefined → explicit param default 1.0. The t≤l no-op guard is an interpretive addition (the raw §17 formula would DECREASE a better learner) — teaching only pulls up.
-- [ ] T4.3 Decay & un-teachable
+- [x] T4.3 Decay & un-teachable — unused −0.002/day (used_skills exempt); below 0.2 forfeits the id; practice re-earns it.
 - [ ] T4.4 Extinction (per-settlement)
 - [ ] T4.5 Writing durability
 - [ ] Phase-Exit 4: sole holder dies untaught ⇒ extinction event; with writing ⇒ no extinction → tag phase-4-complete
