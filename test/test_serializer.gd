@@ -14,6 +14,7 @@ func _populated_gnome(id: int) -> GnomeData:
 	g.set_relationship(99, "mate", 0.8)
 	g.remember({"event": "landslide", "place": 3})
 	g.notability = 0.25
+	g.mastered_skills = ["foraging"]
 	g.partner_id = 99
 	g.home_settlement = 2
 	g.hardship_rate = 0.15

@@ -20,6 +20,7 @@ static func gnome_to_dict(g: GnomeData) -> Dictionary:
 		"relationships": g.relationships.duplicate(true),
 		"memory": g.memory.duplicate(true),
 		"notability": g.notability,
+		"mastered_skills": g.mastered_skills.duplicate(true),
 		"partner_id": g.partner_id,
 		"home_settlement": g.home_settlement,
 		"hardship_rate": g.hardship_rate,
@@ -47,6 +48,7 @@ static func gnome_from_dict(d: Dictionary) -> GnomeData:
 	g.relationships = d["relationships"].duplicate(true)
 	g.memory = d["memory"].duplicate(true)
 	g.notability = d["notability"]
+	g.mastered_skills = d["mastered_skills"].duplicate(true)
 	g.partner_id = d["partner_id"]
 	g.home_settlement = d["home_settlement"]
 	g.hardship_rate = d["hardship_rate"]

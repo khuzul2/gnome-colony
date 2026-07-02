@@ -20,6 +20,9 @@ var feelings := {}
 var relationships := {}
 var memory: Array = []
 var notability := 0.0
+## Crafts already credited with mastery notability [algo §14] (T8.6) — the
+## guard that makes each craft worth fame at most once per lifetime.
+var mastered_skills: Array = []
 var partner_id := -1
 var home_settlement := 0
 ## Abstract current place (site id, "" = unplaced) — prototype-spec

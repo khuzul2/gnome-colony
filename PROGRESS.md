@@ -82,7 +82,7 @@ human records GO here.
 - [x] T8.3 Magnitude + valence potency — 1+0.9·log10(1+M), δ=0.4; Influence.cast_act wires both (Phase-7 stubs retired).
 - [x] T8.4 Terror instability + secularization — unrest tax 0.02·|flavor|·log10(1+M)/day; INTERPRETIVE: tax and relief are mutually exclusive (relief only in quiet time — reproduces §17's 30–40-day fracture sanity figure; additive reading would miss it); fracture at 0.8; schism +0.01·unrest/season; secularization −0.0005·science/day on faith. PUBLIC API: Colony.unrest (serializer covers). Also pinned T8.2's no-skip ladder with a hermit test.
 - [x] T8.5 Attribution seed — faith += 0.25·clamp(0.3+0.7·devout−0.8·magic)·drama per witness; flavor rides valence (malevolent→fear else awe, interpretive).
-- [ ] T8.6 Notability growth
+- [x] T8.6 Notability growth — award/tick/on_mastery + §14 leader_score; §17 decay −0.001/day; INTERPRETIVE award weights (§14 names deeds, not sizes): DEED 0.3, MASTERY 0.3 (once per craft, credit serialized), PROPHET_LEADER 0.4 — sized so prophet+deed crosses the 0.6 LOD line. leader_score = 0.5·not + 0.3·ambitious + 0.2·relevant (oratory/leadership, else best skill). PUBLIC API: GnomeData.mastered_skills (serializer covers); SimRunner daily order gains Notability.tick.
 - [ ] Phase-Exit 8: belief raises D; tier unlocks at threshold; magnitude grows sub-linearly with D → tag phase-8-complete
 
 ## 🎮 PLAYTEST GATE 1 — Vertical Slice & Fun Check (HUMAN go/no-go — HALT)

@@ -69,6 +69,7 @@ func tick() -> void:
 	Mortality.tick(colony, dt)
 	Culture.plasticity_tick(colony, dt)
 	Social.decay_tick(colony, dt)
+	Notability.tick(colony, dt)
 	food.regrow(dt)
 	if time.season() != _last_season:
 		_last_season = time.season()
