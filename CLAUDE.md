@@ -23,7 +23,7 @@
 ## Commands
 - First run after a fresh checkout (or whenever .godot/ is missing): godot --headless --import   (imports GUT class_names; the .godot/ cache is gitignored)
 - Tests: godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://test -gexit -gexit_on_success
-- Lint: gdformat . && gdlint .
+- Lint: ./lint.sh   (= gdformat --check sim/ test/ presentation/ && gdlint . — vendored addons/ is excluded via .gdlintrc; use ./lint.sh --write to apply formatting)
 - (The GUT addon is already vendored at addons/gut/, v9.5.0 — network access to GitHub is blocked in this environment; never try to re-download it.)
 
 ## When blocked

@@ -9,7 +9,7 @@ human records GO here.
 ## Phase 0 — Scaffold & test harness
 - [x] T0.1 Project skeleton — project.godot (main scene presentation/main.tscn), dir tree, test_smoke.gd; boot exit 0
 - [x] T0.2 Install GUT + test command — plugin enabled in project.godot, commands documented in README_DEV.md (GUT pre-vendored; upstream gut_loader.gd:35 prints a benign SCRIPT ERROR, doesn't affect results)
-- [ ] T0.3 Lint/format gate
+- [x] T0.3 Lint/format gate — .gdlintrc (defaults + addons/.godot excluded), ./lint.sh gate; CLAUDE.md lint command now ./lint.sh
 - [ ] T0.4 `Rng` singleton (seeded determinism)
 - [ ] T0.5 `WorldConfig` resource
 - [ ] Phase-Exit 0: test_smoke.gd passes headless; Rng reproduces a fixed sequence from a seed → tag phase-0-complete
