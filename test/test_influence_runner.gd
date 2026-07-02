@@ -1,8 +1,9 @@
 extends GutTest
 
 ## T7.2 — phenomenon runner [algo §11]: casting applies the world-state
-## mutation (per-phenomenon handler) and emits one `phenomenon` stimulus.
-## Magnitude and valence potency are STUBS at 1.0 until Phase 8 (T8.3).
+## mutation (per-phenomenon handler supplied by the caller) and emits one
+## `phenomenon` stimulus. Magnitude and valence potency are STUBS at 1.0
+## until Phase 8 (T8.3).
 
 var _def := {
 	"id": "test_quake",
@@ -39,17 +40,14 @@ func test_registered_handler_mutates_world():
 	var colony := Colony.new()
 	var world := WorldState.new()
 	world.sites["quarry"] = ResourceNode.new("stone", 10.0, 10.0, 0.0, 1.0)
-	var handlers := {
-		"test_quake":
-		func(_c: Colony, w: WorldState, stim: Dictionary) -> void:
-## T7.2 — phenomenon runner [algo §11]: casting applies the world-state
-## mutation (per-phenomenon handler) and emits one `phenomenon` stimulus.
-## Magnitude and valence potency are STUBS at 1.0 until Phase 8 (T8.3).
-
-			w.sites["quarry"].current -= 5.0 * stim["intensity"]
-	}
+	var handlers := {}
+	handlers["test_quake"] = _quake_handler
 	Influence.cast(colony, world, _def, "quarry", 1.0, 1.0, handlers)
 	assert_almost_eq(world.sites["quarry"].current, 10.0 - 3.0, 0.0001, "world state mutated")
+
+
+func _quake_handler(_c: Colony, w: WorldState, stim: Dictionary) -> void:
+	w.sites["quarry"].current -= 5.0 * stim["intensity"]
 
 
 func test_magnitude_hook_scales_intensity():
@@ -70,3 +68,13 @@ func test_world_state_container():
 	assert_eq(revealed.size(), 1)
 	assert_eq(world.sites["s_iron"].type, "iron", "hidden ore surfaces as a real site")
 	assert_false(world.hidden_resources.has("s"))
+
+
+func test_reveal_hidden_numbers_same_type_finds():
+	var world := WorldState.new()
+	world.hidden_resources["s"] = [
+		ResourceNode.new("iron", 20.0, 20.0, 0.0, 1.0),
+		ResourceNode.new("iron", 5.0, 5.0, 0.0, 0.5),
+	]
+	var revealed := world.reveal_hidden("s")
+	assert_eq(revealed, ["s_iron", "s_iron_2"], "same-type finds never clobber each other")
