@@ -91,7 +91,7 @@ human records GO here.
 
 ## Phase 9 — Prophets
 - [x] T9.1 Prophet entity & seeding — try_seed on Omen ⑤/Vision ⑥ stimuli; ripeness = local mean(|awe−fear| toward YOU) ≥ 0.5 (§17). INTERPRETIVE (documented in prophet.gd): charge measured toward the unseen will; adults/elders only; vessel = max(prophet_affinity + devout), existing prophets passed over; message {subject: trigger, flavor: mercy|wrath} from flock charge + vessel nurturing−aggressive; catching awards PROPHET_LEADER (closes a T8.6 deferred hook). PUBLIC API: GnomeData.prophet dict (serializer covers); Influence.cast stimuli now carry "category".
-- [ ] T9.2 Charisma, reach, amplification
+- [x] T9.2 Charisma, reach, amplification — charisma N(0.6,0.2) clamped, rolled at catch (§17); reach = BFS over POSITIVE living edges, depth = round(charisma·5); preach writes faith+flavor at 0.12·charisma/day; forced crystallization mirrors T6.3's holder floor & strength but skips the season timer — mints theology(YOU) with flavor + prophet_id, one creed per prophet. INTERPRETIVE (spec gives shapes, not sizes; documented in prophet.gd): depth cap 5, preach rate 3× §9 propagation ("fast"), enemies don't carry the gospel.
 - [ ] T9.3 Life-arc & corruption
 - [ ] T9.4 Rivals & schism
 - [ ] Phase-Exit 9: prophet catches only when ripe; rivals ⇒ schism; spam ⇒ fractured faith → tag phase-9-complete
