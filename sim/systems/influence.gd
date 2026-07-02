@@ -4,9 +4,10 @@ extends RefCounted
 ## its world-state mutation (via a handler passed BY THE CALLER — no
 ## global registry; hidden static state would leak outside the sim's
 ## declared inputs) and emits ONE `phenomenon` stimulus for appraisal
-## (T7.4). Magnitude and valence potency arrive with Phase 8 (T8.3) —
-## until then both default to 1.0 (the stub the plan mandates). Chains &
-## tail-risk are T7.5. T7.8's catalog owns the id→handler map.
+## (T7.4). Bare cast() keeps neutral 1.0 magnitude/potency defaults for
+## explicit callers; cast_act() (T8.3) resolves the real values from the
+## colony's social mass and the act's valence. Chains & tail-risk are
+## T7.5. T7.8's catalog owns the id→handler map.
 
 const CURIOUS_DISCOVERY_THRESHOLD := 0.6
 const SAFETY_SPIKE_BASE := 0.3
