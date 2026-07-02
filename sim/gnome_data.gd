@@ -25,6 +25,8 @@ var home_settlement := 0
 ## Extra death probability per day from sustained hardship [algo §3–§4].
 ## Written by the needs system (T3.5), consumed by Mortality (T2.3).
 var hardship_rate := 0.0
+## Consecutive days each hardship need has sat at ≥ 0.9 [algo §3] (T3.5).
+var hardship_days := {"hunger": 0.0, "safety": 0.0}
 
 
 func _init(gnome_id: int = 0) -> void:

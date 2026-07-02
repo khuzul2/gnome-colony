@@ -10,6 +10,13 @@ const SAFETY_RECOVERY_PER_DAY := 0.06
 const ADOLESCENT_SOCIAL_MOD := 1.3
 const MATURE_PURPOSE_MOD := 1.3
 
+# Hardship [algo §3/§17]: hunger/safety ≥ 0.9 sustained > 5 days
+# ⇒ +0.15/day mortality (consumed by Mortality via hardship_rate).
+const HARDSHIP_NEEDS := ["hunger", "safety"]
+const HARDSHIP_THRESHOLD := 0.9
+const HARDSHIP_SUSTAIN_DAYS := 5.0
+const HARDSHIP_MORTALITY := 0.15
+
 
 static func stage_mod(g: GnomeData, need: String) -> float:
 	if need == "social" and g.stage == Enums.LifeStage.ADOLESCENT:
@@ -24,3 +31,16 @@ static func tick(colony: Colony, dt_days: float) -> void:
 		for need in DECAY_PER_DAY:
 			g.adjust_need(need, DECAY_PER_DAY[need] * stage_mod(g, need) * dt_days)
 		g.adjust_need("safety", -SAFETY_RECOVERY_PER_DAY * dt_days)
+		_track_hardship(g, dt_days)
+
+
+static func _track_hardship(g: GnomeData, dt_days: float) -> void:
+	var suffering := false
+	for need in HARDSHIP_NEEDS:
+		if g.needs[need] >= HARDSHIP_THRESHOLD:
+			g.hardship_days[need] += dt_days
+		else:
+			g.hardship_days[need] = 0.0
+		if g.hardship_days[need] > HARDSHIP_SUSTAIN_DAYS:
+			suffering = true
+	g.hardship_rate = HARDSHIP_MORTALITY if suffering else 0.0
