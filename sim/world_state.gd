@@ -13,11 +13,16 @@ var paths := {}
 
 
 ## Surface every hidden resource at `site_id` as a real site named
-## "<site>_<type>". Returns the new site ids.
+## "<site>_<type>" (numbered on collision so same-type finds never
+## silently clobber each other). Returns the new site ids.
 func reveal_hidden(site_id: String) -> Array:
 	var revealed := []
 	for node in hidden_resources.get(site_id, []):
 		var new_id := "%s_%s" % [site_id, node.type]
+		var n := 2
+		while sites.has(new_id):
+			new_id = "%s_%s_%d" % [site_id, node.type, n]
+			n += 1
 		sites[new_id] = node
 		revealed.append(new_id)
 	hidden_resources.erase(site_id)

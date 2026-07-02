@@ -20,10 +20,6 @@ var _def := {
 }
 
 
-func before_each() -> void:
-	Influence.clear_handlers()
-
-
 func test_cast_emits_stimulus_with_stub_magnitude():
 	var colony := Colony.new()
 	var world := WorldState.new()
@@ -43,12 +39,12 @@ func test_registered_handler_mutates_world():
 	var colony := Colony.new()
 	var world := WorldState.new()
 	world.sites["quarry"] = ResourceNode.new("stone", 10.0, 10.0, 0.0, 1.0)
-	Influence.register_handler(
-		"test_quake",
+	var handlers := {
+		"test_quake":
 		func(_c: Colony, w: WorldState, stim: Dictionary) -> void:
 			w.sites["quarry"].current -= 5.0 * stim["intensity"]
-	)
-	Influence.cast(colony, world, _def, "quarry")
+	}
+	Influence.cast(colony, world, _def, "quarry", 1.0, 1.0, handlers)
 	assert_almost_eq(world.sites["quarry"].current, 10.0 - 3.0, 0.0001, "world state mutated")
 
 
