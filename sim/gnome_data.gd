@@ -30,6 +30,8 @@ var hardship_days := {"hunger": 0.0, "safety": 0.0}
 ## Active long-horizon project [algo §6] (T3.6): {} when none, else
 ## {kind, progress, duration} in days. Managed by Projects.
 var project := {}
+## Founder = 0; child = max(parent generations) + 1 (T5.3).
+var generation := 0
 
 
 func _init(gnome_id: int = 0) -> void:

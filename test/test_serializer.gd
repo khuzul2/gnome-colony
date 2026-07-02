@@ -18,6 +18,7 @@ func _populated_gnome(id: int) -> GnomeData:
 	g.home_settlement = 2
 	g.hardship_rate = 0.15
 	g.hardship_days = {"hunger": 3.0, "safety": 0.0}
+	g.generation = 4
 	return g
 
 
