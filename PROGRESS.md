@@ -35,7 +35,7 @@ human records GO here.
 - [x] T3.3 Utility scoring — need²·relief with side costs subtracting; work trait_mod 0.7+0.6·industrious; culture/belief mods are ctx hooks (T6.4 wires them); jitter U(0,0.05) via Rng. SIGN CONVENTION: catalog deltas are signed (negative reduces a need); Utility scores with −delta; Act (T3.4) must apply raw deltas via adjust_need.
 - [x] T3.4 Decide & act loop — Decide.choose (max utility, idle fallback), Act.apply (signed deltas; eat draws MEAL_UNITS=1.0 — implementation unit). ResourceNode (§15) pulled forward, constructor-parameterized, no invented defaults.
 - [x] T3.5 Hardship link — sustained ≥0.9 hunger/safety >5 days ⇒ hardship_rate 0.15/day. Tracking placed in needs.gd (owns need updates) rather than the plan's "edit mortality.gd" — Mortality already consumes hardship_rate. PUBLIC API: GnomeData.hardship_days added; serializer covers it.
-- [ ] T3.6 Projects (multi-tick goals)
+- [x] T3.6 Projects — persist unless a need ≥0.9 (reuses HARDSHIP_THRESHOLD); completion applies §6 create relief. PUBLIC API: Decide.choose can now return "project:<kind>"; GnomeData.project added; serializer covers it.
 - [ ] Phase-Exit 3: hungry colony with a food source recovers over seeded ticks, no scripting → tag phase-3-complete
 
 ## Phase 4 — Skills, knowledge, teaching, extinction

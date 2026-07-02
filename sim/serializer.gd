@@ -24,6 +24,7 @@ static func gnome_to_dict(g: GnomeData) -> Dictionary:
 		"home_settlement": g.home_settlement,
 		"hardship_rate": g.hardship_rate,
 		"hardship_days": g.hardship_days.duplicate(true),
+		"project": g.project.duplicate(true),
 	}
 
 
@@ -44,6 +45,7 @@ static func gnome_from_dict(d: Dictionary) -> GnomeData:
 	g.home_settlement = d["home_settlement"]
 	g.hardship_rate = d["hardship_rate"]
 	g.hardship_days = d["hardship_days"].duplicate(true)
+	g.project = d["project"].duplicate(true)
 	return g
 
 

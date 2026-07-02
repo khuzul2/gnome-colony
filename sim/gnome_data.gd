@@ -27,6 +27,9 @@ var home_settlement := 0
 var hardship_rate := 0.0
 ## Consecutive days each hardship need has sat at ≥ 0.9 [algo §3] (T3.5).
 var hardship_days := {"hunger": 0.0, "safety": 0.0}
+## Active long-horizon project [algo §6] (T3.6): {} when none, else
+## {kind, progress, duration} in days. Managed by Projects.
+var project := {}
 
 
 func _init(gnome_id: int = 0) -> void:

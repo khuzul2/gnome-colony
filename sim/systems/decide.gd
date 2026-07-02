@@ -6,6 +6,10 @@ extends RefCounted
 
 
 static func choose(g: GnomeData, ctx: Dictionary = {}) -> String:
+	# An active project holds the gnome's day unless a need is desperate
+	# (≥0.9) — long-horizon behavior isn't re-decided each tick (T3.6).
+	if not g.project.is_empty() and not Projects.has_urgent_need(g):
+		return "project:%s" % g.project["kind"]
 	var best := "idle"
 	var best_score := -INF
 	for action in Actions.available(g, ctx):
