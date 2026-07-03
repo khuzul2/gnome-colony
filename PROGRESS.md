@@ -159,6 +159,23 @@ human records GO here.
 - [x] T16.4 Final pass — suite 524/524 (100 scripts, 2732 asserts), lint clean, every task checked, DONE.md written (build summary + handover notes: strict-perf re-check on reference hardware, waived fun gates, final-assembly glue, open minors, snapshot-recovery recipe).
 - [x] Phase-Exit 16: long seeded run 4 gnomes → multi-settlement civilization, no crash/runaway, invariants pass → tag phase-16-complete — test_phase16_exit.gd: 40-year individual epoch from 4 founders (peak bounded, generations turned) → §14 fold conserves heads → 20 civilization-tier seasons with 5%/season migration seed a second basin: TWO living settlements, world alive. Invariants = test_invariants.gd + test_diversity_balance.gd, green in the same suite.
 
+## Phase 17 — Final assembly: the playable game shell (post-plan; user request 2026-07-03)
+Sanctioned by DONE.md handover note 3: presentation-only glue binding menu → wizard →
+world → HUD → panels into one executable flow — NO new sim surface, NO new gameplay.
+The run composes EXACTLY the proven default game: test_epochal.gd's daily/seasonal
+order + the playtest slice's documented Magic/exposure glue + the slice's cast
+composition. The civilization/aggregate tier stays library+test-composed as the plan
+left it (no live multi-basin composition exists in the tested game; authoring one
+would be new gameplay, out of scope). World resource layout promotes the canonical
+integration-fixture numbers (structure, not §17 numbers — same precedent as T13.1's
+world-gen scaffolding), bent only by Tuning's already-specified world multipliers.
+- [ ] T17.1 World bootstrap — presentation/shell/world_bootstrap.gd: WorldConfig → Tuning world block → RegionGraph.generate → WorldState (sites/affordances per region) + the colony's food node & K, reproducing the tested fixture composition deterministically per seed.
+- [ ] T17.2 GameRun orchestrator — presentation/shell/game_run.gd: owns SimRunner+world+telemetry; epochal daily order (Lod.assign ← attention, tick, Belief propagate/decay/crystallize, Devotion unlocks/unrest, Prophet.tick, slice Magic glue); seasonal Research with epochal derivations; cast() = slice's _on_cast composition; save/load envelope (region_graph key per T13.1 note) incl. Rng stream; speed via TimeService. Deps: T17.1.
+- [ ] T17.3 GameShell menu routing — presentation/shell/game_shell.gd + main.tscn: setup §6 MainMenu entries live (Continue/New Game wizard/Load/Settings/Codex/Chronicles/Credits/Quit); wizard start() → GameRun; LoadMenu → restore; world_ended → ChronicleScreen → ChronicleStore → menu. Deps: T17.2.
+- [ ] T17.4 In-run HUD binding — WorldView+PuppetPool (drawn_cap)+CameraRig+AttentionInput→Lod; InfluencePanel cast_requested→GameRun.cast; AftermathPanel; heatmaps/codex; AmbienceDirector; speed/pause controls; manual save + autosave per GameSettings §7.4. Deps: T17.2.
+- [ ] Phase-Exit 17: test_phase17_exit.gd — boot main scene → menu; quick-start; days advance through the shell; a cast lands; save → menu → load → continue; two identical scripted shell runs hash equal; extinction yields a stored chronicle → tag phase-17-complete. Deps: T17.3, T17.4.
+- [ ] T17.5 Documentation — README_DEV.md (run-the-game instructions), DONE.md refresh, PROGRESS notes. docs/ untouched (read-only). Deps: Phase-Exit 17.
+
 ## Notes
 - T15.2 reviewer minors (informational, open): wizard setters silently no-op on typo'd keys (could push_warning); pages 2–4 are logic-first without widget chrome (same pattern as MainMenu); quicken_budget stays the WorldConfig ~300 constant — §3.6's per-scale INDIVIDUAL budget is already Tuning.resolve's SCALE_INDIVIDUAL_BUDGET (T12.3), and no spec number maps scale→quicken_budget.
 (The agent appends one-line notes here when checking tasks off, and records any public-API changes other tasks depend on.)
