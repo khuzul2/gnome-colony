@@ -32,8 +32,13 @@ static func snapshot_records(colony: Colony) -> void:
 
 
 ## Remove ids with no living local holder (unless durable) and emit
-## knowledge_lost per loss.
-static func check_extinction(colony: Colony) -> void:
+## knowledge_lost per loss. `folded_sids` names settlements that live in
+## AGGREGATE form (T11.2) — they hold knowledge without gnome objects by
+## design, so the holder-count sweep must skip them or it would misread
+## every fold as a dark age (reviewer catch); aggregate-tier loss is
+## event-driven at the civilization tier (T11.4). A settlement emptied
+## by DEATH is not folded — it still loses its crafts (T4.4).
+static func check_extinction(colony: Colony, folded_sids: Array = []) -> void:
 	var holders := {}
 	for g in colony.living():
 		for id in g.knowledge:
@@ -41,6 +46,8 @@ static func check_extinction(colony: Colony) -> void:
 				holders[g.home_settlement] = {}
 			holders[g.home_settlement][id] = true
 	for sid in colony.settlement_knowledge:
+		if sid in folded_sids:
+			continue
 		for id in colony.settlement_knowledge[sid].keys():
 			if holders.get(sid, {}).has(id):
 				continue

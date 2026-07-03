@@ -64,6 +64,9 @@ static func season_tick(
 	institution_factors: Dictionary = {},
 ) -> Dictionary:
 	_graduate(s)
+	# Crowding is read once, before this season's flows apply — pressure
+	# reacts to the season people LIVED through, not the one being written
+	# (deliberate; keeps every flow a function of the same state).
 	var crowding := s.crowding(colony)
 	var births := _births(colony, s, food_factor, crowding)
 	s.by_stage[Enums.LifeStage.INFANT] += births
@@ -162,6 +165,8 @@ static func _research(
 	surplus_factor: float,
 	institution_factors: Dictionary,
 ) -> Array:
+	# Truncated on purpose: research needs at least one WHOLE capable mind
+	# — a 0.9-adult remnant does not run experiments.
 	var minds := int(s.adults() + s.by_stage[Enums.LifeStage.ELDER])
 	if minds <= 0:
 		return []

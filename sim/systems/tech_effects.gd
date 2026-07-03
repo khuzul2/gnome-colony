@@ -9,8 +9,9 @@ extends RefCounted
 ## medicine cuts mortality/hardship by 40% at full level, agriculture
 ## lifts fertility 30%, metallurgy work output 30%, construction shelter
 ## (safety recovery) 30%. A settlement's tech LEVEL is binary for now —
-## 1.0 once the id is known there (the richer aggregate levels arrive
-## with the settlement tier, T11.2). Consumers: Mortality.tick takes the
+## 1.0 once the id is known there (T11.2 kept it binary; graded levels
+## are deferred to T11.4/T12 if the flows prove to need them).
+## Consumers: Mortality.tick takes the
 ## medicine multiplier, Birth.season_tick the fertility one; war strength
 ## and sail/settlement unlocks are consumed by T11.x (DEFERRED there).
 

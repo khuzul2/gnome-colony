@@ -127,6 +127,23 @@ func test_regional_loss_and_trade_respread():
 	assert_true(c.settlement_knowledge[0].has("writing"))
 
 
+func test_extinction_sweep_spares_folded_settlements():
+	# Reviewer catch: a folded settlement holds knowledge without gnome
+	# objects BY DESIGN — the caller names it and the T4.4 sweep skips it.
+	# A settlement emptied by death is NOT folded and still goes dark.
+	var c := Colony.new()
+	c.settlement_knowledge[7] = {"smithing": true}
+	c.settlement_knowledge[3] = {"pottery": true}
+	Knowledge.check_extinction(c, [7])
+	assert_true(
+		c.settlement_knowledge[7].has("smithing"), "aggregate-held knowledge survives the sweep"
+	)
+	assert_false(
+		c.settlement_knowledge[3].has("pottery"),
+		"an UN-folded settlement with no living holders still goes dark [T4.4]"
+	)
+
+
 func test_aggregate_tracks_individual_control_loosely():
 	# T11.2's tolerance check (T11.5's exit test is the strict one): the
 	# same founding band, one simulated individually and one as flows,
