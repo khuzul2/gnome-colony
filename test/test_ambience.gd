@@ -10,6 +10,19 @@ extends GutTest
 ## phenomenon moves a layer. Audio reads the sim, never touches it.
 
 
+func _audio_nodes_under(node: Node) -> Array:
+	var found := []
+	for child in node.get_children():
+		if (
+			child is AudioStreamPlayer
+			or child is AudioStreamPlayer2D
+			or child is AudioStreamPlayer3D
+		):
+			found.append(child)
+		found.append_array(_audio_nodes_under(child))
+	return found
+
+
 func _director() -> AmbienceDirector:
 	var director := AmbienceDirector.new()
 	add_child_autofree(director)
@@ -153,8 +166,14 @@ func test_casting_triggers_no_ui_audio_only_the_world_does():
 	panel.paint({"place": "the_hollow"})
 	var after: Dictionary = director.params(colony, time, "the_hollow")
 	assert_eq(before, after, "the button press is SILENT — no stinger, no fanfare [§2.7c]")
-	assert_false(after.has("stinger"), "no UI layer exists to fire")
-	assert_false(after.has("confirmation"), "…none")
+	# Reviewer catch: asserting absent dict keys was tautological. The
+	# real claims: the UI owns no audio node anywhere in its subtree,
+	# and the director never subscribed to the button's signal.
+	assert_eq(_audio_nodes_under(panel).size(), 0, "the UI layer owns no speaker at all [§2.7c]")
+	assert_false(
+		panel.cast_requested.is_connected(director._on_phenomenon),
+		"the director hears the world, never the button"
+	)
 	EventBus.phenomenon.emit(
 		{
 			"type": "still_air",
