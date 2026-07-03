@@ -109,7 +109,7 @@ human records GO here.
 
 ## Phase 11 — Hierarchical simulation (scale)
 - [x] T11.1 LOD manager — Lod.assign: eligible (under-Eye OR notability ≥ 0.6, §17) → LOD-0 up to the quicken budget (stays a WorldConfig constant), overflow LOD-1; rest LOD-2; per-settlement individual budget (default 500, §17) folds the least notable to LOD-3 (eligible never fold). Attention = scripted Array of place ids (declared sim input; dwell/hysteresis upstream, design §2.4). INTERPRETIVE (documented in lod.gd): budget priority watched → notability → id, deterministic. PUBLIC API: GnomeData.lod (serializer covers). State fold-back is T11.3.
-- [ ] T11.2 Settlement tier
+- [x] T11.2 Settlement tier — Settlement (fractional stage buckets, mean traits, mood, aggregate YOU-belief scalars, from_colony fold; K/crowding via §17 TechEffects) + SettlementSim season flows (births/deaths/graduation/migration/research/belief-relax; exact accounting: Δpop = births − deaths − migration). Trade = symmetric knowledge union (regional loss survives elsewhere & re-spreads, §7/§14). INTERPRETIVE (documented in settlement_sim.gd): PAIR_CALIBRATION 0.5 (§14 says adults, individuals roll per pair — keeps tiers consistent for T11.5), stage mortality at mid-band ages (elder 75), hardship deaths deferred to T11.4 famine events, graduation season/band_years oldest-first, emigration 5%/season at full pressure (crowding>0.7 norm + 0.5·mood<0.5 + phenomena input) from adults, aggregate research reuses §13 exactly (food_factor = surplus proxy, discoveries land as aggregate holders until T11.3 materializes), belief relax compounds §9's daily rate. PUBLIC API: Settlement + SettlementSim classes.
 - [ ] T11.3 Promotion fidelity
 - [ ] T11.6 Emergent leadership
 - [ ] T11.4 Civilization tier
