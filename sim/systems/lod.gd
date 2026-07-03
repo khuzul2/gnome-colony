@@ -59,12 +59,22 @@ static func _fold_over_budget(colony: Colony, individual_budget: int) -> void:
 			by_settlement[g.home_settlement] = []
 		by_settlement[g.home_settlement].append(g)
 	for sid in by_settlement:
-		var locals: Array = by_settlement[sid]
-		if locals.size() <= individual_budget:
+		# The tracked (LOD-0/1) are structurally exempt — if a settlement's
+		# eligible count ever exceeds the budget, the budget yields, not
+		# the tracking (reviewer note: §14 folds statistical crowds only).
+		var protected := 0
+		var foldable := []
+		for g in by_settlement[sid]:
+			if g.lod < STATISTICAL:
+				protected += 1
+			else:
+				foldable.append(g)
+		var keep := maxi(0, individual_budget - protected)
+		if foldable.size() <= keep:
 			continue
-		locals.sort_custom(_fold_order)
-		for i in range(individual_budget, locals.size()):
-			locals[i].lod = FOLDED
+		foldable.sort_custom(_fold_order)
+		for i in range(keep, foldable.size()):
+			foldable[i].lod = FOLDED
 
 
 ## Budget priority: the watched first (the Eye changes fate, design
