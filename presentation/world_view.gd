@@ -11,6 +11,9 @@ const EXTENT_KM := 14.0
 
 var mesh_instance := MeshInstance3D.new()
 var baked_version := -1
+## The raw walkable triangles of the last bake (CPU-side) — NavWorld
+## bakes its navmesh from these instead of re-reading GPU mesh data.
+var walkable_faces := PackedVector3Array()
 
 var _graph: RegionGraph
 
@@ -44,6 +47,7 @@ func height_at(point: Vector2) -> float:
 func _bake() -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	walkable_faces = PackedVector3Array()
 	var step := 2.0 * EXTENT_KM / GRID
 	for gz in GRID:
 		for gx in GRID:
@@ -60,5 +64,6 @@ func _bake() -> void:
 				verts.append(Vector3(c.x, height_at(c), c.y))
 			for index in [0, 1, 2, 0, 2, 3]:
 				st.add_vertex(verts[index])
+				walkable_faces.append(verts[index])
 	st.generate_normals()
 	mesh_instance.mesh = st.commit()

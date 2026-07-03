@@ -17,6 +17,8 @@ const STAGE_SCALE := {
 
 var data: GnomeData
 var body := MeshInstance3D.new()
+## NavigationAgent3D, attached by NavWorld.route on first routing (T13.3).
+var agent: NavigationAgent3D
 
 var _material := StandardMaterial3D.new()
 
