@@ -105,7 +105,7 @@ human records GO here.
 
 ## 🎮 FUN CHECK 2 — Emergence: culture, prophets, tech & god-vs-mages (HUMAN — HALT)
 - [x] Slice extended with Phase 9–10 systems — ungated omen button (documented playtest bypass: 6-gnome bands can't reach Tier IV), prophet seeding/preaching/corruption live, seasonal research (flat frontier need — slice glue), magic accrual + auto-ward at resistance, HUD reads prophets/creeds/schism/tech/mu/outliers.
-- [ ] Human GO recorded here
+- [x] Human GO recorded here — 2026-07-03, user: "GO ahead! (I again can't test but I'll test everything later in terms of gameplay)". Second waived gate: NO hands-on fun evidence exists yet — FUN CHECK 3 (the real playable build) is the first true fun evaluation; core-feel rework stays fully open there.
 
 ## Phase 11 — Hierarchical simulation (scale)
 - [ ] T11.1 LOD manager
