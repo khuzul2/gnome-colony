@@ -123,7 +123,7 @@ human records GO here.
 - [x] Phase-Exit 12: test_determinism.gd IS the exit — identical run-hash twice from seed+config+recorded acts+attention; save→load→continue equals uninterrupted → tagged phase-12-complete (417 tests, lint clean)
 
 ## Phase 13 — Presentation: world, puppets, camera
-- [ ] T13.1 Region-graph → heightmap skin
+- [x] T13.1 Region-graph → heightmap skin — SIM HALF created here (no graph existed): RegionGraph.generate from seeded Rng + Tuning world block (basins on a jittered ring w/ guaranteed ring adjacency; elevation band scales with hazard density — INTERPRETIVE: §4 maps hazards to affordance density, ruggedness reading documented; biome pool collapses under Uniform); reshape bumps a version counter; deterministic per seed. World-gen scaffolding numbers (10 km ring, 2 km jitter, 1+2·hazard band, 4 biomes) are structure, not §17 numbers. PRESENTATION HALF: WorldView (Node3D) bakes an IDW heightfield mesh, lazy re-bake on version change; GRID/EXTENT are render resolution. PUBLIC API: RegionGraph, WorldView, Serializer.region_graph pair (Vector2 → [x,y] for JSON; envelope key when the orchestrator owns a graph, T15/T16).
 - [ ] T13.2 `GnomePuppet`
 - [ ] T13.3 NavMesh for LOD-0
 - [ ] T13.4 Camera & three-zoom lens

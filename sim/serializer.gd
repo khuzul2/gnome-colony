@@ -283,3 +283,44 @@ static func save_from_dict(d: Dictionary) -> Dictionary:
 		"time": time_from_dict(d["time"]),
 		"chronicle": d["chronicle"].duplicate(true),
 	}
+
+
+## Region-graph pair (T13.1) — centers flatten to [x, y] so the dict
+## stays JSON-safe (Vector2 is not plain data). The save ENVELOPE gains
+## a region_graph key when the orchestrator owns one (T15/T16 wiring).
+static func region_graph_to_dict(graph: RegionGraph) -> Dictionary:
+	var regions := []
+	for r in graph.regions:
+		(
+			regions
+			. append(
+				{
+					"id": r["id"],
+					"center": [r["center"].x, r["center"].y],
+					"elevation": r["elevation"],
+					"biome": r["biome"],
+					"neighbors": r["neighbors"].duplicate(),
+				}
+			)
+		)
+	return {"regions": regions, "version": graph.version}
+
+
+static func region_graph_from_dict(d: Dictionary) -> RegionGraph:
+	var graph := RegionGraph.new()
+	graph.version = d["version"]
+	for rd in d["regions"]:
+		(
+			graph
+			. regions
+			. append(
+				{
+					"id": rd["id"],
+					"center": Vector2(rd["center"][0], rd["center"][1]),
+					"elevation": rd["elevation"],
+					"biome": rd["biome"],
+					"neighbors": rd["neighbors"].duplicate(),
+				}
+			)
+		)
+	return graph
