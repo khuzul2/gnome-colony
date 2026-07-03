@@ -138,7 +138,7 @@ human records GO here.
 - [x] Phase-Exit 14: category controls appear/lock by devotion tier; aftermath panel reflects outcomes → tag phase-14-complete — test/integration/test_phase14_exit.gd: one scene, one REAL cast — Earth & Stone hidden at tier I, appears when the live Devotion ladder reaches II; the paint routes panel→cast_with_cascade→EventBus→AftermathPanel (cause first, certain chain after, ground highlighted, cursed tag really written to the colony); who_they_think_you_are reads "feared" off real feelings.
 
 ## 🎮 FUN CHECK 3 — The real playable build & engagement (HUMAN — HALT)
-- [ ] Human GO recorded here
+- [x] Human GO recorded here — 2026-07-03, user: "GO let's go on until the end". Third gate GO'd without recorded hands-on notes; the same message pre-waives PLAYTEST 4 ("until the end"), so the loop runs Phases 15–16 to completion. All fun/feel evaluation remains deferred to the user's own later testing; core-feel rework stays open post-delivery.
 
 ## Phase 15 — Menus & setup
 - [ ] T15.1 Main menu
@@ -149,7 +149,7 @@ human records GO here.
 - [ ] Phase-Exit 15: wizard emits correct WorldConfig; Load lists saves; Settings persist and never alter sim → tag phase-15-complete
 
 ## 🎮 PLAYTEST 4 — Onboarding & full flow (HUMAN go/no-go — HALT)
-- [ ] Human GO recorded here
+- [x] Human GO recorded here — pre-waived 2026-07-03 by the FUN CHECK 3 ruling ("GO let's go on until the end"): the user directed the loop to run through to project completion without further halts. Onboarding/learnability evaluation deferred to the user's own testing.
 
 ## Phase 16 — Integration, balance & polish
 - [ ] T16.1 Epochal smoke run (test_epochal.gd)
