@@ -122,6 +122,8 @@ static func _graduate(s: Settlement) -> void:
 
 static func _births(colony: Colony, s: Settlement, food_factor: float, crowding: float) -> float:
 	var ag := TechEffects.level(colony, s.sid, "agriculture")
+	# §17 unrest effects (wired at T16.5): −0.3·unrest on the aggregate
+	# birth flow, same line as the individual grain [algo §10].
 	return (
 		Birth.SEASON_BIRTH_CHANCE
 		* PAIR_CALIBRATION
@@ -129,6 +131,7 @@ static func _births(colony: Colony, s: Settlement, food_factor: float, crowding:
 		* food_factor
 		* maxf(0.0, 1.0 - crowding)
 		* TechEffects.fertility_mult(ag)
+		* (1.0 - 0.3 * colony.unrest)
 	)
 
 

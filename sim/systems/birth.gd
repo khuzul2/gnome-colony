@@ -46,7 +46,12 @@ static func spawn_infant(colony: Colony, p1: GnomeData = null, p2: GnomeData = n
 static func season_tick(
 	colony: Colony, food_factor: float, crowding: float, fertility_mult: float = 1.0
 ) -> void:
-	var chance := SEASON_BIRTH_CHANCE * food_factor * (1.0 - crowding) * fertility_mult
+	# §17 unrest effects (wired at T16.5): −0.3·unrest on birth-rate —
+	# the quantified half of the terror-state's size cap [algo §10].
+	var unrest_damp := 1.0 - 0.3 * colony.unrest
+	var chance := (
+		SEASON_BIRTH_CHANCE * food_factor * (1.0 - crowding) * fertility_mult * unrest_damp
+	)
 	var ids := colony.gnomes.keys()
 	ids.sort()
 	for id in ids:

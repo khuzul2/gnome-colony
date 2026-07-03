@@ -73,3 +73,45 @@ func test_unrest_round_trips():
 	Devotion.unrest_tick(c, 1.0)
 	var restored := Serializer.colony_from_dict(Serializer.colony_to_dict(c))
 	assert_almost_eq(restored.unrest, c.unrest, 0.000001)
+
+
+func test_unrest_cuts_the_birth_rate():
+	# §17 (T16.5 wiring): unrest scales −0.3·unrest onto birth-rate —
+	# the terror-state's size cap. Full unrest ⇒ 30% fewer conceptions.
+	Rng.seed_with(16503)
+	var counts := []
+	for unrest_level in [0.0, 1.0]:
+		Rng.seed_with(16503)
+		var colony := Colony.new()
+		for i in 40:
+			var g := colony.spawn()
+			g.age = 30.0
+			g.stage = Enums.LifeStage.ADULT
+			g.sex = i % 2
+		var ids: Array = colony.gnomes.keys()
+		for i in range(0, 40, 2):
+			colony.gnomes[ids[i]].partner_id = ids[i + 1]
+			colony.gnomes[ids[i + 1]].partner_id = ids[i]
+		colony.unrest = unrest_level
+		var born := 0
+		for season in 40:
+			var before := colony.population()
+			Birth.season_tick(colony, 1.0, 0.0)
+			born += colony.population() - before
+			for g in colony.living():
+				if g.age < 20.0:
+					colony.remove(g.id)
+		counts.append(born)
+	gut.p("births calm %d vs boiling %d" % [counts[0], counts[1]])
+	assert_lt(counts[1], counts[0], "a boiling colony bears fewer children [§17 −0.3·unrest]")
+
+
+func test_unrest_cuts_the_settlement_fold_too():
+	# The same §17 line at the statistical grain.
+	var colony := Colony.new()
+	var s := Settlement.new(0, 50.0, 2.0)
+	s.by_stage[Enums.LifeStage.ADULT] = 20.0
+	var calm := SettlementSim._births(colony, s, 1.0, 0.0)
+	colony.unrest = 1.0
+	var boiling := SettlementSim._births(colony, s, 1.0, 0.0)
+	assert_almost_eq(boiling, calm * 0.7, 0.0001, "−0.3·unrest on the aggregate birth flow [§17]")
