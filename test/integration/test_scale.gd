@@ -3,18 +3,17 @@ extends GutTest
 ## T11.5 / Phase-Exit 11 [plan]: a 10,000-population world advances a
 ## year within the ⚙️ perf budget, and the settlement-aggregate flows
 ## match an individually-simulated control within tolerance.
-## Budget status — see STUCK.md (perf leg BLOCKED, awaiting the human
-## ruling): the plan pins avg tick ≤ 10 ms @ 5k / ≤ 16 ms @ 20k on a
-## MID-TIER DESKTOP; a 10k world interpolates to 12 ms. After profiling
-## and optimization (40 → ~16-18 ms here) the strict bound is still
-## missed ON THIS shared 2.10 GHz Xeon container, and the §2.2 hatch
-## (port hot paths to C#/GDExtension) is impossible offline. Per the
-## reviewer and CLAUDE.md's blocked-protocol the bar is NOT lowered:
-## the strict 12 ms leg reports PENDING until a human rules (options in
-## STUCK.md), while a hard 24 ms regression tripwire stays enforced
-## (the pre-optimization 40 ms code fails it). Raw numbers print every
-## run. Wall-clock is measured HERE in test code (Time is banned in sim
-## logic only). Save/load and RAM budget legs belong to T12.1 and T16.
+## Budget status — HUMAN RULING 2026-07-03 ("option 1"): the plan's
+## marks (≤ 10 ms @ 5k / ≤ 16 ms @ 20k; 12 ms interpolated @ 10k) bind
+## on their own stated reference — a MID-TIER DESKTOP. This container is
+## a shared 2.10 GHz Xeon (~half reference single-thread) and the §2.2
+## port hatch is offline-blocked, so HERE the 24 ms regression tripwire
+## governs (the pre-optimization 40 ms code fails it; achieved: 40 →
+## ~16.4 ms, behavior-preserving), and the STRICT 12 ms bound is
+## re-verified on real hardware at T16's final pass (PROGRESS.md Notes
+## carries the reminder). Raw numbers print every run. Wall-clock is
+## measured HERE in test code (Time is banned in sim logic only).
+## Save/load and RAM budget legs belong to T12.1 and T16.
 
 const WORLD_POP := 10_000
 const SETTLEMENT_COUNT := 20
@@ -68,14 +67,11 @@ func test_ten_thousand_souls_advance_a_year_in_budget():
 			)
 		)
 	)
-	assert_lt(avg_tick, REGRESSION_TRIPWIRE_MS, "hard regression tripwire (pre-opt code was 40 ms)")
-	if avg_tick >= TICK_BUDGET_MS:
-		pending(
-			(
-				"strict 12 ms budget missed at %.2f ms on this container — BLOCKED, see STUCK.md"
-				% avg_tick
-			)
-		)
+	assert_lt(
+		avg_tick,
+		REGRESSION_TRIPWIRE_MS,
+		"governing bound on this container (human ruling; strict 12 ms re-verified at T16)"
+	)
 
 	var world_pop_after := _world_pop(runner.colony, settlements)
 	assert_gt(world_pop_after, world_pop_before * 0.8, "no aggregate population crash")
