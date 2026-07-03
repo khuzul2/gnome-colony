@@ -10,6 +10,16 @@ func seed_with(seed_value: int) -> void:
 	_rng.seed = seed_value
 
 
+## Stream position for save/load [plan T12.1]: a restored game continues
+## the EXACT sequence an uninterrupted run would have produced.
+func get_state() -> int:
+	return _rng.state
+
+
+func set_state(state_value: int) -> void:
+	_rng.state = state_value
+
+
 func randf() -> float:
 	return _rng.randf()
 

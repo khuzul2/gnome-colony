@@ -117,7 +117,7 @@ human records GO here.
 - [x] Phase-Exit 11: 10k world advances a year at 16.4 ms/tick (24 ms calibrated bound, raw printed); aggregate tracks the individual control (15 vs 13.6 after 3 years) → tagged phase-11-complete (400 tests, lint clean; the perf work also cut the full suite ~25%)
 
 ## Phase 12 — Persistence & determinism
-- [ ] T12.1 Full serializer
+- [x] T12.1 Full serializer — save_to_dict envelope {version, colony (full belief/culture graph rides colony_to_dict), world (sites/hidden/paths/affordances/wards — WorldState IS the world container until Phase-13 world-gen), settlements, config, time, chronicle, rng_state}; all plain data (JSON-proven); save_from_dict restores live objects AND the Rng stream position (documented side effect) so a load continues the exact uninterrupted sequence. PUBLIC API: Serializer.node/world/settlement/time/save pairs; Rng.get_state/set_state. Tests: field round-trips, save→load→save byte-stability on a rich late-game fixture, JSON survival, RNG continuation vs control.
 - [ ] T12.2 Determinism harness (input-scoped) (test_determinism.gd)
 - [ ] T12.3 `WorldConfig` ingestion
 - [ ] Phase-Exit 12: identical run-hash twice from seed+config+recorded acts+attention; save→load→continue equals uninterrupted → tag phase-12-complete

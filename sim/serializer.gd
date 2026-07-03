@@ -151,3 +151,127 @@ static func config_from_dict(d: Dictionary) -> WorldConfig:
 	cfg.colony_name = d["colony_name"]
 	cfg.quicken_budget = d["quicken_budget"]
 	return cfg
+
+
+static func node_to_dict(n: ResourceNode) -> Dictionary:
+	return {
+		"type": n.type,
+		"capacity": n.capacity,
+		"current": n.current,
+		"regrowth": n.regrowth,
+		"richness": n.richness,
+	}
+
+
+static func node_from_dict(d: Dictionary) -> ResourceNode:
+	return ResourceNode.new(d["type"], d["capacity"], d["current"], d["regrowth"], d["richness"])
+
+
+static func world_to_dict(w: WorldState) -> Dictionary:
+	var sites := {}
+	for id in w.sites:
+		sites[id] = node_to_dict(w.sites[id])
+	var hidden := {}
+	for id in w.hidden_resources:
+		var nodes := []
+		for n in w.hidden_resources[id]:
+			nodes.append(node_to_dict(n))
+		hidden[id] = nodes
+	return {
+		"sites": sites,
+		"hidden_resources": hidden,
+		"paths": w.paths.duplicate(true),
+		"affordances": w.affordances.duplicate(true),
+		"wards": w.wards.duplicate(true),
+	}
+
+
+static func world_from_dict(d: Dictionary) -> WorldState:
+	var w := WorldState.new()
+	for id in d["sites"]:
+		w.sites[id] = node_from_dict(d["sites"][id])
+	for id in d["hidden_resources"]:
+		var nodes := []
+		for nd in d["hidden_resources"][id]:
+			nodes.append(node_from_dict(nd))
+		w.hidden_resources[id] = nodes
+	w.paths = d["paths"].duplicate(true)
+	w.affordances = d["affordances"].duplicate(true)
+	w.wards = d["wards"].duplicate(true)
+	return w
+
+
+static func settlement_to_dict(s: Settlement) -> Dictionary:
+	return {
+		"sid": s.sid,
+		"base_k": s.base_k,
+		"richness_sum": s.richness_sum,
+		"by_stage": s.by_stage.duplicate(true),
+		"mean_traits": s.mean_traits.duplicate(true),
+		"mood": s.mood,
+		"belief": s.belief.duplicate(true),
+	}
+
+
+static func settlement_from_dict(d: Dictionary) -> Settlement:
+	var s := Settlement.new(d["sid"], d["base_k"], d["richness_sum"])
+	s.by_stage = d["by_stage"].duplicate(true)
+	s.mean_traits = d["mean_traits"].duplicate(true)
+	s.mood = d["mood"]
+	s.belief = d["belief"].duplicate(true)
+	return s
+
+
+static func time_to_dict(t: TimeService) -> Dictionary:
+	return {"total_days": t.total_days, "speed": t.speed}
+
+
+static func time_from_dict(d: Dictionary) -> TimeService:
+	var t := TimeService.new()
+	t.total_days = d["total_days"]
+	t.speed = d["speed"]
+	return t
+
+
+## Full save-game envelope [plan T12.1]: everything a run is — colony
+## (with its belief/culture graph), world, settlement aggregates, config,
+## calendar, chronicle, and the RNG stream position — as PLAIN data
+## (JSON-safe, no objects). Loading returns live objects keyed the same
+## way and restores the Rng stream as a side effect, so play continues
+## the exact sequence an uninterrupted run would have produced.
+static func save_to_dict(
+	colony: Colony,
+	world: WorldState,
+	settlements: Array,
+	config: WorldConfig,
+	time: TimeService,
+	chronicle: Array,
+) -> Dictionary:
+	var settlement_dicts := []
+	for s in settlements:
+		settlement_dicts.append(settlement_to_dict(s))
+	return {
+		"version": 1,
+		"colony": colony_to_dict(colony),
+		"world": world_to_dict(world),
+		"settlements": settlement_dicts,
+		"config": config_to_dict(config),
+		"time": time_to_dict(time),
+		"chronicle": chronicle.duplicate(true),
+		"rng_state": Rng.get_state(),
+	}
+
+
+static func save_from_dict(d: Dictionary) -> Dictionary:
+	var settlements := []
+	for sd in d["settlements"]:
+		settlements.append(settlement_from_dict(sd))
+	Rng.set_state(d["rng_state"])
+	return {
+		"colony": colony_from_dict(d["colony"]),
+		"world": world_from_dict(d["world"]),
+		"settlements": settlements,
+		"config": config_from_dict(d["config"]),
+		"time": time_from_dict(d["time"]),
+		"chronicle": d["chronicle"].duplicate(true),
+	}
