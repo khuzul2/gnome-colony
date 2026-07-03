@@ -28,6 +28,9 @@ var unrest := 0.0
 ## Per-settlement magic_understanding [algo §13] (T10.4): sid → [0,1] —
 ## how far they've gotten in studying you.
 var magic_understanding := {}
+## Per-settlement current leader gnome id [algo §14] (T11.6): sid → id.
+## Written only by Leadership.elect — never by the player.
+var leaders := {}
 
 
 func spawn() -> GnomeData:
