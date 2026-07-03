@@ -82,12 +82,17 @@ func path_between(a_site: String, b_site: String) -> PackedVector3Array:
 
 
 ## Give a materialized puppet an agent (once) and send it to a site.
-func route(puppet: GnomePuppet, to_site: String) -> void:
+## Refuses (false) when the sim buried the destination's road — actual
+## movement honors the same truth path_between does (reviewer catch).
+func route(puppet: GnomePuppet, to_site: String) -> bool:
+	if _leg_buried(to_site):
+		return false
 	if puppet.agent == null:
 		puppet.agent = NavigationAgent3D.new()
 		puppet.add_child(puppet.agent)
 		puppet.agent.set_navigation_map(_map)
 	puppet.agent.target_position = site_positions[to_site]
+	return true
 
 
 func _leg_buried(site_id: String) -> bool:

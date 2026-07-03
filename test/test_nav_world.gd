@@ -61,15 +61,34 @@ func test_materialized_gnomes_get_an_agent():
 	g.stage = Enums.LifeStage.ADULT
 	puppet.bind(g)
 	puppet.position = nav.site_positions["the_hollow"]
-	nav.route(puppet, "eastern_ridge")
+	var accepted := nav.route(puppet, "eastern_ridge")
+	assert_true(accepted, "an open road accepts the journey")
 	assert_not_null(puppet.agent, "a NavigationAgent3D rides the puppet [T13.3]")
 	await wait_physics_frames(3)
 	var next := puppet.agent.get_next_path_position()
-	assert_gt(
-		next.distance_to(nav.site_positions["eastern_ridge"]),
-		-1.0,
-		"agent produced a next waypoint without erroring"
-	)
+	assert_ne(next, Vector3.ZERO, "the agent produced a real waypoint (reviewer catch)")
 	assert_eq(
 		puppet.agent.target_position, nav.site_positions["eastern_ridge"], "target is the ridge"
+	)
+
+
+func test_route_refuses_a_buried_destination():
+	# Reviewer catch: path_between gated on the sim's buried paths but
+	# route() — the call real movement uses — did not.
+	var stage := _stage()
+	var nav: NavWorld = stage["nav"]
+	var world := WorldState.new()
+	world.paths["eastern_ridge_path"] = false
+	nav.attach(world)
+	var puppet := GnomePuppet.new()
+	add_child_autofree(puppet)
+	var g := GnomeData.new(0)
+	g.age = 30.0
+	g.stage = Enums.LifeStage.ADULT
+	puppet.bind(g)
+	puppet.position = nav.site_positions["the_hollow"]
+	assert_false(nav.route(puppet, "eastern_ridge"), "no road, no journey [T7.3]")
+	assert_true(
+		puppet.agent == null or puppet.agent.target_position == Vector3.ZERO,
+		"the agent was never aimed at the buried ridge"
 	)
