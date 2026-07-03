@@ -131,7 +131,7 @@ human records GO here.
 - [x] Phase-Exit 13: puppets reflect GnomeData; heightmap matches region-graph; camera zooms civ→settlement→individual; navmesh path found → tag phase-13-complete — test/integration/test_phase13_exit.gd composes graph→view (height match at every basin)→PuppetPool (stage scale, death hides)→NavWorld (route found)→CameraRig (three-zoom sweep) in one scene. The manual "does it LOOK right" half belongs to 🎮 Fun Check 3. Folded T13.5 reviewer minor: radius_for(CIVILIZATION) == 0.0 asserted.
 
 ## Phase 14 — Influence UI & feedback layer
-- [ ] T14.1 Phenomenon controls (7 categories, tier-gated, act targeting)
+- [x] T14.1 Phenomenon controls — InfluencePanel (presentation/ui/): build(defs) raises design §3.1's seven category roofs + a Button per catalog act; refresh(colony) reads colony.unlocked_tier ONLY (the panel never re-derives the §10 ladder — gating tests run the real Devotion.update_unlocks with d̄/pop-floor cases); INTERPRETIVE (documented): a category is HIDDEN until its first act unlocks (§3.1 "toolbox widens" + §3.8 discover-by-trying), locked acts inside a visible category show disabled. Targeting: arm→paint→release; paint demands the §11 selection key per target kind (point/area/settlement→place, region→region, region-edge→edge, individual→gnome[+place]), emits cast_requested(act, target, selection) and disarms (no preview, no undo §3.8); wrong-kind paint refused and keeps the act armed. Individual kind proven with a synthetic schema-valid Vision (seed 15 has none, §18). PUBLIC API: InfluencePanel.
 - [ ] T14.2 Feedback/hindsight
 - [ ] T14.3 Heatmaps + faint codex
 - [ ] T14.4 Diegetic ambience & act feedback
