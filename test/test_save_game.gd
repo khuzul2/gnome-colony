@@ -122,6 +122,21 @@ func test_save_is_plain_data():
 	)
 	var json := JSON.stringify(save)
 	assert_true(json.length() > 100, "the whole save survives JSON — no objects leaked in")
+	# The REAL disk trip: parse it back and continue the run from it.
+	# (Reviewer catch: a raw int64 rng_state silently corrupts through
+	# JSON's doubles — hence the string encoding.)
+	var reparsed: Dictionary = JSON.parse_string(json)
+	var reloaded := Serializer.save_from_dict(reparsed)
+	assert_eq(
+		reloaded["colony"].population(),
+		state["colony"].population(),
+		"a save that crossed a real JSON boundary still loads"
+	)
+	assert_eq(
+		str(reparsed["rng_state"]),
+		str(save["rng_state"]),
+		"the 64-bit stream position survives JSON exactly"
+	)
 
 
 func test_rng_stream_continues_across_a_save():

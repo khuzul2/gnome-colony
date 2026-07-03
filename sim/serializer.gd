@@ -223,13 +223,18 @@ static func settlement_from_dict(d: Dictionary) -> Settlement:
 
 
 static func time_to_dict(t: TimeService) -> Dictionary:
-	return {"total_days": t.total_days, "speed": t.speed}
+	return {
+		"total_days": t.total_days,
+		"speed": t.speed,
+		"speed_before_pause": t._speed_before_pause,
+	}
 
 
 static func time_from_dict(d: Dictionary) -> TimeService:
 	var t := TimeService.new()
 	t.total_days = d["total_days"]
 	t.speed = d["speed"]
+	t._speed_before_pause = d["speed_before_pause"]
 	return t
 
 
@@ -258,7 +263,10 @@ static func save_to_dict(
 		"config": config_to_dict(config),
 		"time": time_to_dict(time),
 		"chronicle": chronicle.duplicate(true),
-		"rng_state": Rng.get_state(),
+		# As a STRING: JSON numbers are doubles and would silently corrupt
+		# a 64-bit stream position (reviewer catch — the exactness promise
+		# must survive a real trip through disk).
+		"rng_state": str(Rng.get_state()),
 	}
 
 
@@ -266,7 +274,7 @@ static func save_from_dict(d: Dictionary) -> Dictionary:
 	var settlements := []
 	for sd in d["settlements"]:
 		settlements.append(settlement_from_dict(sd))
-	Rng.set_state(d["rng_state"])
+	Rng.set_state(int(d["rng_state"]))
 	return {
 		"colony": colony_from_dict(d["colony"]),
 		"world": world_from_dict(d["world"]),
