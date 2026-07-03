@@ -42,6 +42,10 @@ static func materialize(colony: Colony, s: Settlement, count: int) -> Array:
 ## gnome objects leave the colony registry.
 static func dematerialize(colony: Colony, s: Settlement, gnomes: Array) -> void:
 	for g in gnomes:
+		# The dead are skipped, not folded: their head-count already left
+		# the buckets at materialize-time and Mortality counted the death —
+		# folding a corpse would resurrect it statistically. They stay in
+		# the registry of every gnome, living and dead (reviewer note).
 		if not g.is_alive():
 			continue
 		var pop_before := s.pop()
@@ -65,7 +69,9 @@ static func dematerialize(colony: Colony, s: Settlement, gnomes: Array) -> void:
 
 static func _largest_bucket(s: Settlement) -> int:
 	var best := -1
-	var best_count := 0.999  # a bucket must hold at least one whole gnome
+	# 0.999, not 1.0: a float-precision fudge so a bucket that is "one
+	# whole gnome" minus rounding dust still yields them (reviewer note).
+	var best_count := 0.999
 	for stage in s.by_stage:
 		if s.by_stage[stage] > best_count:
 			best_count = s.by_stage[stage]
@@ -77,7 +83,9 @@ static func _sample(colony: Colony, s: Settlement, stage: int) -> GnomeData:
 	var g := colony.spawn()
 	g.home_settlement = s.sid
 	var span: Array = BAND_SPAN[stage]
-	g.age = Rng.randf_range(span[0], span[1])
+	# The hair below the band's top keeps a knife-edge draw of exactly
+	# span[1] from landing in the NEXT stage (reviewer note).
+	g.age = Rng.randf_range(span[0], span[1] - 0.001)
 	g.stage = stage
 	g.sex = Rng.randi_range(0, 1)
 	for key in Enums.TRAIT_KEYS:
