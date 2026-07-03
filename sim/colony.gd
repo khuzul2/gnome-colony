@@ -34,6 +34,11 @@ var leaders := {}
 ## World's-end latch [algo §14] (T11.4): world_ended fires exactly once;
 ## the run closes into the Chronicle (design §1.9) — no re-founding.
 var world_over := false
+## The colony's principal settlement sid [user feature 2026-07-03], -1 =
+## none anointed yet. Written only by Civilization.update_main_settlement:
+## sticky while it lives (development biases toward keeping it largest);
+## when it dies off the largest survivor succeeds it.
+var main_settlement := -1
 
 
 func spawn() -> GnomeData:

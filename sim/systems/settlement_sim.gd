@@ -27,6 +27,11 @@ extends RefCounted
 
 const PAIR_CALIBRATION := 0.5
 const MIGRATION_BASE := 0.05
+## Main-settlement retention [user feature 2026-07-03, INTERPRETIVE]:
+## emigration from the colony's seat is halved — the other half of the
+## keep-the-main-settlement-larger bias (Civilization.MAIN_PULL is the
+## inbound half). Inert while colony.main_settlement is -1.
+const MAIN_RETENTION := 0.5
 const CROWDING_COMFORT := 0.7
 const MOOD_FLOOR := 0.5
 const MOOD_WEIGHT := 0.5
@@ -72,6 +77,8 @@ static func season_tick(
 	s.by_stage[Enums.LifeStage.INFANT] += births
 	var deaths := _deaths(colony, s)
 	var migration_out := _migration(s, crowding, phenomena_pressure)
+	if s.sid == colony.main_settlement:
+		migration_out *= MAIN_RETENTION
 	s.by_stage[Enums.LifeStage.ADULT] -= migration_out
 	var discovered := _research(colony, s, need_pressures, food_factor, institution_factors)
 	for axis in s.belief:

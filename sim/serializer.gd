@@ -85,6 +85,7 @@ static func colony_to_dict(c: Colony) -> Dictionary:
 		"magic_understanding": c.magic_understanding.duplicate(true),
 		"leaders": c.leaders.duplicate(true),
 		"world_over": c.world_over,
+		"main_settlement": c.main_settlement,
 	}
 
 
@@ -104,6 +105,8 @@ static func colony_from_dict(d: Dictionary) -> Colony:
 	c.magic_understanding = d["magic_understanding"].duplicate(true)
 	c.leaders = d["leaders"].duplicate(true)
 	c.world_over = d["world_over"]
+	# .get(): pre-feature saves carry no seat — they load with none (-1).
+	c.main_settlement = d.get("main_settlement", -1)
 	return c
 
 

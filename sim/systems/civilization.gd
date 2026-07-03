@@ -33,6 +33,11 @@ const SCHISM_DISTANCE := 0.5  # §17 (same line as T6.5's subcultures)
 const WAR_THRESHOLD := 1.5  # §17
 
 const ROOM_WEIGHT := 2.0
+## Main-settlement pull [user feature 2026-07-03, INTERPRETIVE]: the
+## colony's seat draws migrants as strongly as a full kin tie — the bias
+## that keeps the main settlement the larger one. Inert while
+## colony.main_settlement is -1 (no candidate ever matches).
+const MAIN_PULL := 1.0
 const TRADE_MOOD_LIFT := 0.05
 const TRADE_BELIEF_BLEND := 0.1
 const SPLIT_FAITH_SEPARATION := 0.15
@@ -64,6 +69,7 @@ static func choose_basin(
 			+ ROOM_WEIGHT * (1.0 - s.crowding(colony))
 			+ kin.get(s.sid, 0.0)
 			+ (1.0 - absf(from_s.belief["faith"] - s.belief["faith"]))
+			+ (MAIN_PULL if s.sid == colony.main_settlement else 0.0)
 		)
 		if score > best_score:
 			best_score = score
@@ -163,6 +169,35 @@ static func war(colony: Colony, a: Settlement, b: Settlement) -> Dictionary:
 		"loser_losses": loser_losses,
 		"winner_losses": winner_losses,
 	}
+
+
+## Main-settlement anointment & succession [user feature 2026-07-03]:
+## sticky while the current seat lives (≥ ALIVE_EPSILON) — growth bias,
+## not a crown that hops to whichever village is largest this season.
+## When it dies off (or none was ever chosen) the LARGEST living
+## settlement succeeds (tie → lowest sid, deterministic); with none left
+## the seat empties to -1. Emits main_settlement_changed on every real
+## change. The orchestrator/shell calls this each civilization season
+## alongside the other §14 flows (same deferred-consumer pattern as
+## schism_due). Returns the (possibly unchanged) main sid.
+static func update_main_settlement(colony: Colony, settlements: Array) -> int:
+	var largest: Settlement = null
+	for s in settlements:
+		if s.pop() < ALIVE_EPSILON:
+			continue
+		if s.sid == colony.main_settlement:
+			return colony.main_settlement
+		if (
+			largest == null
+			or s.pop() > largest.pop()
+			or (s.pop() == largest.pop() and s.sid < largest.sid)
+		):
+			largest = s
+	var previous := colony.main_settlement
+	colony.main_settlement = largest.sid if largest != null else -1
+	if colony.main_settlement != previous:
+		EventBus.main_settlement_changed.emit({"sid": colony.main_settlement, "previous": previous})
+	return colony.main_settlement
 
 
 ## §14 world's end: every settlement below one whole gnome AND no living
