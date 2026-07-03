@@ -51,6 +51,10 @@ var prophet := {}
 ## Per-phenomenon-type habituation counters [algo §9] (T6.1): repeats of
 ## the same act land weaker; recovers −0.02/day.
 var habituation := {}
+## Current simulation fidelity [algo §14] (T11.1): 0 quickened · 1
+## individual · 2 statistical (default) · 3 folded into settlement stats.
+## Written by Lod.assign; consumed by the tier orchestration (T11.2+).
+var lod := 2
 
 
 func _init(gnome_id: int = 0) -> void:

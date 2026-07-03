@@ -33,6 +33,7 @@ static func gnome_to_dict(g: GnomeData) -> Dictionary:
 		"prophet": g.prophet.duplicate(true),
 		"habituation": g.habituation.duplicate(true),
 		"location": g.location,
+		"lod": g.lod,
 	}
 
 
@@ -62,6 +63,7 @@ static func gnome_from_dict(d: Dictionary) -> GnomeData:
 	g.prophet = d["prophet"].duplicate(true)
 	g.habituation = d["habituation"].duplicate(true)
 	g.location = d["location"]
+	g.lod = d["lod"]
 	return g
 
 

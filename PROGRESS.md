@@ -108,7 +108,7 @@ human records GO here.
 - [x] Human GO recorded here — 2026-07-03, user: "GO ahead! (I again can't test but I'll test everything later in terms of gameplay)". Second waived gate: NO hands-on fun evidence exists yet — FUN CHECK 3 (the real playable build) is the first true fun evaluation; core-feel rework stays fully open there.
 
 ## Phase 11 — Hierarchical simulation (scale)
-- [ ] T11.1 LOD manager
+- [x] T11.1 LOD manager — Lod.assign: eligible (under-Eye OR notability ≥ 0.6, §17) → LOD-0 up to the quicken budget (stays a WorldConfig constant), overflow LOD-1; rest LOD-2; per-settlement individual budget (default 500, §17) folds the least notable to LOD-3 (eligible never fold). Attention = scripted Array of place ids (declared sim input; dwell/hysteresis upstream, design §2.4). INTERPRETIVE (documented in lod.gd): budget priority watched → notability → id, deterministic. PUBLIC API: GnomeData.lod (serializer covers). State fold-back is T11.3.
 - [ ] T11.2 Settlement tier
 - [ ] T11.3 Promotion fidelity
 - [ ] T11.6 Emergent leadership
