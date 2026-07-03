@@ -153,7 +153,7 @@ human records GO here.
 
 ## Phase 16 — Integration, balance & polish
 - [x] T16.1 Epochal smoke run — test_epochal.gd: 60 default-config years with the full shell composition (life core + belief/devotion/prophets daily, §13 research seasonally); asserts survival, bounded population (structural 4×K tripwire, documented — §16 "no loop runs away"), ≥3 generations turned, and a moving tech arc. Runs ~12s.
-- [ ] T16.2 Tuning-invariant tests (test_invariants.gd)
+- [x] T16.2 Tuning-invariant tests — test_invariants.gd, §16's three stability invariants: (a) recoverable early game — one drought season (regrowth ×0.2, larder emptied; severity INTERPRETIVE and documented — zero-food-for-24-days proved a cataclysm, §16c territory) → pop 6 → 9 four years on; (b) no runaway loops — 20-year composed run sampled seasonally: pop < ceiling, unrest ∈ [0,1], d̄ ≤ 1, log magnitude < 10, larder ≤ capacity; (c) extinction band — calibrated harsh century (cap 15/regrowth 2.0, probed on this container: abundance 0/10, famine 9-10/10) lands 3/10 extinct; band [1,9]/10 is the INTERPRETIVE reading of "rare enough to hurt, common enough to matter".
 - [ ] T16.5 Diversity & balance invariants (test_diversity_balance.gd)
 - [ ] T16.3 Telemetry hooks
 - [ ] T16.4 Final pass (DONE.md, project-complete sigil)
