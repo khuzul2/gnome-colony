@@ -16,7 +16,9 @@ var _dir: String
 
 
 func _init(base_dir: String = "user://saves") -> void:
-	_dir = base_dir
+	# Hardening (reviewer): the store lives in user:// territory only —
+	# a stray absolute path (plus wipe()) must not touch arbitrary dirs.
+	_dir = base_dir if base_dir.begins_with("user://") else "user://saves"
 	DirAccess.make_dir_recursive_absolute(_dir)
 
 
@@ -132,7 +134,16 @@ func wipe() -> void:
 
 
 func _path(slot: String) -> String:
-	return _dir.path_join("%s.json" % slot)
+	return _dir.path_join("%s.json" % sanitize(slot))
+
+
+## Hardening (reviewer): a slot always names a file INSIDE the dir —
+## separators and dot-runs are stripped, so "../escapee" lands here as
+## "escapee", never beside the store.
+static func sanitize(slot: String) -> String:
+	var out := slot.replace("\\", "/").replace("..", "")
+	out = out.replace("/", "")
+	return out if out != "" else "unnamed"
 
 
 func _read(slot: String) -> Dictionary:

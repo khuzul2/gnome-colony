@@ -40,6 +40,8 @@ const DEFAULTS := {
 		"zoom_sensitivity": 1.0,
 		"rotate_sensitivity": 1.0,
 		"invert_zoom": false,
+		"controller_enabled": true,
+		"controller_layout": "default",
 		"bindings": {},
 	},
 	"gameplay":

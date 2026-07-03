@@ -8,7 +8,8 @@ var _dir: String
 
 
 func _init(base_dir: String = "user://chronicles") -> void:
-	_dir = base_dir
+	# Same user://-territory containment as SaveStore (reviewer).
+	_dir = base_dir if base_dir.begins_with("user://") else "user://chronicles"
 	DirAccess.make_dir_recursive_absolute(_dir)
 
 
@@ -44,4 +45,4 @@ func wipe() -> void:
 
 
 func _path(slot: String) -> String:
-	return _dir.path_join("%s.json" % slot)
+	return _dir.path_join("%s.json" % SaveStore.sanitize(slot))

@@ -121,3 +121,27 @@ func test_the_menu_renders_cards_and_reports_the_choice():
 	menu.show_tab("auto")
 	assert_false(menu.cards["first"].visible, "manual card hides on the autosave tab [§6.1]")
 	assert_true(menu.cards["second"].visible)
+
+
+func test_slots_cannot_escape_the_save_dir():
+	# Reviewer hardening: a slot with path separators must land INSIDE
+	# the store's dir, never beside it.
+	if FileAccess.file_exists("user://escapee.json"):
+		DirAccess.remove_absolute("user://escapee.json")  # a prior red run's debris
+	var envelope := _rich_save()
+	_store.save_game("../escapee", envelope, {"kind": "manual", "timestamp": "t1"})
+	assert_false(FileAccess.file_exists("user://escapee.json"), "nothing written outside the dir")
+	var cards: Array = _store.list_saves()
+	assert_eq(cards.size(), 1, "the save still landed, under a sanitized name")
+	assert_false("/" in str(cards[0]["slot"]), "…with no separators left")
+	assert_false(".." in str(cards[0]["slot"]))
+
+
+func test_the_store_stays_inside_user_territory():
+	# Reviewer hardening: a stray absolute base_dir (plus wipe()) must
+	# not be able to touch arbitrary directories.
+	if DirAccess.dir_exists_absolute("/tmp/definitely_not_here"):
+		DirAccess.remove_absolute("/tmp/definitely_not_here")  # a prior red run's debris
+	var stray := SaveStore.new("/tmp/definitely_not_here")
+	stray.wipe()
+	assert_false(DirAccess.dir_exists_absolute("/tmp/definitely_not_here"), "never created")

@@ -57,8 +57,6 @@ func _hash_of_run(density: int) -> String:
 	cfg.seed = 15400
 	var food := ResourceNode.new("food", 100.0, 100.0, 10.0, 1.0)
 	var runner := SimRunner.new(cfg, food, 60.0)
-	for g in runner.colony.living():
-		g.location = "the_hollow"
 	var settings := GameSettings.new()
 	settings.set_value("graphics", "render_crowd_density", density)
 	var pool := PuppetPool.new()
@@ -90,3 +88,15 @@ func test_drawn_cap_reads_the_dial():
 	var settings := GameSettings.new()
 	settings.set_value("graphics", "render_crowd_density", 7)
 	assert_eq(settings.drawn_cap(), 7, "the renderer's budget is the dial")
+
+
+func test_a_missing_cfg_loads_pure_defaults():
+	var loaded := GameSettings.load_from("user://no_such_settings_file.cfg")
+	assert_eq(loaded.get_value("audio", "music"), 0.8, "no file, spec defaults [§7]")
+	assert_eq(loaded.get_value("graphics", "render_crowd_density"), 200)
+
+
+func test_controller_dials_exist():
+	var settings := GameSettings.new()
+	assert_true(settings.values["controls"].has("controller_enabled"), "§7.3 controller support")
+	assert_true(settings.values["controls"].has("controller_layout"), "…and layout")
