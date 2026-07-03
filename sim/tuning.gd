@@ -23,6 +23,9 @@ const DIVINITY_POWER_MULT := {"humble": 0.75, "normal": 1.0, "ascendant": 1.25}
 const CHAOS_MULT := {"calm": 0.5, "normal": 1.0, "capricious": 2.0}
 const CHAOS_RIPENESS_MULT := {"calm": 1.2, "normal": 1.0, "capricious": 0.8}
 const SCALE_POP_CAP := {"intimate": 500, "kingdom": 5000, "civilization": 20000}
+## §3.6 names individual_budget as a scale target (reviewer catch) —
+## Kingdom keeps §17's ~500 mark; the ends bend it interpretively.
+const SCALE_INDIVIDUAL_BUDGET := {"intimate": 250, "kingdom": 500, "civilization": 750}
 const FAITH_SECULARIZATION := {"coexist": 0.0, "mild_drift": 1.0, "secularizing": 2.0}
 ## Ward ceiling per faith mode (§13's 0.7 is the mild-drift default).
 const FAITH_RESISTANCE_CEILING := {"coexist": 0.5, "mild_drift": 0.7, "secularizing": 0.85}
@@ -36,10 +39,10 @@ static func resolve(cfg: WorldConfig) -> Dictionary:
 		{
 			"ticks_per_second": PACE_TICKS[cfg.generation_pace],
 		},
-		"mortality":
 		# One ladder scales every §3.2 dial: age curve, hardship,
+		# accidents, tail lethality — and knowledge fragility.
+		"mortality":
 		{
-			# accidents, tail lethality — and knowledge fragility.
 			"age_curve_mult": MORTALITY_MULT[cfg.mortality],
 			"hardship_mult": MORTALITY_MULT[cfg.mortality],
 			"accident_mult": MORTALITY_MULT[cfg.mortality],
@@ -68,7 +71,7 @@ static func resolve(cfg: WorldConfig) -> Dictionary:
 		"scale":
 		{
 			"population_cap": SCALE_POP_CAP[cfg.civilization_scale],
-			"individual_budget": Lod.DEFAULT_INDIVIDUAL_BUDGET,
+			"individual_budget": SCALE_INDIVIDUAL_BUDGET[cfg.civilization_scale],
 			"quicken_budget": cfg.quicken_budget,
 			"civ_tier_enabled": cfg.civilization_scale != "intimate",
 		},

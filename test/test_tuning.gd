@@ -67,6 +67,16 @@ func test_civilization_scale_gates_the_civ_tier():
 	assert_eq(intimate["scale"]["civ_tier_enabled"], false, "Intimate keeps it personal")
 	assert_eq(civilization["scale"]["civ_tier_enabled"], true)
 	assert_lt(intimate["scale"]["population_cap"], civilization["scale"]["population_cap"])
+	assert_lt(
+		intimate["scale"]["individual_budget"],
+		civilization["scale"]["individual_budget"],
+		"§3.6 names individual_budget as a scale target (reviewer catch)"
+	)
+	assert_eq(
+		_defaults()["scale"]["individual_budget"],
+		Lod.DEFAULT_INDIVIDUAL_BUDGET,
+		"Kingdom default = the §17 ~500 mark"
+	)
 
 
 func test_faith_slider_spans_coexist_to_secularizing():
