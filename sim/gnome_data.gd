@@ -108,7 +108,14 @@ func add_knowledge(knowledge_id: String) -> void:
 
 
 func set_relationship(other_id: int, type: String, weight: float) -> void:
-	relationships[other_id] = {"type": type, "weight": clampf(weight, -1.0, 1.0)}
+	# In-place update on the hot path (T11.5): same semantics as
+	# reassigning a fresh {type, weight} dict, without the allocation.
+	if relationships.has(other_id):
+		var edge: Dictionary = relationships[other_id]
+		edge["type"] = type
+		edge["weight"] = clampf(weight, -1.0, 1.0)
+	else:
+		relationships[other_id] = {"type": type, "weight": clampf(weight, -1.0, 1.0)}
 
 
 func remember(event: Dictionary) -> void:

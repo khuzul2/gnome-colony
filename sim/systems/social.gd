@@ -23,10 +23,17 @@ static func compat(a: GnomeData, b: GnomeData) -> float:
 ## 0.05·sign·compat and adopt `type`.
 static func interact(a: GnomeData, b: GnomeData, type: String, sign_value: float) -> void:
 	var step := INTERACT_STEP * sign_value * compat(a, b)
-	var a_weight: float = a.relationships.get(b.id, {}).get("weight", 0.0)
-	var b_weight: float = b.relationships.get(a.id, {}).get("weight", 0.0)
+	var a_weight := _weight_of(a, b.id)
+	var b_weight := _weight_of(b, a.id)
 	a.set_relationship(b.id, type, a_weight + step)
 	b.set_relationship(a.id, type, b_weight + step)
+
+
+## Edge weight without allocating a default dict per lookup (T11.5 perf).
+static func _weight_of(g: GnomeData, other_id: int) -> float:
+	if not g.relationships.has(other_id):
+		return 0.0
+	return g.relationships[other_id]["weight"]
 
 
 ## Partnership [plan T5.2, algo §8]: two unpartnered Adults with MUTUAL

@@ -12,6 +12,10 @@ const JITTER_MAX := 0.05
 const WORK_MOD_BASE := 0.7
 const WORK_MOD_SLOPE := 0.6
 
+## Shared read-only default so hot-path .get() calls don't allocate a
+## fresh Dictionary per score (T11.5 perf). Never written.
+const NO_MODS := {}
+
 
 static func trait_mod(g: GnomeData, action: String) -> float:
 	if action == "work":
@@ -25,8 +29,8 @@ static func base_score(g: GnomeData, action: String, ctx: Dictionary = {}) -> fl
 	for need in relief:
 		var need_level: float = g.needs.get(need, 0.0)
 		total += need_level * need_level * -relief[need]
-	var culture_mod: float = ctx.get("culture_mods", {}).get(action, 1.0)
-	var belief_mod: float = ctx.get("belief_mods", {}).get(action, 1.0)
+	var culture_mod: float = ctx.get("culture_mods", NO_MODS).get(action, 1.0)
+	var belief_mod: float = ctx.get("belief_mods", NO_MODS).get(action, 1.0)
 	return total * trait_mod(g, action) * culture_mod * belief_mod
 
 

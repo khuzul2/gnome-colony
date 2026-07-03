@@ -23,6 +23,13 @@ const LEANING_BIAS := 0.15
 const FOUNDER_AGE_MIN := 20.0
 const FOUNDER_AGE_MAX := 25.0
 
+## Bounded courtship (T11.5 perf, interpretive): above this many eligible
+## candidates a courting gnome evaluates an Rng sample instead of everyone
+## — you cannot court a whole city. At or below it the exhaustive scan is
+## kept, so small-band behavior (Milestone 1) is byte-identical and no
+## extra Rng is consumed.
+const COURT_SAMPLE := 16
+
 var colony := Colony.new()
 var time := TimeService.new()
 var food: ResourceNode
@@ -31,6 +38,13 @@ var chronicle: Array = []
 var max_generation := 0
 
 var _last_season := -1
+# Per-day caches (T11.5 perf): colony-wide facts hoisted out of the
+# per-gnome loop — the O(n²) context/courtship scans became O(n).
+# Refreshed at the top of every tick; partnerships only change seasonally
+# so the eligible lists cannot go stale mid-day.
+var _knowledge_holders := 0
+var _caregiver_present := false
+var _eligible_by_sex: Array = [[], []]
 
 
 func _init(config: WorldConfig, food_node: ResourceNode, capacity: float) -> void:
@@ -59,9 +73,16 @@ func tick() -> void:
 	var dt := time.advance(1.0)
 	Needs.tick(colony, dt)
 	var living := colony.living()
+	_refresh_day_cache(living)
+	# Availability varies only by (stage, has-a-teacher) today — memo the
+	# 12 possible action lists instead of rebuilding one per gnome (T11.5).
+	var day_actions := {}
 	for g in living:
 		var ctx := _context_for(g, living)
-		var action := Decide.choose(g, ctx)
+		var key: int = g.stage * 2 + (1 if ctx["teacher_available"] else 0)
+		if not day_actions.has(key):
+			day_actions[key] = Actions.available(g, ctx)
+		var action := Decide.choose(g, ctx, day_actions[key])
 		Act.apply(g, action, ctx)
 		_side_effects(g, action, living, dt)
 	Projects.tick(colony, dt)
@@ -88,22 +109,30 @@ func _season_tick() -> void:
 	Knowledge.check_extinction(colony)
 
 
-func _context_for(g: GnomeData, living: Array) -> Dictionary:
-	var teacher := false
-	for other in living:
-		if other.id != g.id and not other.knowledge.is_empty():
-			teacher = true
-			break
-	var caregiver := false
-	for other in living:
-		if other.stage in [Enums.LifeStage.ADULT, Enums.LifeStage.ELDER]:
-			caregiver = true
-			break
+## Colony-wide facts gathered once per day (T11.5 perf — identical
+## numbers to the old per-gnome scans, just not recomputed 300 times).
+func _refresh_day_cache(living: Array) -> void:
+	_knowledge_holders = 0
+	_caregiver_present = false
+	_eligible_by_sex = [[], []]
+	for g in living:
+		if not g.knowledge.is_empty():
+			_knowledge_holders += 1
+		if g.stage in [Enums.LifeStage.ADULT, Enums.LifeStage.ELDER]:
+			_caregiver_present = true
+		if _mate_eligible(g):
+			_eligible_by_sex[g.sex].append(g)
+
+
+func _context_for(g: GnomeData, _living: Array) -> Dictionary:
+	# teacher_available = some OTHER gnome holds knowledge; the cached
+	# count minus g's own contribution reproduces the old scan exactly.
+	var own := 0 if g.knowledge.is_empty() else 1
 	return {
 		"food_available": food.current > 0.0,
 		"food_node": food,
-		"teacher_available": teacher,
-		"caregiver_available": caregiver,
+		"teacher_available": _knowledge_holders > own,
+		"caregiver_available": _caregiver_present,
 	}
 
 
@@ -150,11 +179,18 @@ func _pick_company(g: GnomeData, living: Array) -> GnomeData:
 	return _random_other(g, living)
 
 
-func _best_mate_candidate(g: GnomeData, living: Array) -> GnomeData:
+func _best_mate_candidate(g: GnomeData, _living: Array) -> GnomeData:
+	var candidates: Array = _eligible_by_sex[1 - g.sex]
+	var pool := candidates
+	if candidates.size() > COURT_SAMPLE:
+		# Bounded courtship: an Rng sample (with replacement) of the crowd.
+		pool = []
+		for i in COURT_SAMPLE:
+			pool.append(candidates[Rng.randi_range(0, candidates.size() - 1)])
 	var best: GnomeData = null
 	var best_compat := -1.0
-	for other in living:
-		if other.id == g.id or other.sex == g.sex or not _mate_eligible(other):
+	for other in pool:
+		if other.id == g.id:
 			continue
 		var c := Social.compat(g, other)
 		if c > best_compat:

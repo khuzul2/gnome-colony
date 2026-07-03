@@ -19,6 +19,15 @@ extends RefCounted
 ##  · war casualties: loser 15%·min(2, strength ratio), winner 5%;
 ##    both sides gain fear (+0.2 loser / +0.1 winner) — §14's "major
 ##    mortality & belief event". Outcome is deterministic in strengths.
+## DEFERRED consumers (reviewer note — promised "T11.4" by earlier tasks,
+## honored at the world orchestrator instead, T12/T16 wiring): the
+## orchestrator rolls Devotion.schism_pressure_per_season and
+## Devotion.fracture_due each season alongside schism_due, and feeds
+## Prophet.check_schism's factions into split() when individual prophets
+## drive the break; exit tests compose these by hand meanwhile.
+## check_world_end's caller must pass the COMPLETE settlement list — a
+## missing basin falsifies the verdict (the orchestrator is the sole
+## intended caller).
 
 const SCHISM_DISTANCE := 0.5  # §17 (same line as T6.5's subcultures)
 const WAR_THRESHOLD := 1.5  # §17
