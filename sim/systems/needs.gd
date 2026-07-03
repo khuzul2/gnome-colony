@@ -28,9 +28,14 @@ static func stage_mod(g: GnomeData, need: String) -> float:
 
 static func tick(colony: Colony, dt_days: float) -> void:
 	for g in colony.living():
+		# Hot path (T11.5): direct clamped writes — same math as the
+		# adjust_need/set_need pair, two call layers fewer per need.
+		var needs: Dictionary = g.needs
 		for need in DECAY_PER_DAY:
-			g.adjust_need(need, DECAY_PER_DAY[need] * stage_mod(g, need) * dt_days)
-		g.adjust_need("safety", -SAFETY_RECOVERY_PER_DAY * dt_days)
+			needs[need] = clampf(
+				needs[need] + DECAY_PER_DAY[need] * stage_mod(g, need) * dt_days, 0.0, 1.0
+			)
+		needs["safety"] = clampf(needs["safety"] - SAFETY_RECOVERY_PER_DAY * dt_days, 0.0, 1.0)
 		_track_hardship(g, dt_days)
 
 

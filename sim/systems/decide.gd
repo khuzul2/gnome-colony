@@ -7,23 +7,14 @@ extends RefCounted
 ## (T3.6).
 
 
-## `available_override` lets an orchestrator reuse a precomputed action
-## list — availability depends only on (stage, ctx gates), so callers can
-## memo it per day instead of rebuilding it per gnome (T11.5 perf). null
-## (the default) computes it here; behavior is identical either way.
-static func choose(
-	g: GnomeData, ctx: Dictionary = {}, available_override: Variant = null
-) -> String:
+static func choose(g: GnomeData, ctx: Dictionary = {}) -> String:
 	# An active project holds the gnome's day unless a need is desperate
 	# (≥0.9) — long-horizon behavior isn't re-decided each tick (T3.6).
 	if not g.project.is_empty() and not Projects.has_urgent_need(g):
 		return "project:%s" % g.project["kind"]
-	var pool: Array = (
-		available_override if available_override != null else Actions.available(g, ctx)
-	)
 	var best := "idle"
 	var best_score := -INF
-	for action in pool:
+	for action in Actions.available(g, ctx):
 		# Inlined Utility.score (base + jitter): one call layer fewer on
 		# the hottest loop in the sim (T11.5) — identical math and an
 		# identical Rng stream.

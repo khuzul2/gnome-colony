@@ -3,26 +3,25 @@ extends GutTest
 ## T11.5 / Phase-Exit 11 [plan]: a 10,000-population world advances a
 ## year within the ⚙️ perf budget, and the settlement-aggregate flows
 ## match an individually-simulated control within tolerance.
-## Budget notes (documented, NOT silently lowered): the plan pins avg
-## sim tick ≤ 10 ms @ pop 5k and ≤ 16 ms @ pop 20k ON A MID-TIER DESKTOP
-## (the budget's own stated reference) — a 10k world gets the linear
-## interpolation, 12 ms. This CI container is a shared 2.10 GHz Xeon
-## vCPU, roughly half a mid-tier desktop's single-thread speed, and the
-## §2.2 escape hatch (port hot paths to C#/GDExtension) is impossible
-## offline — so the assertion here carries a 2× environment headroom,
-## the RAW number prints every run, and the strict 12 ms bound is pinned
-## for re-verification on reference hardware at T16's final pass
-## (PROGRESS.md carries the reminder). The tripwire still bites: the
-## pre-optimization tick (40 ms) fails this bound. Wall-clock is
-## measured HERE in test code (Time is banned in sim logic only). The
-## save/load and RAM legs of the budget belong to T12.1 and T16.
+## Budget status — see STUCK.md (perf leg BLOCKED, awaiting the human
+## ruling): the plan pins avg tick ≤ 10 ms @ 5k / ≤ 16 ms @ 20k on a
+## MID-TIER DESKTOP; a 10k world interpolates to 12 ms. After profiling
+## and optimization (40 → ~16-18 ms here) the strict bound is still
+## missed ON THIS shared 2.10 GHz Xeon container, and the §2.2 hatch
+## (port hot paths to C#/GDExtension) is impossible offline. Per the
+## reviewer and CLAUDE.md's blocked-protocol the bar is NOT lowered:
+## the strict 12 ms leg reports PENDING until a human rules (options in
+## STUCK.md), while a hard 24 ms regression tripwire stays enforced
+## (the pre-optimization 40 ms code fails it). Raw numbers print every
+## run. Wall-clock is measured HERE in test code (Time is banned in sim
+## logic only). Save/load and RAM budget legs belong to T12.1 and T16.
 
 const WORLD_POP := 10_000
 const SETTLEMENT_COUNT := 20
 const QUICKENED := 300
 const DAYS := TimeService.DAYS_PER_YEAR
 const TICK_BUDGET_MS := 12.0
-const CI_HEADROOM := 2.0
+const REGRESSION_TRIPWIRE_MS := 24.0
 
 
 func test_ten_thousand_souls_advance_a_year_in_budget():
@@ -60,17 +59,23 @@ func test_ten_thousand_souls_advance_a_year_in_budget():
 	runner.shutdown()
 
 	var avg_tick := elapsed_ms / DAYS
-	gut.p(
-		(
-			"10k world · year in %.0f ms · avg tick %.2f ms (budget %.0f ms ref / %.0f ms here)"
-			% [elapsed_ms, avg_tick, TICK_BUDGET_MS, TICK_BUDGET_MS * CI_HEADROOM]
+	(
+		gut
+		. p(
+			(
+				"10k world · year in %.0f ms · avg tick %.2f ms (strict budget %.0f ms · tripwire %.0f ms)"
+				% [elapsed_ms, avg_tick, TICK_BUDGET_MS, REGRESSION_TRIPWIRE_MS]
+			)
 		)
 	)
-	assert_lt(
-		avg_tick,
-		TICK_BUDGET_MS * CI_HEADROOM,
-		"≤ 12 ms reference budget × documented 2× CI headroom — re-verify strict at T16"
-	)
+	assert_lt(avg_tick, REGRESSION_TRIPWIRE_MS, "hard regression tripwire (pre-opt code was 40 ms)")
+	if avg_tick >= TICK_BUDGET_MS:
+		pending(
+			(
+				"strict 12 ms budget missed at %.2f ms on this container — BLOCKED, see STUCK.md"
+				% avg_tick
+			)
+		)
 
 	var world_pop_after := _world_pop(runner.colony, settlements)
 	assert_gt(world_pop_after, world_pop_before * 0.8, "no aggregate population crash")

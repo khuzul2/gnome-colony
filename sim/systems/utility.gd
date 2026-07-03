@@ -25,13 +25,19 @@ static func trait_mod(g: GnomeData, action: String) -> float:
 
 static func base_score(g: GnomeData, action: String, ctx: Dictionary = {}) -> float:
 	var total := 0.0
-	var relief: Dictionary = Actions.relief(action)
+	# Hot path (T11.5): direct const-catalog access and inlined trait_mod —
+	# same math as Actions.relief()/trait_mod(), two call layers fewer.
+	# Direct needs[need] is safe: relief keys ⊆ NEED_KEYS, always present.
+	var relief: Dictionary = Actions.CATALOG[action]["relief"]
 	for need in relief:
-		var need_level: float = g.needs.get(need, 0.0)
+		var need_level: float = g.needs[need]
 		total += need_level * need_level * -relief[need]
+	var mod := 1.0
+	if action == "work":
+		mod = WORK_MOD_BASE + WORK_MOD_SLOPE * g.traits["industrious"]
 	var culture_mod: float = ctx.get("culture_mods", NO_MODS).get(action, 1.0)
 	var belief_mod: float = ctx.get("belief_mods", NO_MODS).get(action, 1.0)
-	return total * trait_mod(g, action) * culture_mod * belief_mod
+	return total * mod * culture_mod * belief_mod
 
 
 static func score(g: GnomeData, action: String, ctx: Dictionary = {}) -> float:

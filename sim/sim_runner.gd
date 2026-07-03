@@ -47,10 +47,28 @@ var _caregiver_present := false
 var _eligible_by_sex: Array = [[], []]
 
 
-func _init(config: WorldConfig, food_node: ResourceNode, capacity: float) -> void:
+## `adopt_colony`/`adopt_time` resume a LOADED game (T12.2) instead of
+## founding a new one: no founder rolls, the season latch re-arms from
+## the adopted clock (identical to an uninterrupted run — after any
+## day's tick both hold season(day)), and max_generation is recomputed
+## from the gnomes since it is derivable, not serialized.
+func _init(
+	config: WorldConfig,
+	food_node: ResourceNode,
+	capacity: float,
+	adopt_colony: Colony = null,
+	adopt_time: TimeService = null,
+) -> void:
 	food = food_node
 	k_capacity = capacity
-	_spawn_founders(config)
+	if adopt_colony != null:
+		colony = adopt_colony
+		time = adopt_time if adopt_time != null else TimeService.new()
+		_last_season = time.season()
+		for g in colony.gnomes.values():
+			max_generation = maxi(max_generation, g.generation)
+	else:
+		_spawn_founders(config)
 	EventBus.born.connect(_on_born)
 	EventBus.gnome_died.connect(_on_died)
 
@@ -74,15 +92,13 @@ func tick() -> void:
 	Needs.tick(colony, dt)
 	var living := colony.living()
 	_refresh_day_cache(living)
-	# Availability varies only by (stage, has-a-teacher) today — memo the
-	# 12 possible action lists instead of rebuilding one per gnome (T11.5).
-	var day_actions := {}
+	# NO action-list memo here: Actions.available also gates on per-gnome
+	# knowledge ("teach") and LIVE food (which depletes mid-loop as gnomes
+	# eat) — a shared cached list leaks unearned actions (reviewer catch;
+	# a T11.5 draft had one and it was a real behavior bug).
 	for g in living:
 		var ctx := _context_for(g, living)
-		var key: int = g.stage * 2 + (1 if ctx["teacher_available"] else 0)
-		if not day_actions.has(key):
-			day_actions[key] = Actions.available(g, ctx)
-		var action := Decide.choose(g, ctx, day_actions[key])
+		var action := Decide.choose(g, ctx)
 		Act.apply(g, action, ctx)
 		_side_effects(g, action, living, dt)
 	Projects.tick(colony, dt)
@@ -183,7 +199,9 @@ func _best_mate_candidate(g: GnomeData, _living: Array) -> GnomeData:
 	var candidates: Array = _eligible_by_sex[1 - g.sex]
 	var pool := candidates
 	if candidates.size() > COURT_SAMPLE:
-		# Bounded courtship: an Rng sample (with replacement) of the crowd.
+		# Bounded courtship: an Rng sample of the crowd, WITH replacement —
+		# duplicates are possible, so up to (not exactly) 16 distinct
+		# candidates are courted (reviewer note; documented interpretive).
 		pool = []
 		for i in COURT_SAMPLE:
 			pool.append(candidates[Rng.randi_range(0, candidates.size() - 1)])
