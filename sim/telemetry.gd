@@ -23,6 +23,13 @@ func record(event: Dictionary) -> void:
 	events.append(event.duplicate(true))
 
 
+## Re-arm the peak after a load [T17.2 reviewer catch]: the shell
+## serializes summary()'s peak into its save envelope; without this the
+## counter restarts at the loaded population and end-of-run stats lie.
+func restore_peak(peak: int) -> void:
+	_peak_pop = maxi(_peak_pop, peak)
+
+
 ## The balancing summary [T16.3's named fields].
 func summary(colony: Colony) -> Dictionary:
 	var generations := 0

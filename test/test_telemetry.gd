@@ -32,6 +32,22 @@ func test_the_summary_carries_the_balancing_fields():
 	assert_eq(summary["wars"], 1)
 
 
+func test_restore_peak_rearms_after_a_load():
+	# [T17.2 reviewer catch]: the shell serializes summary()'s peak;
+	# a restored Telemetry must keep the historical high-water mark.
+	var telemetry := Telemetry.new()
+	var colony := Colony.new()
+	for i in 3:
+		var g := colony.spawn()
+		g.age = 30.0
+		g.stage = Enums.LifeStage.ADULT
+	telemetry.restore_peak(12)
+	telemetry.track_day(colony)
+	assert_eq(telemetry.summary(colony)["peak_pop"], 12, "the saved peak outranks today's count")
+	telemetry.restore_peak(5)
+	assert_eq(telemetry.summary(colony)["peak_pop"], 12, "restore never lowers the mark")
+
+
 func test_the_export_travels_as_json():
 	var telemetry := Telemetry.new()
 	var colony := Colony.new()
