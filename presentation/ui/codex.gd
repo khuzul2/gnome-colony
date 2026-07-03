@@ -94,4 +94,6 @@ func _lesson(stimulus: Dictionary) -> String:
 			best_value = value
 	if best_axis == "":
 		return FACELESS_PHRASE
-	return PHRASES["%s%s" % [best_axis, "+" if best_value >= 0.0 else "-"]]
+	# An axis the phrase table doesn't know (a future catalog entry)
+	# degrades to mystery, never to a crash (reviewer catch).
+	return PHRASES.get("%s%s" % [best_axis, "+" if best_value >= 0.0 else "-"], FACELESS_PHRASE)

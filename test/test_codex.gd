@@ -71,6 +71,16 @@ func test_different_faces_of_one_act_accrue_separately():
 	assert_eq(lines.size(), 2, "two lessons: it uncovers, and it kills")
 
 
+func test_an_unknown_effect_axis_stays_faceless_not_fatal():
+	# Reviewer catch (T14.3): a future catalog entry with an axis the
+	# phrase table doesn't know must degrade to mystery, not crash.
+	var codex := FaintCodex.new()
+	codex.observe(_stim("strange_act", {"weirdness": 0.9}))
+	var lines: Array = codex.about("strange_act")
+	assert_eq(lines.size(), 1, "the sighting is still recorded")
+	assert_string_contains(lines[0], "without a trace", "…as a faceless impression")
+
+
 func test_consequence_markers_teach_too():
 	var codex := FaintCodex.new()
 	var marker := {
