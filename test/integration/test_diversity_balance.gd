@@ -121,6 +121,10 @@ func test_the_shepherd_holds_more_sustained_devotion():
 		results["tyrant"]["pop"],
 		"the stable civilization grows larger [§17 unrest birth damp]"
 	)
+	# With depth held constant this restates the pop comparison through
+	# §10's identity D = faith·pop — kept as the named claim the plan
+	# asks for, but the independent evidence above is the SIZE gap
+	# (reviewer note: not a second mechanism).
 	assert_gt(
 		results["shepherd"]["d_total"],
 		results["tyrant"]["d_total"],

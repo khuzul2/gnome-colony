@@ -9,6 +9,10 @@ extends GutTest
 ## spec names no frequency, so the band [1,9]/10 under a calibrated
 ## harsh regime is INTERPRETIVE (documented; probe notes in-line).
 
+## Keep in sync with test_epochal.gd's POP_CEILING — same structural
+## runaway tripwire (reviewer: was a bare re-typed literal).
+const POP_CEILING := 240
+
 
 func test_one_bad_season_is_survivable():
 	Rng.seed_with(16201)
@@ -52,7 +56,7 @@ func test_no_loop_runs_away_within_a_session():
 		if runner.time.season() != last_season:
 			last_season = runner.time.season()
 			var pop := runner.colony.population()
-			assert_lt(pop, 240, "population bounded by K [§16b] (day %d)" % day)
+			assert_lt(pop, POP_CEILING, "population bounded by K [§16b] (day %d)" % day)
 			assert_between(runner.colony.unrest, 0.0, 1.0, "unrest stays a fraction [§10]")
 			assert_lte(
 				Devotion.per_capita(runner.colony), 1.0, "per-capita devotion is a [0,1] mean [§10]"
