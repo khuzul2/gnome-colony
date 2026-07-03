@@ -142,7 +142,7 @@ human records GO here.
 
 ## Phase 15 — Menus & setup
 - [x] T15.1 Main menu — MainMenu (presentation/ui/main_menu.gd): setup §6's eight entries verbatim and ordered (continue/new_game/load_game/settings/codex/chronicles/credits/quit), one `selected` signal; refresh(has_save) hides Continue when nothing is resumable (save discovery belongs to T15.3 — the menu never touches the filesystem). PUBLIC API: MainMenu.
-- [ ] T15.2 New Game wizard
+- [x] T15.2 New Game wizard — NewGameWizard (presentation/ui/new_game/): §1's preset table verbatim (Slow/Normal/Brisk pace cells mapped to §3.1's languid/balanced/brisk; Balanced Saga = WorldConfig defaults by construction); set_rule/set_world/set_founding whitelisted nudges layered over the bundle; blank seed rolled via Rng.randi_range and blank name from Rng-picked parts (presentation strings), BOTH persisted into overrides so summary().seed == start().seed (bug caught red-first); start() normalizes (clamps/fallbacks proven); quick_start() = Balanced Saga + random world. PUBLIC API: NewGameWizard.
 - [ ] T15.3 Load Game
 - [ ] T15.4 Settings (global)
 - [ ] T15.5 Chronicle & world's end
