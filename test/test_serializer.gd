@@ -77,6 +77,8 @@ func test_world_config_round_trip():
 	cfg.band_size = 5
 	cfg.temperament_leanings = ["hardy", "devout"]
 	cfg.exploration_fog = false
+	cfg.environmental_events = true
+	cfg.event_frequencies = {"landslide": "frequent", "day_twice": "off"}
 	var restored := Serializer.config_from_dict(Serializer.config_to_dict(cfg))
 	assert_eq(Serializer.config_to_dict(restored), Serializer.config_to_dict(cfg))
 	assert_eq(restored.seed, 424242)
@@ -84,3 +86,16 @@ func test_world_config_round_trip():
 	assert_eq(restored.basin_count(), 12)
 	assert_eq(restored.temperament_leanings, ["hardy", "devout"])
 	assert_false(restored.exploration_fog)
+	assert_true(restored.environmental_events)
+	assert_eq(restored.event_frequencies, {"landslide": "frequent", "day_twice": "off"})
+
+
+func test_pre_feature_config_dict_loads_with_events_off():
+	# Saves written before the natural-events option carry neither key —
+	# they must load as the world they were played in [user feature].
+	var d := Serializer.config_to_dict(WorldConfig.new())
+	d.erase("environmental_events")
+	d.erase("event_frequencies")
+	var restored := Serializer.config_from_dict(d)
+	assert_false(restored.environmental_events)
+	assert_eq(restored.event_frequencies, {})

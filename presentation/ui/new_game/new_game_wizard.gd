@@ -65,6 +65,8 @@ const WORLD_KEYS := [
 	"hazard_frequency",
 	"biome_variety",
 	"exploration_fog",
+	"environmental_events",
+	"event_frequencies",
 ]
 const FOUNDING_KEYS := ["band_size", "temperament_leanings", "culture_flavor", "colony_name"]
 const PAGES := 5
@@ -105,6 +107,16 @@ func set_rule(key: String, level: Variant) -> void:
 func set_world(key: String, value: Variant) -> void:
 	if key in WORLD_KEYS:
 		_overrides[key] = value
+
+
+## Page 3 [user feature 2026-07-03]: dial one natural event's frequency —
+## the per-event half of the environmental-events option. Levels are
+## WorldConfig.EVENT_FREQUENCIES; ids the catalog doesn't know are
+## dropped by normalize() on the way out, same as every other field.
+func set_event_frequency(event_id: String, level: String) -> void:
+	var frequencies: Dictionary = _overrides.get("event_frequencies", {})
+	frequencies[event_id] = level
+	_overrides["event_frequencies"] = frequencies
 
 
 ## Page 2 [§5].

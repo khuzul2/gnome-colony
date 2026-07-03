@@ -58,7 +58,9 @@ func _ready() -> void:
 	cfg.temperament_leanings = ["devout", "social"]
 	cfg.normalize()
 	var food := ResourceNode.new("food", 100.0, 100.0, 10.0, 1.0)
-	runner = SimRunner.new(cfg, food, 60.0)
+	# world passed so cfg.environmental_events = true above would bring
+	# natural events to the slice; the default config keeps them off.
+	runner = SimRunner.new(cfg, food, 60.0, null, null, world)
 	world.sites[HOLLOW] = food
 	world.sites[RIDGE] = ResourceNode.new("stone", 40.0, 40.0, 2.0, 0.8)
 	world.hidden_resources[RIDGE] = [ResourceNode.new("iron", 30.0, 30.0, 0.0, 1.5)]

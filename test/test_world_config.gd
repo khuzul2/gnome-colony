@@ -19,6 +19,10 @@ func test_defaults_match_setup_spec():
 	assert_eq(cfg.hazard_frequency, "normal")
 	assert_eq(cfg.biome_variety, "varied")
 	assert_true(cfg.exploration_fog)
+	# Natural events [user feature 2026-07-03] — OFF: §1.8b sole
+	# authorship stays the default experience
+	assert_false(cfg.environmental_events)
+	assert_eq(cfg.event_frequencies, {})
 	# Founding [setup §5]
 	assert_eq(cfg.band_size, 4)
 	assert_eq(cfg.temperament_leanings, ["curious"])
@@ -71,6 +75,29 @@ func test_temperament_leanings_validated():
 	cfg.temperament_leanings = []
 	cfg.normalize()
 	assert_eq(cfg.temperament_leanings, ["curious"], "empty falls back to the default leaning")
+
+
+func test_event_frequencies_validated_per_event():
+	var cfg := WorldConfig.new()
+	cfg.environmental_events = true
+	cfg.event_frequencies = {
+		"landslide": "frequent",
+		"day_twice": "off",
+		"the_blight": "hourly",
+		"meteor_strike": "rare",
+	}
+	cfg.normalize()
+	assert_true(cfg.environmental_events)
+	assert_eq(cfg.event_frequencies["landslide"], "frequent", "valid per-event levels survive")
+	assert_eq(cfg.event_frequencies["day_twice"], "off", "a single event can be silenced")
+	assert_eq(
+		cfg.event_frequencies["the_blight"],
+		WorldConfig.DEFAULT_EVENT_FREQUENCY,
+		"an unknown level falls back to the default"
+	)
+	assert_false(
+		cfg.event_frequencies.has("meteor_strike"), "ids the catalog doesn't know are dropped"
+	)
 
 
 func test_quicken_budget_clamps_to_positive():

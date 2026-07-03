@@ -80,6 +80,15 @@ static func resolve(cfg: WorldConfig) -> Dictionary:
 			"secularization_mult": FAITH_SECULARIZATION[cfg.faith_enlightenment],
 			"resistance_ceiling": FAITH_RESISTANCE_CEILING[cfg.faith_enlightenment],
 		},
+		# Natural environmental events [user feature 2026-07-03]: the
+		# per-day probability per catalog id, resolved from the opt-in +
+		# per-event frequency levels (ladder lives with its consumer,
+		# NaturalEvents.FREQUENCY_INTERVAL_DAYS). Empty when off.
+		"events":
+		{
+			"enabled": cfg.environmental_events,
+			"daily_prob": NaturalEvents.daily_probs(cfg),
+		},
 		"world":
 		{
 			"basin_count": cfg.basin_count(),

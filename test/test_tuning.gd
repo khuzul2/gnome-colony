@@ -107,6 +107,28 @@ func test_world_options_resolve():
 	assert_eq(Tuning.resolve(no_fog)["world"]["exploration_fog"], false)
 
 
+func test_environmental_events_resolve_per_event():
+	# [user feature 2026-07-03] — off by default, per-event daily probs
+	# when opted in (ladder documented in natural_events.gd).
+	var off := _defaults()
+	assert_eq(off["events"]["enabled"], false)
+	assert_eq(off["events"]["daily_prob"], {}, "off resolves to an empty schedule")
+	var cfg := WorldConfig.new()
+	cfg.environmental_events = true
+	cfg.event_frequencies = {"landslide": "frequent", "day_twice": "off"}
+	cfg.normalize()
+	var on: Dictionary = Tuning.resolve(cfg)["events"]
+	assert_eq(on["enabled"], true)
+	assert_almost_eq(on["daily_prob"]["landslide"], 1.0 / TimeService.DAYS_PER_SEASON, 0.000001)
+	assert_false(on["daily_prob"].has("day_twice"), "a silenced event never rolls")
+	assert_almost_eq(
+		on["daily_prob"]["still_air"],
+		1.0 / TimeService.DAYS_PER_YEAR,
+		0.000001,
+		"unlisted events run at the default level"
+	)
+
+
 func test_every_gameplay_option_is_honored():
 	# The §3–§5 contract in one sweep: flipping ANY enumerated option away
 	# from its default must change the resolved parameter set. (Seed feeds
@@ -131,6 +153,13 @@ func test_every_gameplay_option_is_honored():
 	var fogless := WorldConfig.new()
 	fogless.exploration_fog = false
 	assert_ne(JSON.stringify(Tuning.resolve(fogless)), baseline, "exploration_fog too")
+	var eventful := WorldConfig.new()
+	eventful.environmental_events = true
+	assert_ne(
+		JSON.stringify(Tuning.resolve(eventful)),
+		baseline,
+		"environmental_events too [user feature]"
+	)
 	var big_band := WorldConfig.new()
 	big_band.band_size = 8
 	assert_eq(Tuning.resolve(big_band)["founding"]["band_size"], 8, "band size passes through [§5]")

@@ -74,6 +74,29 @@ func test_the_config_leaves_valid_and_normalized():
 	assert_eq(cfg.mortality, "normal", "an unknown level falls back to the default")
 
 
+func test_environmental_events_are_a_new_game_option():
+	# [user feature 2026-07-03]: opt in on the world page, then dial each
+	# event's frequency individually; normalize() guards the exit.
+	var wizard := _wizard()
+	wizard.set_world("environmental_events", true)
+	wizard.set_event_frequency("landslide", "frequent")
+	wizard.set_event_frequency("day_twice", "off")
+	wizard.set_event_frequency("the_blight", "hourly")
+	wizard.set_event_frequency("meteor_strike", "rare")
+	var cfg := wizard.start()
+	assert_true(cfg.environmental_events, "the option reaches the config")
+	assert_eq(cfg.event_frequencies["landslide"], "frequent")
+	assert_eq(cfg.event_frequencies["day_twice"], "off")
+	assert_eq(
+		cfg.event_frequencies["the_blight"],
+		WorldConfig.DEFAULT_EVENT_FREQUENCY,
+		"a bad level normalizes to the default"
+	)
+	assert_false(cfg.event_frequencies.has("meteor_strike"), "unknown events are dropped")
+	var untouched := _wizard().start()
+	assert_false(untouched.environmental_events, "every preset leaves nature off by default")
+
+
 func test_seeds_typed_or_rolled_never_zero():
 	Rng.seed_with(15200)
 	var wizard := _wizard()

@@ -17,6 +17,11 @@ const REGION_SIZES := {"small": 3, "medium": 6, "large": 12}
 const RESOURCE_ABUNDANCES := ["sparse", "normal", "lush"]
 const HAZARD_FREQUENCIES := ["calm", "normal", "volatile"]
 const BIOME_VARIETIES := ["uniform", "varied"]
+## Per-event frequency levels for the optional natural-events scheduler
+## [user feature 2026-07-03]. Level → mean interval lives with its
+## consumer (NaturalEvents.FREQUENCY_INTERVAL_DAYS).
+const EVENT_FREQUENCIES := ["off", "rare", "occasional", "frequent"]
+const DEFAULT_EVENT_FREQUENCY := "occasional"
 const TEMPERAMENTS := ["hardy", "curious", "social", "devout", "ambitious"]
 const BAND_SIZE_MIN := 3
 const BAND_SIZE_MAX := 8
@@ -42,6 +47,15 @@ var resource_abundance := "normal"
 var hazard_frequency := "normal"
 var biome_variety := "varied"
 var exploration_fog := true
+## Natural environmental events [user feature 2026-07-03, opt-in]: when
+## true, catalog phenomena also fire UNBIDDEN on a per-event clock — the
+## world acts without the player's hand. Off by default: §1.8b's
+## sole-authorship pillar stays the intended experience.
+var environmental_events := false
+## Per-event frequency, chosen event by event: catalog id → level in
+## EVENT_FREQUENCIES. An id absent here runs at DEFAULT_EVENT_FREQUENCY
+## while environmental_events is on; "off" silences that event alone.
+var event_frequencies := {}
 
 # Founding [setup §5]
 var band_size := 4
@@ -74,6 +88,17 @@ func normalize() -> void:
 	biome_variety = _pick(biome_variety, BIOME_VARIETIES, "varied")
 	band_size = clampi(band_size, BAND_SIZE_MIN, BAND_SIZE_MAX)
 	quicken_budget = maxi(quicken_budget, 1)
+	var frequencies := {}
+	var known_events := Catalog.defs()
+	for event_id in event_frequencies:
+		if not known_events.has(event_id):
+			continue
+		var level: Variant = event_frequencies[event_id]
+		if level is String and level in EVENT_FREQUENCIES:
+			frequencies[event_id] = level
+		else:
+			frequencies[event_id] = DEFAULT_EVENT_FREQUENCY
+	event_frequencies = frequencies
 	var leanings := []
 	for entry in temperament_leanings:
 		if entry in TEMPERAMENTS and not entry in leanings and leanings.size() < MAX_LEANINGS:

@@ -36,6 +36,15 @@ var food: ResourceNode
 var k_capacity: float
 var chronicle: Array = []
 var max_generation := 0
+## Optional world container for natural environmental events [user
+## feature 2026-07-03]: when a WorldState is adopted AND the config opted
+## in, NaturalEvents rolls daily. Null (the default) keeps every existing
+## composition byte-identical — no world, no extra Rng draws.
+var world: WorldState = null
+
+var _event_probs := {}
+var _event_defs := {}
+var _event_handlers := {}
 
 var _last_season := -1
 # Per-day caches (T11.5 perf): colony-wide facts hoisted out of the
@@ -58,9 +67,15 @@ func _init(
 	capacity: float,
 	adopt_colony: Colony = null,
 	adopt_time: TimeService = null,
+	world_state: WorldState = null,
 ) -> void:
 	food = food_node
 	k_capacity = capacity
+	world = world_state
+	_event_probs = NaturalEvents.daily_probs(config)
+	if not _event_probs.is_empty():
+		_event_defs = Catalog.defs()
+		_event_handlers = Catalog.handlers()
 	if adopt_colony != null:
 		colony = adopt_colony
 		time = adopt_time if adopt_time != null else TimeService.new()
@@ -108,9 +123,28 @@ func tick() -> void:
 	Social.decay_tick(colony, dt)
 	Notability.tick(colony, dt)
 	food.regrow(dt)
+	_natural_events_tick()
 	if time.season() != _last_season:
 		_last_season = time.season()
 		_season_tick()
+
+
+## Nature's daily roll [user feature 2026-07-03] — only when a world was
+## adopted and the config opted in. Root phenomena (not consequence
+## markers or tail aftershocks) enter the chronicle: history remembers
+## what befell the colony, not who authored it.
+func _natural_events_tick() -> void:
+	if world == null or _event_probs.is_empty():
+		return
+	for stim in NaturalEvents.tick(colony, world, _event_probs, _event_defs, _event_handlers):
+		if stim.get("consequence", false) or stim["type"].begins_with("tail:"):
+			continue
+		chronicle.append(
+			(
+				"Year %d · %s befalls %s — no hand behind it"
+				% [time.year(), stim["type"], stim["place"]]
+			)
+		)
 
 
 func _season_tick() -> void:

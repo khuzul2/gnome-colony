@@ -122,6 +122,8 @@ static func config_to_dict(cfg: WorldConfig) -> Dictionary:
 		"hazard_frequency": cfg.hazard_frequency,
 		"biome_variety": cfg.biome_variety,
 		"exploration_fog": cfg.exploration_fog,
+		"environmental_events": cfg.environmental_events,
+		"event_frequencies": cfg.event_frequencies.duplicate(true),
 		"band_size": cfg.band_size,
 		"temperament_leanings": cfg.temperament_leanings.duplicate(true),
 		"culture_flavor": cfg.culture_flavor,
@@ -145,6 +147,10 @@ static func config_from_dict(d: Dictionary) -> WorldConfig:
 	cfg.hazard_frequency = d["hazard_frequency"]
 	cfg.biome_variety = d["biome_variety"]
 	cfg.exploration_fog = d["exploration_fog"]
+	# .get(): pre-feature saves predate the natural-events option — they
+	# load with it off, exactly the world they were played in.
+	cfg.environmental_events = d.get("environmental_events", false)
+	cfg.event_frequencies = d.get("event_frequencies", {}).duplicate(true)
 	cfg.band_size = d["band_size"]
 	cfg.temperament_leanings = d["temperament_leanings"].duplicate(true)
 	cfg.culture_flavor = d["culture_flavor"]
