@@ -152,7 +152,7 @@ human records GO here.
 - [x] Human GO recorded here — pre-waived 2026-07-03 by the FUN CHECK 3 ruling ("GO let's go on until the end"): the user directed the loop to run through to project completion without further halts. Onboarding/learnability evaluation deferred to the user's own testing.
 
 ## Phase 16 — Integration, balance & polish
-- [ ] T16.1 Epochal smoke run (test_epochal.gd)
+- [x] T16.1 Epochal smoke run — test_epochal.gd: 60 default-config years with the full shell composition (life core + belief/devotion/prophets daily, §13 research seasonally); asserts survival, bounded population (structural 4×K tripwire, documented — §16 "no loop runs away"), ≥3 generations turned, and a moving tech arc. Runs ~12s.
 - [ ] T16.2 Tuning-invariant tests (test_invariants.gd)
 - [ ] T16.5 Diversity & balance invariants (test_diversity_balance.gd)
 - [ ] T16.3 Telemetry hooks
