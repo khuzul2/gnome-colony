@@ -31,6 +31,9 @@ var magic_understanding := {}
 ## Per-settlement current leader gnome id [algo §14] (T11.6): sid → id.
 ## Written only by Leadership.elect — never by the player.
 var leaders := {}
+## World's-end latch [algo §14] (T11.4): world_ended fires exactly once;
+## the run closes into the Chronicle (design §1.9) — no re-founding.
+var world_over := false
 
 
 func spawn() -> GnomeData:
