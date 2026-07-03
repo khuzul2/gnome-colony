@@ -141,7 +141,7 @@ human records GO here.
 - [x] Human GO recorded here — 2026-07-03, user: "GO let's go on until the end". Third gate GO'd without recorded hands-on notes; the same message pre-waives PLAYTEST 4 ("until the end"), so the loop runs Phases 15–16 to completion. All fun/feel evaluation remains deferred to the user's own later testing; core-feel rework stays open post-delivery.
 
 ## Phase 15 — Menus & setup
-- [ ] T15.1 Main menu
+- [x] T15.1 Main menu — MainMenu (presentation/ui/main_menu.gd): setup §6's eight entries verbatim and ordered (continue/new_game/load_game/settings/codex/chronicles/credits/quit), one `selected` signal; refresh(has_save) hides Continue when nothing is resumable (save discovery belongs to T15.3 — the menu never touches the filesystem). PUBLIC API: MainMenu.
 - [ ] T15.2 New Game wizard
 - [ ] T15.3 Load Game
 - [ ] T15.4 Settings (global)
