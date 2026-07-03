@@ -68,6 +68,11 @@ func test_radius_narrows_with_zoom():
 		eye.radius_for(CameraRig.Zoom.INDIVIDUAL),
 		"the closer the Eye, the tighter the circle"
 	)
+	assert_eq(
+		eye.radius_for(CameraRig.Zoom.CIVILIZATION),
+		0.0,
+		"the god's-eye has no circle at all [reviewer minor]"
+	)
 
 
 func test_recording_replays_identically():
