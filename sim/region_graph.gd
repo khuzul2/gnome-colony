@@ -4,11 +4,15 @@ extends RefCounted
 ## graph of basins — center (abstract km), elevation, biome, neighbors —
 ## generated from the seeded Rng + Tuning's world block, and reshaped by
 ## phenomena (each reshape bumps `version` so skins know to re-bake).
-## Plain data; the heightmap SKIN lives in presentation/world_view.gd.
+## Plain data; the heightmap SKIN is a render-layer concern that bakes
+## FROM this graph — the sim never references it (T13.2's purity test
+## enforces the direction, and caught this very docstring once).
 ## Layout constants below are world-gen scaffolding (structure, not §17
 ## gameplay numbers — noted in PROGRESS.md): basins sit on a jittered
 ## ring (guaranteed ring adjacency — no unreachable island basins),
-## elevations draw from a hazard-scaled band, biomes from a small pool.
+## elevations draw from a hazard-scaled band (INTERPRETIVE: setup §4 maps
+## hazards to affordance density; ruggedness is a documented extension),
+## biomes from a small pool.
 
 const RING_RADIUS_KM := 10.0
 const JITTER_KM := 2.0

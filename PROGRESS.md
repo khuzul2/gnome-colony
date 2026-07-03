@@ -124,7 +124,7 @@ human records GO here.
 
 ## Phase 13 — Presentation: world, puppets, camera
 - [x] T13.1 Region-graph → heightmap skin — SIM HALF created here (no graph existed): RegionGraph.generate from seeded Rng + Tuning world block (basins on a jittered ring w/ guaranteed ring adjacency; elevation band scales with hazard density — INTERPRETIVE: §4 maps hazards to affordance density, ruggedness reading documented; biome pool collapses under Uniform); reshape bumps a version counter; deterministic per seed. World-gen scaffolding numbers (10 km ring, 2 km jitter, 1+2·hazard band, 4 biomes) are structure, not §17 numbers. PRESENTATION HALF: WorldView (Node3D) bakes an IDW heightfield mesh, lazy re-bake on version change; GRID/EXTENT are render resolution. PUBLIC API: RegionGraph, WorldView, Serializer.region_graph pair (Vector2 → [x,y] for JSON; envelope key when the orchestrator owns a graph, T15/T16).
-- [ ] T13.2 `GnomePuppet`
+- [x] T13.2 GnomePuppet — bind/refresh reads GnomeData (scale by stage, tint = the slice's fear/faith mapping, hidden when dead; READ-only — movement is T13.3); PuppetPool acquire/release (rebind, never free — no node churn at 10k). The purity invariant is now a TEST: walks res://sim recursively asserting no .gd mentions presentation paths/classes — it caught T13.1's docstring on its first run (reworded; inline INTERPRETIVE tag added per T13.1 reviewer minor). Styling numbers are presentation, not sim.
 - [ ] T13.3 NavMesh for LOD-0
 - [ ] T13.4 Camera & three-zoom lens
 - [ ] T13.5 Attention input (the Eye, dwell-based)
