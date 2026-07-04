@@ -136,6 +136,20 @@ func test_bindings_drive_the_camera():
 	wheel.pressed = true
 	view._unhandled_input(wheel)
 	assert_eq(view.camera.level, CameraRig.Zoom.SETTLEMENT, "wheel down zooms out")
+	# [T23 review] the rig rides the ground height as it pans…
+	assert_almost_eq(
+		view.camera.position.y,
+		view.world_view.height_at(Vector2(view.camera.position.x, view.camera.position.z)),
+		0.001,
+		"the camera keeps its clearance over uneven terrain"
+	)
+	# …and a diagonal pan is normalized, not ~1.41× faster.
+	view._unhandled_input(_key("A", true))
+	view._unhandled_input(_key("W", true))
+	var flat := Vector2(view.camera.position.x, view.camera.position.z)
+	view._process(0.1)
+	var moved := Vector2(view.camera.position.x, view.camera.position.z).distance_to(flat)
+	assert_almost_eq(moved, RunView.PAN_SPEED * 0.1, 0.01, "diagonal pan speed matches one axis")
 
 
 func test_a_click_targets_the_basin_under_the_cursor():

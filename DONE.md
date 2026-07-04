@@ -81,6 +81,12 @@ local tags — tag pushes are rejected by branch-scoped rights).
 
 ## Handover notes (for the human)
 
+0. **Playable-build render/play check (Phase 23, 2026-07-04)** — the
+   in-run 3D world now has lighting, camera control (WASD pan, E/Q/wheel
+   zoom), and left-click mouse-picking so arm-act + click-ground casts.
+   All of it is unit-tested headless, but the "does it render and feel
+   right" pass needs a windowed build — see README_DEV "Manual
+   render/play check". That is the one open sign-off before playtest.
 1. **Strict performance budget** — the 12 ms/tick @10k budget was verified
    on this container only against the calibrated 24 ms tripwire (human
    ruling 2026-07-03). On reference hardware, set `test/integration/

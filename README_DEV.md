@@ -32,6 +32,33 @@ debug launcher. The whole flow is covered headless by
 `test_game_shell.gd`, `test_run_view.gd`, and
 `test/integration/test_phase17_exit.gd` — CI never needs a display.
 
+### Controls (in a run)
+- **WASD** pan the camera (rebindable in Settings → Controls).
+- **E / Q** or the **mouse wheel** zoom the three-lens (civilization →
+  settlement → individual).
+- Click an act in the influence panel to **arm** it, then **left-click
+  the world** to cast it there (a ring shows where it will land). The
+  panel's buttons consume their own clicks; clicks on open ground pick.
+- Dwell the camera on a basin (~2 s) to let the Eye **quicken** its
+  folk into watchable individuals.
+
+### Manual render/play check (Phase-Exit 23 — needs a display, only a human can sign)
+The input/render layer (lighting, camera control, mouse-picking) is
+unit-tested headless, but "does it actually look right and feel right"
+needs eyes on a windowed build. Run `godot` (not `--headless`) and
+confirm:
+1. The 3D world is **lit and visible** (heightmap + gnome puppets), not
+   a black void behind the HUD.
+2. **WASD pans** and **E/Q/wheel zoom**; the camera keeps clearance over
+   hills.
+3. Arming an act and **left-clicking the ground casts it there** — the
+   aftermath page and chronicle name that basin; a **hover ring** tracks
+   the cursor while armed.
+4. Menus, save/Continue, Settings, Codex, Chronicles all respond.
+
+Record the result (GO / issues) — this is the last check standing
+between "green tests" and "playable".
+
 ## Run the test suite
 ```
 godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit -gexit_on_success

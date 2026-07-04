@@ -273,9 +273,15 @@ func _apply_pan(delta: float) -> void:
 		dir += _pan_keys.get(code, Vector2.ZERO)
 	if dir == Vector2.ZERO:
 		return
+	# Normalize so a diagonal (W+D) doesn't pan ~1.41× faster than an axis
+	# [T23 review]; the rig rides the terrain height at its new spot so the
+	# camera keeps its per-zoom clearance over uneven ground.
+	dir = dir.normalized()
 	var sensitivity: float = settings.get_value("controls", "pan_sensitivity")
 	var step := PAN_SPEED * sensitivity * delta
-	camera.focus(camera.position + Vector3(dir.x * step, 0.0, dir.y * step))
+	var target := camera.position + Vector3(dir.x * step, 0.0, dir.y * step)
+	target.y = world_view.height_at(Vector2(target.x, target.z))
+	camera.focus(target)
 
 
 ## Cast the armed act where the cursor points [T23.3]: a ray to the pick
@@ -306,6 +312,10 @@ func _hover(screen_pos: Vector2) -> void:
 		return
 	var point := _ground_point(screen_pos)
 	if point.x == INF:
+		# The cursor strayed off the pickable ground — drop the ring
+		# rather than leave it glued to the last valid spot [T23 review].
+		hovered_place = ""
+		_highlight.visible = false
 		return
 	hovered_place = _nearest_place(point)
 	_highlight.position = place_positions[hovered_place] + Vector3(0.0, 0.05, 0.0)
