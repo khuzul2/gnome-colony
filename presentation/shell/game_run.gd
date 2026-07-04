@@ -43,10 +43,20 @@ const FRONTIER_BASE_K := 200.0
 const FRONTIER_RICHNESS := 2.0
 const FRONTIER_FOOD_FACTOR := 1.0
 const FRACTURE_FRACTION := 0.5
+## Eye-quickening cap [T21.1]: dwelling on a populated frontier basin
+## materializes at most this many of its souls — a small watchable knot,
+## not a census. INTERPRETIVE presentation-side number (documented; no
+## spec value maps a single basin's quickening); the GLOBAL LOD-0 cap
+## stays WorldConfig.quicken_budget through Lod.assign as before.
+const QUICKENED_PER_BASIN := 16
 
 ## Live frontier settlements [T18.2]: sid (= basin/region id) → the
 ## aggregate Settlement. Home stays individual-grain at HOME_SID.
 var settlements := {}
+## Eye-quickened frontier souls [T21.1]: sid → Array of the GnomeData
+## this gaze materialized out of that basin's aggregate. Maintained
+## daily by _quicken_frontier; rebuilt on resume from home_settlement.
+var quickened := {}
 
 var config: WorldConfig
 var graph: RegionGraph
@@ -102,6 +112,15 @@ static func resume(envelope: Dictionary) -> GameRun:
 	run.runner.chronicle = loaded["chronicle"]
 	for s in loaded["settlements"]:
 		run.settlements[s.sid] = s
+	# T21.1: quickened frontier souls ride the colony envelope with
+	# home_settlement pointing at their basin (their heads were drained
+	# from the saved settlement at materialize-time — consistent, no
+	# double count); regroup them so a later gaze-off dematerializes.
+	for g in run.runner.colony.living():
+		if g.home_settlement != HOME_SID:
+			if not run.quickened.has(g.home_settlement):
+				run.quickened[g.home_settlement] = []
+			run.quickened[g.home_settlement].append(g)
 	run.exposure = envelope.get("exposure", 0.0)
 	run._phenomena_pressure = envelope.get("phenomena_pressure", 0.0)
 	var saved_telemetry: Dictionary = envelope.get("telemetry", {})
@@ -123,6 +142,7 @@ func advance_day() -> Dictionary:
 	Terrain.refresh(colony, world, home, food, capacity, HOME_SID)
 	_stage_locations()
 	Lod.assign(colony, attention_places, config.quicken_budget, _individual_budget)
+	_quicken_frontier()
 	runner.tick()
 	Belief.propagate_tick(colony, 1.0)
 	Belief.decay_tick(colony, 1.0)
@@ -238,12 +258,53 @@ func _finish_setup() -> void:
 func _stage_locations() -> void:
 	var day := runner.time.day()
 	for g in runner.colony.living():
+		if g.home_settlement != HOME_SID:
+			continue  # quickened frontier folk keep their basin [T21.1]
 		var trip: bool = (
 			g.stage == Enums.LifeStage.ADULT
 			and _trip_place != home
 			and (g.id + day) % TRIP_ROTATION == 0
 		)
 		g.location = _trip_place if trip else home
+
+
+## T21.1 — the Eye quickens the frontier: dwelling on a populated
+## frontier basin materializes up to QUICKENED_PER_BASIN of its souls
+## (Promotion.materialize — heads leave the buckets, bodies join the
+## colony, standing at the basin's place); the gaze leaving (or the
+## settlement vanishing) folds them back via Promotion.dematerialize —
+## heads conserved by the proven T11.3 pair, the dead skipped there.
+## DISCLOSED DIVERGENCE [§14: "minor divergence is acceptable — and,
+## under the Eye, intended"]: while quickened these souls live the
+## individual day through SimRunner, so they share home's single larder
+## (the sim has one food node) instead of their basin's food_factor
+## economy, and their drained heads sit out SettlementSim.season_tick.
+func _quicken_frontier() -> void:
+	var colony := runner.colony
+	for sid in quickened.keys():
+		var s: Settlement = settlements.get(sid)
+		if s != null and _place_of(sid) in attention_places:
+			continue
+		if s != null:
+			Promotion.dematerialize(colony, s, quickened[sid])
+		quickened.erase(sid)
+	var sids := settlements.keys()
+	sids.sort()
+	for sid in sids:
+		if quickened.has(sid):
+			continue
+		var s: Settlement = settlements[sid]
+		if s.pop() < 1.0:
+			continue
+		var place := _place_of(sid)
+		if place not in attention_places:
+			continue
+		var souls := Promotion.materialize(colony, s, mini(int(s.pop()), QUICKENED_PER_BASIN))
+		for g in souls:
+			g.home_settlement = sid
+			g.location = place
+		if not souls.is_empty():
+			quickened[sid] = souls
 
 
 ## The live civilization season [T18.2, algo §14]: fold a home mirror,
