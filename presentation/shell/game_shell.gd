@@ -43,6 +43,8 @@ var chronicle_store: ChronicleStore
 var codex := FaintCodex.new()
 var menu: MainMenu
 var wizard: NewGameWizard
+var wizard_view: WizardView
+var settings_view: SettingsView
 var load_menu: LoadMenu
 var chronicle_screen: ChronicleScreen
 var run: GameRun = null
@@ -143,7 +145,7 @@ func _on_menu_selected(entry: String) -> void:
 			load_menu.build(store)
 			show_screen("load")
 		"settings":
-			_fill_settings_list()
+			_mount_settings_view()
 			show_screen("settings")
 		"codex":
 			_fill_list("codex", codex.impressions(), "nothing observed yet")
@@ -230,13 +232,27 @@ func _on_menu_requested() -> void:
 ## shell methods, so they always reach the current instance.
 func _remint_wizard() -> void:
 	var box: Control = screens["wizard"]
-	if wizard != null:
-		box.remove_child(wizard)
-		wizard.queue_free()
+	if wizard_view != null:
+		box.remove_child(wizard_view)
+		wizard_view.queue_free()
 	wizard = NewGameWizard.new()
-	wizard.build()
-	box.add_child(wizard)
-	box.move_child(wizard, 0)
+	wizard_view = WizardView.new()
+	wizard_view.wizard = wizard
+	box.add_child(wizard_view)
+	box.move_child(wizard_view, 0)
+
+
+## Settings chrome [T18.4]: the editable view mounts lazily, wrapping
+## the shell's live GameSettings so edits persist immediately.
+func _mount_settings_view() -> void:
+	if settings_view != null:
+		return
+	settings_view = SettingsView.new()
+	settings_view.settings = settings
+	settings_view.settings_path = settings_path
+	var box: Control = screens["settings"]
+	box.add_child(settings_view)
+	box.move_child(settings_view, 0)
 
 
 ## A fresh ChronicleScreen per run: its world_ended arm/hold state has
@@ -283,8 +299,6 @@ func _build_screens() -> void:
 	menu = MainMenu.new()
 	menu.build()
 	menu.selected.connect(_on_menu_selected)
-	wizard = NewGameWizard.new()
-	wizard.build()
 	load_menu = LoadMenu.new()
 	load_menu.load_requested.connect(func(slot: String) -> void: _load_slot(slot))
 	screens = {
@@ -303,12 +317,12 @@ func _build_screens() -> void:
 			_ui.add_child(screens[key])
 		screens[key].visible = false
 	_arm_chronicle_watch()
+	_remint_wizard()
 
 
 func _wizard_screen() -> Control:
 	var box := VBoxContainer.new()
 	box.name = "wizard_screen"
-	box.add_child(wizard)
 	var quick := Button.new()
 	quick.name = "quick_start"
 	quick.text = "Quick Start — Balanced Saga, random world"
@@ -370,15 +384,6 @@ func _fill_list(screen_name: String, lines: Array, empty_line: String) -> void:
 		var label := Label.new()
 		label.text = str(line)
 		list.add_child(label)
-
-
-func _fill_settings_list() -> void:
-	var lines := []
-	for section in settings.values:
-		for key in settings.values[section]:
-			lines.append("%s / %s: %s" % [section, key, settings.values[section][key]])
-	lines.append("(edit %s — machine settings never touch the sim)" % settings_path)
-	_fill_list("settings", lines, "")
 
 
 func _fill_chronicles_list() -> void:

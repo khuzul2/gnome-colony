@@ -98,15 +98,20 @@ func set_preset(id: String) -> void:
 
 
 ## Page 4 [§3]: nudge one rule slider; presets are starting positions.
+## Unknown keys warn and no-op [PROGRESS T18.3, T15.2 minor closed].
 func set_rule(key: String, level: Variant) -> void:
 	if key in RULE_KEYS:
 		_overrides[key] = level
+	else:
+		push_warning("NewGameWizard.set_rule: unknown key '%s'" % key)
 
 
-## Page 3 [§4].
+## Page 3 [§4]. Unknown keys warn and no-op [PROGRESS T18.3].
 func set_world(key: String, value: Variant) -> void:
 	if key in WORLD_KEYS:
 		_overrides[key] = value
+	else:
+		push_warning("NewGameWizard.set_world: unknown key '%s'" % key)
 
 
 ## Page 3 [user feature 2026-07-03]: dial one natural event's frequency —
@@ -119,10 +124,12 @@ func set_event_frequency(event_id: String, level: String) -> void:
 	_overrides["event_frequencies"] = frequencies
 
 
-## Page 2 [§5].
+## Page 2 [§5]. Unknown keys warn and no-op [PROGRESS T18.3].
 func set_founding(key: String, value: Variant) -> void:
 	if key in FOUNDING_KEYS:
 		_overrides[key] = value
+	else:
+		push_warning("NewGameWizard.set_founding: unknown key '%s'" % key)
 
 
 func next() -> void:
