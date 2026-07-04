@@ -1,13 +1,36 @@
-# DONE — Gnome Colony, one-shot build complete
+# DONE — Gnome Colony, build complete and PLAYABLE
 
 Every `T<id>` in docs/implementation-plan.md is checked, every Phase-Exit
 test and all seven named integration tests (`test_milestone1`,
 `test_iron_irony`, `test_scale`, `test_determinism`, `test_epochal`,
 `test_invariants`, `test_diversity_balance`) are green, and lint is clean.
 
-**Final state (2026-07-03):** 100 test scripts · 524 tests · 2732 asserts ·
-lint clean · phases 0–16 tagged (`phase-0-complete` … `phase-16-complete`,
+**Final state (2026-07-04):** 107 test scripts · 590 tests · 2963 asserts ·
+lint clean · phases 0–17 tagged (`phase-0-complete` … `phase-17-complete`,
 local tags — tag pushes are rejected by branch-scoped rights).
+
+## Post-plan additions (user-requested, 2026-07-03/04)
+
+- **Natural environmental events (opt-in):** `WorldConfig.environmental_events`
+  + per-event `event_frequencies` (off/rare/occasional/frequent), a New Game
+  world option. `sim/systems/natural_events.gd` rolls each scheduled catalog
+  phenomenon daily through the full influence pipeline at neutral magnitude.
+  Default OFF — the sole-authorship experience and every replay are untouched.
+- **Main settlement & succession:** `Colony.main_settlement`; migration pull
+  (`Civilization.MAIN_PULL`) + emigration retention (`SettlementSim.
+  MAIN_RETENTION`) bias growth toward the seat; on its death
+  `Civilization.update_main_settlement` anoints the largest survivor and emits
+  `EventBus.main_settlement_changed`. (Live consumer arrives with any future
+  civ-tier orchestration; biases engage wherever the seat is set.)
+- **Phase 17 — the final assembly (handover note 3, delivered):** the game is
+  now one executable flow. `presentation/shell/` holds WorldBootstrap
+  (seed → fixture-exact playable world), GameRun (the proven epochal/slice
+  daily composition + tier-gated casting + save/resume with the RNG stream),
+  GameShell on `main.tscn` (all eight setup-§6 menu entries live), and RunView
+  (world skin, crowd-capped puppets, dwell → Eye → LOD, arm-and-paint casting,
+  §7.4 autosaves). `test_phase17_exit.gd` walks boot → menu → quick-start →
+  season → cast → save → Continue → extinction → kept Chronicle, and proves
+  two identically scripted shell runs byte-identical.
 
 ## What was built
 
@@ -47,11 +70,19 @@ local tags — tag pushes are rejected by branch-scoped rights).
    The core-feel questions in the old FUN CHECK 3 brief (cadence,
    attributability, agency, tyrant/shepherd feel) remain open for your
    own play sessions; core-feel rework is expected, not exceptional.
-3. **Final assembly** — systems are built and tested individually and in
-   integration harnesses; the single orchestrated game scene that binds
-   menu → wizard → world → HUD → panels into one executable flow is
-   deliberately thin (the playtest slice is the closest thing). That
-   glue is presentation-only work with no new sim surface.
+3. **Final assembly — DELIVERED (Phase 17, 2026-07-04).** The shell binds
+   menu → wizard → world → HUD → panels → chronicle; `godot` runs the game.
+   Still-thin edges, all disclosed in PROGRESS: wizard pages 2–4 and the
+   settings screen remain logic-first (chrome-light, as T15.2/T15.4
+   shipped); life-terrain affordances (farmland/built_up/crowded/drought/
+   wilds) were never world-authored, so acts gated on them fizzle exactly
+   as in every tested composition; the civ/aggregate tier stays
+   library+test-composed (no live multi-basin loop was ever specified);
+   NavWorld stays a library (the sim authored no movement to route).
+   Perf note: on the Phase-17 session's cloud container, test_scale's
+   24 ms tripwire is marginal for the PRE-Phase-17 baseline too
+   (23.76–24.40 ms measured) — the point-1 reference-hardware re-check
+   below covers it.
 4. **Known open minors** (all reviewer-noted, non-blocking, in PROGRESS
    Notes): wizard setters silently no-op on typo'd keys; §17's
    "productivity" half of the unrest damp is wired to births and the
