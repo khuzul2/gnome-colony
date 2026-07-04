@@ -99,6 +99,90 @@ func test_civilization_zoom_never_gazes():
 	assert_eq(view.run.attention_places, [], "the wide view is absence [T13.5]")
 
 
+func _key(name: String, pressed: bool) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = OS.find_keycode_from_string(name)
+	event.pressed = pressed
+	return event
+
+
+func test_the_world_is_lit_and_the_camera_renders():
+	# [T23.1] Without these the 3D viewport is a black void behind the HUD.
+	var view := _view()
+	assert_true(view.camera.camera.current, "the rig camera renders the viewport")
+	assert_not_null(view.get_node("sun"), "a directional sun lights the world")
+	var env := view.get_node("environment") as WorldEnvironment
+	assert_not_null(env, "a WorldEnvironment supplies ambient + sky")
+	assert_not_null(env.environment, "…with a real Environment resource")
+
+
+func test_bindings_drive_the_camera():
+	# [T23.2] WASD from Settings pans the rig; E/Q and the wheel zoom it.
+	var view := _view()
+	view.set_speed(0.0)
+	var before := view.camera.position
+	view._unhandled_input(_key("W", true))
+	view._process(0.1)
+	assert_lt(view.camera.position.z, before.z, "W pans north (−Z)")
+	var held := view.camera.position
+	view._unhandled_input(_key("W", false))
+	view._process(0.1)
+	assert_eq(view.camera.position, held, "releasing the key stops the pan")
+	assert_eq(view.camera.level, CameraRig.Zoom.SETTLEMENT)
+	view._unhandled_input(_key("E", true))
+	assert_eq(view.camera.level, CameraRig.Zoom.INDIVIDUAL, "E zooms in")
+	var wheel := InputEventMouseButton.new()
+	wheel.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	wheel.pressed = true
+	view._unhandled_input(wheel)
+	assert_eq(view.camera.level, CameraRig.Zoom.SETTLEMENT, "wheel down zooms out")
+
+
+func test_a_click_targets_the_basin_under_the_cursor():
+	# [T23.3] THE core verb: arm an act, click the world, it casts there.
+	var view := _view()
+	view.set_speed(0.0)
+	assert_eq(Devotion.total(view.run.runner.colony), 0.0)
+	assert_true(view.influence_panel.arm("still_air"))
+	var home_pos: Vector3 = view.place_positions[view.run.home]
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = view.camera.camera.unproject_position(home_pos)
+	view._unhandled_input(click)
+	assert_gt(
+		Devotion.total(view.run.runner.colony),
+		0.0,
+		"arm + click open ground = a witnessed cast at that basin"
+	)
+	assert_gt(view.aftermath.timeline.size(), 0, "the aftermath page opened on the act")
+
+
+func test_the_pick_resolves_the_nearest_gnome():
+	# [T23.3] The individual-kind routing (no stock catalog act targets a
+	# gnome — same disclosure as T14.1 — but the resolver is exercised).
+	var view := _view()
+	var target: GnomePuppet = view._puppets[view._puppets.keys()[0]]
+	var found := view._nearest_gnome(target.position)
+	assert_eq(found, target.data, "the closest puppet's gnome is picked")
+
+
+func test_hover_highlights_the_pick_while_armed():
+	# [T23.4] Learnability: the ring marks where the armed act would land.
+	var view := _view()
+	view.influence_panel.arm("still_air")
+	var home_pos: Vector3 = view.place_positions[view.run.home]
+	var motion := InputEventMouseMotion.new()
+	motion.position = view.camera.camera.unproject_position(home_pos)
+	view._unhandled_input(motion)
+	assert_eq(view.hovered_place, view.run.home, "hover marks the basin under the cursor")
+	assert_true(view._highlight.visible, "the ring shows")
+	view.influence_panel.disarm()
+	view._unhandled_input(motion)
+	assert_eq(view.hovered_place, "", "disarming clears the hover")
+	assert_false(view._highlight.visible, "…and hides the ring")
+
+
 func test_season_autosave_cadence_emits():
 	var view := _view()
 	watch_signals(view)

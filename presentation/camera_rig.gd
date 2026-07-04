@@ -19,6 +19,10 @@ var camera := Camera3D.new()
 
 func _ready() -> void:
 	add_child(camera)
+	# T23.1: without an explicit current camera the 3D viewport renders
+	# from nothing — a human sees only the HUD over a void. The rig owns
+	# the one live camera for the whole run.
+	camera.current = true
 	_apply()
 
 

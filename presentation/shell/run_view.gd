@@ -15,7 +15,14 @@ extends Node
 ## The readout also carries the run's civilization truth [T22.4]:
 ## frontier settlement count + aggregate souls + the main seat's place,
 ## the Eye's quickened knot, and a fracture-risk warning as unrest
-## nears Devotion.FRACTURE_LINE. §7.4 autosave cadence
+## nears Devotion.FRACTURE_LINE. Input & render [T23]: RunView lights
+## the world (a sun + ambient WorldEnvironment — without them lit
+## materials render black), drives the CameraRig from the settings key
+## bindings (pan/zoom) and the mouse (wheel-zoom, click-to-target,
+## hover highlight) via _unhandled_input, so the HUD's armed act meets a
+## world pick and casts — the game's core verb, finally reachable by a
+## human. Colours/angles/speeds here are presentation numbers.
+## §7.4 autosave cadence
 ## (off/season/year) emits save_requested("auto"); the shell owns slots
 ## and rolling. Movement [T21.2/T22.5] is presentation-only: a NavWorld
 ## baked from the skin gates basin crossings — when a gnome's sim
@@ -54,6 +61,15 @@ const WALK_EPSILON := 0.001
 ## the readout warns at UNREST_WARN and sharpens at UNREST_WARN_DIRE.
 const UNREST_WARN := 0.6
 const UNREST_WARN_DIRE := 0.75
+## Camera control [T23.2] — presentation numbers: km/sec panned across
+## the ground at sensitivity 1.
+const PAN_SPEED := 12.0
+## Lighting [T23.1] — a low afternoon sun + a cool ambient fill so lit
+## materials (the puppets, the heightmap) are visible; the background is
+## a plain daylit sky colour (no HDRI dependency).
+const SUN_ANGLE_DEG := Vector3(-55.0, -35.0, 0.0)
+const SKY_COLOR := Color(0.42, 0.55, 0.68)
+const AMBIENT_COLOR := Color(0.60, 0.62, 0.68)
 
 var run: GameRun
 var settings: GameSettings
@@ -75,6 +91,8 @@ var place_positions := {}
 ## (GameRun keeps its _place_of private; the view stays self-sufficient).
 var sid_places := {}
 var days_per_sec := 0.0
+## The basin under the cursor while an act is armed [T23.4]; "" = none.
+var hovered_place := ""
 
 var _accum := 0.0
 var _puppets := {}
@@ -88,17 +106,30 @@ var _walkers := {}
 var _last_place := {}
 var _feed: Array = []
 var _hud_label: Label
+## Input state [T23.2/T23.3/T23.4].
+var _pan_keys := {}
+var _zoom_keys := {}
+var _pan_held := {}
+var _pick_plane_y := 0.0
+var _highlight: MeshInstance3D
 
 
 func _ready() -> void:
+	_build_environment()
 	world_view = WorldView.new()
 	add_child(world_view)
 	world_view.sync(run.graph)
+	var y_sum := 0.0
 	for region in run.graph.regions:
 		var center: Vector2 = region["center"]
 		var place := WorldBootstrap.place_id(region)
 		place_positions[place] = Vector3(center.x, world_view.height_at(center), center.y)
 		sid_places[region["id"]] = place
+		y_sum += place_positions[place].y
+	# The pick plane sits at the mean basin height so a click ray hits
+	# near the true ground — minimal parallax when resolving the nearest
+	# basin [T23.3].
+	_pick_plane_y = y_sum / maxf(1.0, float(run.graph.regions.size()))
 	nav = NavWorld.new()
 	add_child(nav)
 	nav.bake(world_view)
@@ -115,10 +146,44 @@ func _ready() -> void:
 	ambience = AmbienceDirector.new()
 	add_child(ambience)
 	_build_hud()
+	_build_controls()
 	days_per_sec = settings.get_value("gameplay", "default_speed")
 	influence_panel.refresh(run.runner.colony)
 	_refresh_puppets()
 	_refresh_hud()
+
+
+## Light the world [T23.1]: a directional sun plus an ambient/sky
+## WorldEnvironment. Without them the lit puppet/heightmap materials
+## render black and the player sees only the HUD.
+func _build_environment() -> void:
+	var sun := DirectionalLight3D.new()
+	sun.name = "sun"
+	sun.rotation_degrees = SUN_ANGLE_DEG
+	add_child(sun)
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = SKY_COLOR
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = AMBIENT_COLOR
+	env.ambient_light_energy = 0.6
+	var world_env := WorldEnvironment.new()
+	world_env.name = "environment"
+	world_env.environment = env
+	add_child(world_env)
+	# A faint unshaded ring under the cursor while an act is armed [T23.4].
+	_highlight = MeshInstance3D.new()
+	_highlight.name = "target_highlight"
+	var ring := TorusMesh.new()
+	ring.inner_radius = 0.6
+	ring.outer_radius = 0.9
+	_highlight.mesh = ring
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(1.0, 0.9, 0.4)
+	_highlight.material_override = mat
+	_highlight.visible = false
+	add_child(_highlight)
 
 
 ## Wall-clock frame beat: gaze → Eye → attention input, then the day
@@ -135,7 +200,155 @@ func _process(delta: float) -> void:
 		steps += 1
 		_advance_one_day()
 	_advance_walkers(delta)
+	_apply_pan(delta)
 	ambience.update(delta)
+
+
+## Resolve the settings key bindings (T21.4) into keycode → action maps
+## once [T23.2] — rebinding in Settings is honored on the next run.
+func _build_controls() -> void:
+	var bindings: Dictionary = settings.get_value("controls", "bindings")
+	_pan_keys = {
+		_keycode(bindings.get("pan_up", "W")): Vector2(0.0, -1.0),
+		_keycode(bindings.get("pan_down", "S")): Vector2(0.0, 1.0),
+		_keycode(bindings.get("pan_left", "A")): Vector2(-1.0, 0.0),
+		_keycode(bindings.get("pan_right", "D")): Vector2(1.0, 0.0),
+	}
+	_zoom_keys = {
+		_keycode(bindings.get("zoom_in", "E")): 1,
+		_keycode(bindings.get("zoom_out", "Q")): -1,
+	}
+
+
+func _keycode(name: String) -> int:
+	return OS.find_keycode_from_string(name)
+
+
+## The world's input [T23.2/T23.3/T23.4]: only events the HUD didn't
+## consume reach here, so a click on a panel button arms the act while a
+## click on open ground targets it. Held pan keys accumulate; discrete
+## zoom fires on press; a left click paints the armed act's target;
+## motion moves the hover highlight.
+func _unhandled_input(event: InputEvent) -> void:
+	if run == null:
+		return
+	if event is InputEventKey:
+		var code: int = event.keycode
+		if _pan_keys.has(code):
+			if event.pressed:
+				_pan_held[code] = true
+			else:
+				_pan_held.erase(code)
+		elif event.pressed and not event.echo and _zoom_keys.has(code):
+			_zoom(_zoom_keys[code])
+	elif event is InputEventMouseButton and event.pressed:
+		match event.button_index:
+			MOUSE_BUTTON_WHEEL_UP:
+				_zoom(1)
+			MOUSE_BUTTON_WHEEL_DOWN:
+				_zoom(-1)
+			MOUSE_BUTTON_LEFT:
+				_pick(event.position)
+	elif event is InputEventMouseMotion:
+		_hover(event.position)
+
+
+## Discrete zoom, honoring the invert-zoom setting [T23.2].
+func _zoom(direction: int) -> void:
+	if settings.get_value("controls", "invert_zoom"):
+		direction = -direction
+	if direction > 0:
+		camera.zoom_in()
+	else:
+		camera.zoom_out()
+
+
+## Slide the rig across the ground by the held pan keys [T23.2] — screen
+## up (W) is world −Z, matching the downward camera's facing.
+func _apply_pan(delta: float) -> void:
+	if _pan_held.is_empty():
+		return
+	var dir := Vector2.ZERO
+	for code in _pan_held:
+		dir += _pan_keys.get(code, Vector2.ZERO)
+	if dir == Vector2.ZERO:
+		return
+	var sensitivity: float = settings.get_value("controls", "pan_sensitivity")
+	var step := PAN_SPEED * sensitivity * delta
+	camera.focus(camera.position + Vector3(dir.x * step, 0.0, dir.y * step))
+
+
+## Cast the armed act where the cursor points [T23.3]: a ray to the pick
+## plane resolves the nearest basin (or the nearest gnome for an
+## individual-kind Vision — no stock catalog act targets one, same as
+## T14.1's disclosure, but the routing is here for when one exists).
+func _pick(screen_pos: Vector2) -> void:
+	if influence_panel.armed() == "":
+		return
+	var point := _ground_point(screen_pos)
+	if point.x == INF:
+		return
+	if influence_panel.armed_target_kind() == "individual":
+		var g := _nearest_gnome(point)
+		if g != null:
+			select_gnome(g.id)
+	else:
+		select_place(_nearest_place(point))
+
+
+## Move the hover ring to the basin under the cursor while an act is
+## armed; clear it when nothing is armed [T23.4].
+func _hover(screen_pos: Vector2) -> void:
+	if influence_panel.armed() == "":
+		if hovered_place != "":
+			hovered_place = ""
+			_highlight.visible = false
+		return
+	var point := _ground_point(screen_pos)
+	if point.x == INF:
+		return
+	hovered_place = _nearest_place(point)
+	_highlight.position = place_positions[hovered_place] + Vector3(0.0, 0.05, 0.0)
+	_highlight.visible = true
+
+
+## Project a screen point onto the mean-height ground plane [T23.3];
+## returns Vector3(INF,…) when the ray never meets it.
+func _ground_point(screen_pos: Vector2) -> Vector3:
+	var cam := camera.camera
+	var origin := cam.project_ray_origin(screen_pos)
+	var normal := cam.project_ray_normal(screen_pos)
+	var hit: Variant = Plane(Vector3.UP, _pick_plane_y).intersects_ray(origin, normal)
+	if hit == null:
+		return Vector3(INF, INF, INF)
+	return hit
+
+
+func _nearest_place(point: Vector3) -> String:
+	var best := run.home
+	var best_distance := INF
+	var flat := Vector2(point.x, point.z)
+	for place in place_positions:
+		var pos: Vector3 = place_positions[place]
+		var distance := flat.distance_to(Vector2(pos.x, pos.z))
+		if distance < best_distance:
+			best_distance = distance
+			best = place
+	return best
+
+
+func _nearest_gnome(point: Vector3) -> GnomeData:
+	var best: GnomeData = null
+	var best_distance := INF
+	for id in _puppets:
+		var puppet: GnomePuppet = _puppets[id]
+		if puppet.data == null or not puppet.data.is_alive():
+			continue
+		var distance := puppet.position.distance_to(point)
+		if distance < best_distance:
+			best_distance = distance
+			best = puppet.data
+	return best
 
 
 func set_speed(value: float) -> void:
