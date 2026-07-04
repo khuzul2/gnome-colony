@@ -49,6 +49,8 @@ var load_menu: LoadMenu
 var chronicle_screen: ChronicleScreen
 var run: GameRun = null
 var run_view: RunView = null
+var sound: SoundDirector
+var music: MusicDirector
 var screens := {}
 var playtime_seconds := 0.0
 
@@ -62,10 +64,17 @@ func _ready() -> void:
 	settings = GameSettings.load_from(settings_path)
 	store = SaveStore.new(save_dir)
 	chronicle_store = ChronicleStore.new(chronicle_dir)
+	sound = SoundDirector.new()
+	sound.settings = settings
+	add_child(sound)
+	music = MusicDirector.new()
+	music.settings = settings
+	add_child(music)
 	_build_screens()
 	EventBus.phenomenon.connect(_on_phenomenon)
 	menu.refresh(store.has_saves())
 	show_screen("menu")
+	music.play(music.screen_track("menu"))
 
 
 func _exit_tree() -> void:
@@ -130,9 +139,11 @@ func close_run_to_menu() -> void:
 	_drop_run()
 	menu.refresh(store.has_saves())
 	show_screen("menu")
+	music.play(music.screen_track("menu"))
 
 
 func _on_menu_selected(entry: String) -> void:
+	sound.ui("ui_click")
 	match entry:
 		"continue":
 			_load_newest()
@@ -196,6 +207,7 @@ func _mount_run_view() -> void:
 	run_view = RunView.new()
 	run_view.run = run
 	run_view.settings = settings
+	run_view.music = music
 	run_view.save_requested.connect(_on_save_requested)
 	run_view.menu_requested.connect(_on_menu_requested)
 	add_child(run_view)
@@ -214,6 +226,7 @@ func _on_save_requested(kind: String) -> void:
 		_auto_counter += 1
 	else:
 		save_current("%s_day%d" % [run.config.colony_name, run.runner.time.day()], "manual")
+		sound.ui("ui_save")
 
 
 ## Leaving to the menu drops the live run — an exit autosave first, so
@@ -286,6 +299,7 @@ func _close_into_chronicle() -> void:
 	menu.refresh(store.has_saves())
 	_fill_chronicles_list()
 	show_screen("chronicles")
+	music.play(music.screen_track("chronicles"))
 
 
 func _on_phenomenon(payload: Dictionary) -> void:

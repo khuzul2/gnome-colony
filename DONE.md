@@ -39,6 +39,19 @@ local tags — tag pushes are rejected by branch-scoped rights).
   season → cast → save → Continue → extinction → kept Chronicle, and proves
   two identically scripted shell runs byte-identical.
 
+## Sound & music (Phases 19-20, 2026-07-04)
+
+- assets/sounds/: 51 named WAVs covering every phenomenon, consequence,
+  life event, ambience bed, and UI click (5 sourced CC0/CC-BY, 46
+  deterministic synth drafts; SOURCES.md records licenses; regenerate via
+  generate_placeholders.py). SoundDirector plays them EventBus-only —
+  §2.7c's no-stinger rule is a test.
+- assets/music/: 10 empty .mp3 placeholders, each with a Suno.ai
+  dungeon-synth brief (.md). Compose, drop the files in, delete
+  assets/music/.gdignore — MusicDirector already resolves every state
+  (seasons, rite, both hymns, menu, lament, founding) and skips empty
+  placeholders silently.
+
 ## What was built
 
 - **The sim (`sim/`, plain data + logic):** gnome agents (§1 state, traits,

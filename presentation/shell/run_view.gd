@@ -33,6 +33,8 @@ const SCATTER_SCALE := 300.0
 
 var run: GameRun
 var settings: GameSettings
+## Optional music hook [T20.2]: the shell hands its director in.
+var music: MusicDirector = null
 
 var world_view: WorldView
 var camera: CameraRig
@@ -129,6 +131,10 @@ func select_gnome(gnome_id: int) -> void:
 
 func _advance_one_day() -> void:
 	var report := run.advance_day()
+	if report["season_changed"] and music != null:
+		var colony := run.runner.colony
+		var state: String = ambience.params(colony, run.runner.time, run.home)["music"]
+		music.play(music.track_for(state, run.runner.time.season()))
 	if report["season_changed"]:
 		var mode: String = settings.get_value("gameplay", "autosave")
 		var year_wrapped: bool = run.runner.time.season() == 0
