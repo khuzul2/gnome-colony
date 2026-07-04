@@ -155,7 +155,10 @@ static func _deaths(colony: Colony, s: Settlement) -> float:
 	return total
 
 
-static func _migration(s: Settlement, crowding: float, phenomena_pressure: float) -> float:
+## §14's emigration flow, public since T18.2 [PROGRESS]: the live
+## frontier computes home's outflow with the SAME formula the aggregate
+## tier uses — one law, two grains (formula unchanged, only exposed).
+static func emigration(s: Settlement, crowding: float, phenomena_pressure: float) -> float:
 	var pressure := clampf(
 		(
 			maxf(0.0, crowding - CROWDING_COMFORT) / (1.0 - CROWDING_COMFORT)
@@ -166,6 +169,10 @@ static func _migration(s: Settlement, crowding: float, phenomena_pressure: float
 		1.0
 	)
 	return minf(s.adults(), s.pop() * MIGRATION_BASE * pressure)
+
+
+static func _migration(s: Settlement, crowding: float, phenomena_pressure: float) -> float:
+	return emigration(s, crowding, phenomena_pressure)
 
 
 static func _research(

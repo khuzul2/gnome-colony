@@ -29,6 +29,24 @@ extends RefCounted
 const HOME_SID := 0
 const EXPOSURE_DECAY := 0.98
 const TRIP_ROTATION := 3
+## Frontier fixtures [phase16 exit, promoted] + §14 wiring [T18.2]:
+## aggregate basins carry the tested base_k/richness/food_factor; a
+## fracture (unrest ≥ 0.8, §14 "splinter settlement") takes HALF the
+## colony — Civilization.split's proven 0.5. Emigrants are the least
+## notable adults (able-bodied leave, the noted stay — interpretive),
+## folded out via Promotion.dematerialize. Player-authored malevolent
+## stimuli at home accumulate into §14's your_phenomena input for the
+## season (raw intensity sum, clamped by the formula — interpretive
+## magnitude), then vent. Unrest resets after a fracture (the pressure
+## has blown — interpretive; without it the line re-fires forever).
+const FRONTIER_BASE_K := 200.0
+const FRONTIER_RICHNESS := 2.0
+const FRONTIER_FOOD_FACTOR := 1.0
+const FRACTURE_FRACTION := 0.5
+
+## Live frontier settlements [T18.2]: sid (= basin/region id) → the
+## aggregate Settlement. Home stays individual-grain at HOME_SID.
+var settlements := {}
 
 var config: WorldConfig
 var graph: RegionGraph
@@ -44,6 +62,7 @@ var exposure := 0.0
 var attention_places: Array = []
 
 var _individual_budget := 500
+var _phenomena_pressure := 0.0
 var _trip_place := ""
 var _last_season := -1
 var _defs := {}
@@ -81,7 +100,10 @@ static func resume(envelope: Dictionary) -> GameRun:
 		run.config, run.food, run.capacity, loaded["colony"], loaded["time"], run.world
 	)
 	run.runner.chronicle = loaded["chronicle"]
+	for s in loaded["settlements"]:
+		run.settlements[s.sid] = s
 	run.exposure = envelope.get("exposure", 0.0)
+	run._phenomena_pressure = envelope.get("phenomena_pressure", 0.0)
 	var saved_telemetry: Dictionary = envelope.get("telemetry", {})
 	for event in saved_telemetry.get("events", []):
 		run.telemetry.record(event)
@@ -118,9 +140,10 @@ func advance_day() -> Dictionary:
 	if season_changed:
 		_last_season = runner.time.season()
 		discovered = _research_season()
+		_frontier_season()
 	_ward_watch()
 	if colony.population() == 0:
-		Civilization.check_world_end(colony, [])
+		Civilization.check_world_end(colony, settlements.values())
 	return {"day": runner.time.day(), "season_changed": season_changed, "discovered": discovered}
 
 
@@ -145,6 +168,10 @@ func cast(act_id: String, target: String) -> Array:
 	)
 	exposure = 1.0
 	for stim in stimuli:
+		# §14's your_phenomena input: your malevolence at home builds
+		# this season's emigration pressure [T18.2].
+		if stim.get("valence", "") == "malevolent" and stim.get("place", "") == home:
+			_phenomena_pressure += stim.get("intensity", 0.0)
 		var present := []
 		for g in colony.living():
 			if g.location == stim["place"]:
@@ -161,12 +188,18 @@ func cast(act_id: String, target: String) -> Array:
 
 ## The T12.1 envelope plus the shell's keys — everything resume() needs.
 func save() -> Dictionary:
+	var frontier := []
+	var sids := settlements.keys()
+	sids.sort()
+	for sid in sids:
+		frontier.append(settlements[sid])
 	var envelope := Serializer.save_to_dict(
-		runner.colony, world, [], config, runner.time, runner.chronicle
+		runner.colony, world, frontier, config, runner.time, runner.chronicle
 	)
 	envelope["region_graph"] = Serializer.region_graph_to_dict(graph)
 	envelope["home"] = home
 	envelope["exposure"] = exposure
+	envelope["phenomena_pressure"] = _phenomena_pressure
 	envelope["telemetry"] = {
 		"events": telemetry.events.duplicate(true),
 		"peak_pop": telemetry.summary(runner.colony)["peak_pop"],
@@ -211,6 +244,84 @@ func _stage_locations() -> void:
 			and (g.id + day) % TRIP_ROTATION == 0
 		)
 		g.location = _trip_place if trip else home
+
+
+## The live civilization season [T18.2, algo §14]: fold a home mirror,
+## compute §14's emigration (or the fracture splinter), fold whole
+## adults out into the best-scoring basin, run every frontier basin's
+## aggregate season, trade knowledge with home, keep the main
+## settlement current, and let the world end only when EVERY basin —
+## individual and aggregate — is empty.
+func _frontier_season() -> void:
+	var colony := runner.colony
+	if colony.population() > 0:
+		var mirror := Settlement.from_colony(colony, HOME_SID, FRONTIER_BASE_K, FRONTIER_RICHNESS)
+		var crowding := clampf(colony.population() / capacity, 0.0, 1.0)
+		var pressure := clampf(_phenomena_pressure, 0.0, 1.0)
+		_phenomena_pressure = 0.0
+		var count := 0
+		if Devotion.fracture_due(colony):
+			count = int(colony.population() * FRACTURE_FRACTION)
+			colony.unrest = 0.0
+			runner.chronicle.append(
+				"Year %d · the colony fractures — a splinter walks out" % runner.time.year()
+			)
+		else:
+			count = int(SettlementSim.emigration(mirror, crowding, pressure))
+		if count >= 1:
+			_send_migrants(mirror, count)
+	for sid in settlements:
+		var s: Settlement = settlements[sid]
+		if s.pop() >= Civilization.ALIVE_EPSILON:
+			SettlementSim.season_tick(colony, s, FRONTIER_FOOD_FACTOR)
+			SettlementSim.trade(colony, HOME_SID, sid)
+	var complete := [Settlement.from_colony(colony, HOME_SID, FRONTIER_BASE_K, FRONTIER_RICHNESS)]
+	complete.append_array(settlements.values())
+	Civilization.update_main_settlement(colony, complete)
+
+
+func _send_migrants(mirror: Settlement, count: int) -> void:
+	var colony := runner.colony
+	var candidates := []
+	for region in graph.regions:
+		if region["id"] == HOME_SID:
+			continue
+		candidates.append(
+			settlements.get(
+				region["id"], Settlement.new(region["id"], FRONTIER_BASE_K, FRONTIER_RICHNESS)
+			)
+		)
+	if candidates.is_empty():
+		return
+	var target: Settlement = Civilization.choose_basin(colony, mirror, candidates)
+	var adults := []
+	for g in colony.living():
+		if g.stage == Enums.LifeStage.ADULT:
+			adults.append(g)
+	adults.sort_custom(
+		func(a: GnomeData, b: GnomeData) -> bool:
+			return a.notability < b.notability if a.notability != b.notability else a.id < b.id
+	)
+	var leaving := adults.slice(0, mini(count, adults.size()))
+	if leaving.is_empty():
+		return
+	if not settlements.has(target.sid):
+		settlements[target.sid] = target
+		telemetry.record({"type": "settlement_founded", "day": runner.time.day()})
+	Promotion.dematerialize(colony, target, leaving)
+	runner.chronicle.append(
+		(
+			"Year %d · %d souls strike out for %s"
+			% [runner.time.year(), leaving.size(), _place_of(target.sid)]
+		)
+	)
+
+
+func _place_of(sid: int) -> String:
+	for region in graph.regions:
+		if region["id"] == sid:
+			return WorldBootstrap.place_id(region)
+	return "settlement_%d" % sid
 
 
 ## Epochal derivations [test_epochal.gd]: a flat need of 1.0 on the
