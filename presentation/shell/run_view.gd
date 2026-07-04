@@ -14,9 +14,15 @@ extends Node
 ## re-derive its pixel ring for 3D km-space (render-only placement).
 ## §7.4 autosave cadence
 ## (off/season/year) emits save_requested("auto"); the shell owns slots
-## and rolling. NavWorld stays a library here: the sim authored no
-## movement (Phases 11/13), so there is nothing to route — disclosed
-## in PROGRESS. Set `run` and `settings` before entering the tree.
+## and rolling. Movement [T21.2] is presentation-only: a NavWorld baked
+## from the skin gates basin crossings — when a gnome's sim location
+## moves to another basin, its puppet WALKS (a wall-clock lerp over
+## WALK_SECONDS in _process, independent of sim pacing; the sim's
+## location write stays the authoritative truth the whole time), and a
+## buried road (NavWorld.path_between empty, the sim's T7.3 verdict)
+## refuses the walk — the puppet holds its old anchor and re-checks
+## next day. First placement (no prior position) is instant; only a
+## CHANGE walks. Set `run` and `settings` before entering the tree.
 
 signal save_requested(kind: String)
 signal menu_requested
@@ -30,6 +36,12 @@ const SCATTER_ANGLE := 2.399
 const SCATTER_BASE := 0.15
 const SCATTER_STEP := 75
 const SCATTER_SCALE := 300.0
+## Presentation walk time [T21.2]: wall-clock seconds a puppet spends
+## crossing to a new basin — a render flourish, never a sim number (the
+## sim already wrote the location; the body just catches up on screen).
+const WALK_SECONDS := 2.0
+## Below this distance a puppet already stands at its target — no walk.
+const WALK_EPSILON := 0.001
 
 var run: GameRun
 var settings: GameSettings
@@ -37,6 +49,7 @@ var settings: GameSettings
 var music: MusicDirector = null
 
 var world_view: WorldView
+var nav: NavWorld
 var camera: CameraRig
 var attention: AttentionInput
 var pool: PuppetPool
@@ -49,6 +62,12 @@ var days_per_sec := 0.0
 
 var _accum := 0.0
 var _puppets := {}
+## In-flight walks [T21.2]: gnome id → {from: Vector3, to: Vector3,
+## t: float} — advanced in _process from delta alone (no Rng, no Time).
+var _walkers := {}
+## Each puppet's last ACCEPTED place, to detect basin crossings; a
+## refused crossing keeps the old place so next day re-checks the road.
+var _last_place := {}
 var _feed: Array = []
 var _hud_label: Label
 
@@ -61,6 +80,12 @@ func _ready() -> void:
 		var center: Vector2 = region["center"]
 		var place := WorldBootstrap.place_id(region)
 		place_positions[place] = Vector3(center.x, world_view.height_at(center), center.y)
+	nav = NavWorld.new()
+	add_child(nav)
+	nav.bake(world_view)
+	nav.attach(run.world)
+	for place in place_positions:
+		nav.place_site(place, place_positions[place])
 	camera = CameraRig.new()
 	add_child(camera)
 	camera.focus(place_positions[run.home])
@@ -90,6 +115,7 @@ func _process(delta: float) -> void:
 		_accum -= 1.0
 		steps += 1
 		_advance_one_day()
+	_advance_walkers(delta)
 	ambience.update(delta)
 
 
@@ -171,6 +197,9 @@ func _gazed_place() -> String:
 
 ## Mirror up to the render crowd cap [setup §7.1] — a DRAW budget; the
 ## colony itself is untouched (T15.4's invariant test is the proof).
+## Position changes WALK [T21.2]: first placement is instant, a basin
+## crossing whose road the sim buried is refused (the puppet holds its
+## old anchor this day), everything else lerps via a walker.
 func _refresh_puppets() -> void:
 	var cap := settings.drawn_cap()
 	var living := run.runner.colony.living()
@@ -181,12 +210,59 @@ func _refresh_puppets() -> void:
 		if not wanted.has(id):
 			pool.release(_puppets[id])
 			_puppets.erase(id)
+			_walkers.erase(id)
+			_last_place.erase(id)
 	for id in wanted:
+		var g: GnomeData = wanted[id]
 		if not _puppets.has(id):
-			_puppets[id] = pool.acquire(wanted[id])
+			_puppets[id] = pool.acquire(g)
+			_puppets[id].position = _stage_position(g)
+			_last_place[id] = g.location
 		var puppet: GnomePuppet = _puppets[id]
 		puppet.refresh()
-		puppet.position = _stage_position(wanted[id])
+		_stage_walk(id, puppet, g)
+
+
+## Decide how one puppet meets its target stage position [T21.2].
+func _stage_walk(id: int, puppet: GnomePuppet, g: GnomeData) -> void:
+	var target := _stage_position(g)
+	if puppet.position.distance_to(target) <= WALK_EPSILON:
+		puppet.position = target
+		_walkers.erase(id)
+		_last_place[id] = g.location
+		return
+	if _walkers.has(id) and _walkers[id]["to"].distance_to(target) <= WALK_EPSILON:
+		return  # Already walking there — let the walker finish.
+	var last: String = _last_place.get(id, g.location)
+	if last != g.location and nav.path_between(last, g.location).is_empty():
+		# The world refuses [T7.3 buried road]: stay at the old anchor;
+		# _last_place keeps the old basin so next day re-checks the road.
+		_walkers.erase(id)
+		return
+	_walkers[id] = {"from": puppet.position, "to": target, "t": 0.0}
+	_last_place[id] = g.location
+
+
+## Advance in-flight walks — wall-clock, accumulated from delta only
+## (deterministic under fixed frame deltas; independent of sim pacing).
+func _advance_walkers(delta: float) -> void:
+	var arrived := []
+	for id in _walkers:
+		var walk: Dictionary = _walkers[id]
+		walk["t"] = float(walk["t"]) + delta / WALK_SECONDS
+		var puppet: GnomePuppet = _puppets.get(id)
+		if puppet == null:
+			arrived.append(id)
+			continue
+		var from: Vector3 = walk["from"]
+		var to: Vector3 = walk["to"]
+		if walk["t"] >= 1.0:
+			puppet.position = to
+			arrived.append(id)
+		else:
+			puppet.position = from.lerp(to, walk["t"])
+	for id in arrived:
+		_walkers.erase(id)
 
 
 func _stage_position(g: GnomeData) -> Vector3:
