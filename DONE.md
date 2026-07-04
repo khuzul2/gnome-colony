@@ -5,8 +5,8 @@ test and all seven named integration tests (`test_milestone1`,
 `test_iron_irony`, `test_scale`, `test_determinism`, `test_epochal`,
 `test_invariants`, `test_diversity_balance`) are green, and lint is clean.
 
-**Final state (2026-07-04):** 107 test scripts · 590 tests · 2963 asserts ·
-lint clean · phases 0–17 tagged (`phase-0-complete` … `phase-17-complete`,
+**Final state (2026-07-04, Phase 18):** 112 test scripts · 625 tests · 3172 asserts ·
+lint clean · phases 0–18 tagged (`phase-0-complete` … `phase-18-complete`,
 local tags — tag pushes are rejected by branch-scoped rights).
 
 ## Post-plan additions (user-requested, 2026-07-03/04)
@@ -22,6 +22,13 @@ local tags — tag pushes are rejected by branch-scoped rights).
   `Civilization.update_main_settlement` anoints the largest survivor and emits
   `EventBus.main_settlement_changed`. (Live consumer arrives with any future
   civ-tier orchestration; biases engage wherever the seat is set.)
+- **Phase 18 — every disclosed gap closed (2026-07-04):** living terrain
+  (drought/farmland/built_up/crowded derive daily from real state; wilds from
+  world-gen — every affordance-gated act landable), the LIVE civilization
+  tier (§14 emigration + fracture splinters open frontier basins that live
+  aggregate seasons, trade, succeed the main settlement, and carry the world
+  on), full wizard + settings chrome through the whitelisted setters, and a
+  monotonic save-ordering tiebreaker.
 - **Phase 17 — the final assembly (handover note 3, delivered):** the game is
   now one executable flow. `presentation/shell/` holds WorldBootstrap
   (seed → fixture-exact playable world), GameRun (the proven epochal/slice

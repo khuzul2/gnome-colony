@@ -27,6 +27,10 @@ func _init(base_dir: String = "user://saves") -> void:
 func save_game(slot: String, envelope: Dictionary, meta: Dictionary = {}) -> void:
 	var card := meta.duplicate(true)
 	card.merge(derive_meta(envelope), true)
+	# Monotonic write sequence [T18.5]: whole-second timestamps tie under
+	# rapid saves; "newest" must be robust by construction, not by slot
+	# names' lexicographic luck (Phase-Exit 17 reviewer).
+	card["sequence"] = _next_sequence()
 	var file := FileAccess.open(_path(slot), FileAccess.WRITE)
 	file.store_string(JSON.stringify({"meta": card, "save": envelope}, "", true))
 	file.close()
@@ -91,9 +95,20 @@ func list_saves(kind: String = "") -> Array:
 		out.append({"slot": slot, "meta": meta})
 	out.sort_custom(
 		func(a: Dictionary, b: Dictionary) -> bool:
-			return str(a["meta"].get("timestamp", "")) > str(b["meta"].get("timestamp", ""))
+			var stamp_a := str(a["meta"].get("timestamp", ""))
+			var stamp_b := str(b["meta"].get("timestamp", ""))
+			if stamp_a != stamp_b:
+				return stamp_a > stamp_b
+			return int(a["meta"].get("sequence", 0)) > int(b["meta"].get("sequence", 0))
 	)
 	return out
+
+
+func _next_sequence() -> int:
+	var highest := 0
+	for entry in list_saves():
+		highest = maxi(highest, int(entry["meta"].get("sequence", 0)))
+	return highest + 1
 
 
 func load_game(slot: String) -> Dictionary:

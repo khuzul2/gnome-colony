@@ -150,3 +150,17 @@ func test_rng_stream_continues_across_a_save():
 	Rng.set_state(saved_state)
 	var resumed := [Rng.randf(), Rng.randf(), Rng.randi_range(0, 100)]
 	assert_eq(resumed, uninterrupted, "a loaded game continues the exact stream [Phase 12 goal]")
+
+
+func test_newest_is_robust_under_tied_timestamps():
+	# [T18.5] whole-second stamps tie under rapid saves; the monotonic
+	# sequence breaks the tie by write order, by construction.
+	var store := SaveStore.new("user://test_sequence_saves")
+	store.wipe()
+	var envelope := Serializer.save_to_dict(
+		Colony.new(), WorldState.new(), [], WorldConfig.new(), TimeService.new(), []
+	)
+	for slot in ["zzz_first", "aaa_second", "mmm_third"]:
+		store.save_game(slot, envelope, {"kind": "manual", "timestamp": "same_second"})
+	assert_eq(store.list_saves()[0]["slot"], "mmm_third", "the LAST write is the newest")
+	store.wipe()
