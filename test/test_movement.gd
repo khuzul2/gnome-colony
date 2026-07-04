@@ -1,8 +1,9 @@
 extends GutTest
 
-## T21.2 — Movement [PROGRESS Phase 21]: presentation-only walking.
-## RunView bakes a NavWorld from the skin, places every basin as a
-## site, and turns a gnome's basin crossing into a walker lerping over
+## T21.2/T22.5 — Movement [PROGRESS Phase 21/22]: presentation-only
+## walking. RunView bakes a NavWorld from the skin, places every basin
+## as a site, and turns a gnome's basin crossing into a walker that
+## follows NavWorld.path_between's baked polyline over
 ## RunView.WALK_SECONDS in _process (wall-clock, no Rng/Time) — the
 ## sim's location writes stay the authoritative truth throughout. A
 ## buried road (WorldState.paths, T7.3) refuses the walk: the puppet
@@ -81,6 +82,42 @@ func test_a_day_trip_walks_instead_of_teleporting():
 	view._process(RunView.WALK_SECONDS)
 	assert_lt(puppet.position.distance_to(target), 0.001, "the walk snaps onto the target")
 	assert_false(view._walkers.has(tripper.id), "…and the walker retires")
+
+
+## T22.5 — the walk follows the BAKED route, not the straight chord:
+## the walker stores exactly path_between's polyline, and the half-time
+## body stands ON that polyline at the constant-speed midpoint.
+func test_the_walk_follows_the_baked_polyline():
+	var view := _view(1)
+	view.set_speed(0.0)
+	await wait_physics_frames(3)
+	_rotate_the_trip(view)
+	view._refresh_puppets()
+	var tripper := _tripper(view)
+	assert_not_null(tripper, "seed 1's rotation stages a day trip [probed]")
+	var walk: Dictionary = view._walkers[tripper.id]
+	var route: PackedVector3Array = walk["route"]
+	assert_gt(route.size(), 1, "the navmesh yielded a real route (home → ridge_1)")
+	assert_eq(
+		route,
+		view.nav.path_between(view.run.home, tripper.location),
+		"the walker stores exactly what path_between returned [T22.5]"
+	)
+	view._process(RunView.WALK_SECONDS * 0.5)
+	var puppet: GnomePuppet = view._puppets[tripper.id]
+	var points: PackedVector3Array = walk["points"]
+	var nearest := INF
+	for i in range(1, points.size()):
+		var on_segment := Geometry3D.get_closest_point_to_segment(
+			puppet.position, points[i - 1], points[i]
+		)
+		nearest = minf(nearest, puppet.position.distance_to(on_segment))
+	assert_lt(nearest, 0.001, "mid-walk the body stands ON the polyline, not the chord")
+	assert_eq(
+		puppet.position,
+		RunView._walk_position(walk, 0.5),
+		"…at the constant-total-duration halfway point"
+	)
 
 
 func test_a_buried_road_refuses_the_walk():

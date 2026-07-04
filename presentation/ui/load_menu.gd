@@ -12,6 +12,10 @@ signal load_requested(slot: String)
 ## RegionGraph.BIOMES entry (meadow, forest, ridge, marsh) in that
 ## order; a biome index the pool doesn't know reads as "?".
 const BIOME_GLYPHS := [".", "♣", "▲", "~"]
+## Cap on displayed thumbnail glyphs [T22.6] — a PRESENTATION number:
+## longer maps show their first GLYPH_CAP cells plus an ellipsis, so a
+## card's label column never stretches with world size.
+const GLYPH_CAP := 8
 
 var cards := {}
 
@@ -57,11 +61,14 @@ func build(store: SaveStore) -> void:
 ## cell of SaveStore.thumbnail becomes one biome glyph (elevation is
 ## carried for a richer renderer later; the label keeps to glyphs).
 ## Indices arrive as JSON doubles — int() them before indexing.
+## Capped at GLYPH_CAP cells + "…" [T22.6] so wide worlds stay a card.
 static func glyphs(thumbnail: Array) -> String:
 	var out := ""
-	for cell in thumbnail:
+	for cell in thumbnail.slice(0, GLYPH_CAP):
 		var idx := int(cell[0])
 		out += BIOME_GLYPHS[idx] if idx >= 0 and idx < BIOME_GLYPHS.size() else "?"
+	if thumbnail.size() > GLYPH_CAP:
+		out += "…"
 	return out
 
 

@@ -293,6 +293,9 @@ func _quicken_frontier() -> void:
 		var s: Settlement = settlements.get(sid)
 		if s != null and _place_of(sid) in attention_places:
 			continue
+		# The s == null arm is future-proofing only [T22.6]: no code path
+		# removes a settlements entry today (war bleeds to ~0, never
+		# erases) — kept so a future reaper can't strand quickened souls.
 		if s != null:
 			Promotion.dematerialize(colony, s, quickened[sid])
 		quickened.erase(sid)

@@ -123,6 +123,21 @@ func test_the_menu_renders_cards_and_reports_the_choice():
 	assert_true(menu.cards["second"].visible)
 
 
+func test_long_thumbnails_cap_their_glyph_column():
+	# T22.6 — GLYPH_CAP is a presentation number: first 8 cells + "…".
+	var long_thumb := []
+	for i in 12:
+		long_thumb.append([i % 4, 0.5])
+	assert_eq(LoadMenu.glyphs(long_thumb), ".♣▲~.♣▲~…", "first GLYPH_CAP glyphs then an ellipsis")
+	assert_eq(
+		LoadMenu.glyphs(long_thumb).length(),
+		LoadMenu.GLYPH_CAP + 1,
+		"…so the card column never stretches with world size [T22.6]"
+	)
+	var short_thumb := [[0, 0.1], [1, 0.2]]
+	assert_eq(LoadMenu.glyphs(short_thumb), ".♣", "short thumbnails stay whole, no ellipsis")
+
+
 func test_slots_cannot_escape_the_save_dir():
 	# Reviewer hardening: a slot with path separators must land INSIDE
 	# the store's dir, never beside it.

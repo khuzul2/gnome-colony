@@ -12,13 +12,19 @@ extends Node
 ## (speeds, steps/frame, feed cap) and the scatter angle/step are the
 ## slice's presentation numbers promoted verbatim; SCATTER_BASE/SCALE
 ## re-derive its pixel ring for 3D km-space (render-only placement).
-## §7.4 autosave cadence
+## The readout also carries the run's civilization truth [T22.4]:
+## frontier settlement count + aggregate souls + the main seat's place,
+## the Eye's quickened knot, and a fracture-risk warning as unrest
+## nears Devotion.FRACTURE_LINE. §7.4 autosave cadence
 ## (off/season/year) emits save_requested("auto"); the shell owns slots
-## and rolling. Movement [T21.2] is presentation-only: a NavWorld baked
-## from the skin gates basin crossings — when a gnome's sim location
-## moves to another basin, its puppet WALKS (a wall-clock lerp over
-## WALK_SECONDS in _process, independent of sim pacing; the sim's
-## location write stays the authoritative truth the whole time), and a
+## and rolling. Movement [T21.2/T22.5] is presentation-only: a NavWorld
+## baked from the skin gates basin crossings — when a gnome's sim
+## location moves to another basin, its puppet WALKS the baked route:
+## NavWorld.path_between's polyline is fetched at walk start and the
+## body advances along it piecewise at constant TOTAL duration
+## WALK_SECONDS (wall-clock in _process, independent of sim pacing; the
+## sim's location write stays the authoritative truth the whole time;
+## degenerate/short routes fall back to the straight lerp), and a
 ## buried road (NavWorld.path_between empty, the sim's T7.3 verdict)
 ## refuses the walk — the puppet holds its old anchor and re-checks
 ## next day. First placement (no prior position) is instant; only a
@@ -42,6 +48,12 @@ const SCATTER_SCALE := 300.0
 const WALK_SECONDS := 2.0
 ## Below this distance a puppet already stands at its target — no walk.
 const WALK_EPSILON := 0.001
+## Fracture-risk warning thresholds [T22.4] — PRESENTATION numbers (the
+## sim's break line is Devotion.FRACTURE_LINE, algo §10; the spec
+## authors no warning band, so these only choose when the HUD speaks):
+## the readout warns at UNREST_WARN and sharpens at UNREST_WARN_DIRE.
+const UNREST_WARN := 0.6
+const UNREST_WARN_DIRE := 0.75
 
 var run: GameRun
 var settings: GameSettings
@@ -59,12 +71,17 @@ var heatmap_overlay: HeatmapOverlay
 var ambience: AmbienceDirector
 var hud: Control
 var place_positions := {}
+## sid → place id [T22.4]: RunView's own lookup over run.graph.regions
+## (GameRun keeps its _place_of private; the view stays self-sufficient).
+var sid_places := {}
 var days_per_sec := 0.0
 
 var _accum := 0.0
 var _puppets := {}
-## In-flight walks [T21.2]: gnome id → {from: Vector3, to: Vector3,
-## t: float} — advanced in _process from delta alone (no Rng, no Time).
+## In-flight walks [T21.2/T22.5]: gnome id → {from, to, t, route (the
+## raw path_between polyline), points (from + route + to), cum
+## (cumulative segment lengths), length} — advanced in _process from
+## delta alone (no Rng, no Time), t mapped onto the polyline.
 var _walkers := {}
 ## Each puppet's last ACCEPTED place, to detect basin crossings; a
 ## refused crossing keeps the old place so next day re-checks the road.
@@ -81,6 +98,7 @@ func _ready() -> void:
 		var center: Vector2 = region["center"]
 		var place := WorldBootstrap.place_id(region)
 		place_positions[place] = Vector3(center.x, world_view.height_at(center), center.y)
+		sid_places[region["id"]] = place
 	nav = NavWorld.new()
 	add_child(nav)
 	nav.bake(world_view)
@@ -226,7 +244,9 @@ func _refresh_puppets() -> void:
 		_stage_walk(id, puppet, g)
 
 
-## Decide how one puppet meets its target stage position [T21.2].
+## Decide how one puppet meets its target stage position [T21.2/T22.5]:
+## a basin crossing fetches NavWorld.path_between's polyline ONCE, at
+## walk start, and the walker carries it to arrival.
 func _stage_walk(id: int, puppet: GnomePuppet, g: GnomeData) -> void:
 	var target := _stage_position(g)
 	if puppet.position.distance_to(target) <= WALK_EPSILON:
@@ -237,17 +257,50 @@ func _stage_walk(id: int, puppet: GnomePuppet, g: GnomeData) -> void:
 	if _walkers.has(id) and _walkers[id]["to"].distance_to(target) <= WALK_EPSILON:
 		return  # Already walking there — let the walker finish.
 	var last: String = _last_place.get(id, g.location)
-	if last != g.location and nav.path_between(last, g.location).is_empty():
-		# The world refuses [T7.3 buried road]: stay at the old anchor;
-		# _last_place keeps the old basin so next day re-checks the road.
-		_walkers.erase(id)
-		return
-	_walkers[id] = {"from": puppet.position, "to": target, "t": 0.0}
+	var route := PackedVector3Array()
+	if last != g.location:
+		route = nav.path_between(last, g.location)
+		if route.is_empty():
+			# The world refuses [T7.3 buried road]: stay at the old anchor;
+			# _last_place keeps the old basin so next day re-checks the road.
+			_walkers.erase(id)
+			return
+	_walkers[id] = _make_walker(puppet.position, target, route)
 	_last_place[id] = g.location
+
+
+## Build one walker [T22.5]: the puppet's real (scattered) endpoints
+## bracket the baked route, and cumulative segment lengths let t map
+## onto the polyline at constant speed. A degenerate route (fewer than
+## two waypoints, or ~zero length) falls back to the straight lerp.
+func _make_walker(from: Vector3, to: Vector3, route: PackedVector3Array) -> Dictionary:
+	var points := PackedVector3Array([from])
+	if route.size() >= 2:
+		points.append_array(route)
+	points.append(to)
+	var cum := PackedFloat32Array([0.0])
+	var total := 0.0
+	for i in range(1, points.size()):
+		total += points[i - 1].distance_to(points[i])
+		cum.append(total)
+	if total <= WALK_EPSILON:
+		points = PackedVector3Array([from, to])
+		cum = PackedFloat32Array([0.0, from.distance_to(to)])
+		total = cum[1]
+	return {
+		"from": from,
+		"to": to,
+		"t": 0.0,
+		"route": route,
+		"points": points,
+		"cum": cum,
+		"length": total
+	}
 
 
 ## Advance in-flight walks — wall-clock, accumulated from delta only
 ## (deterministic under fixed frame deltas; independent of sim pacing).
+## t ∈ [0,1] covers the WHOLE polyline in WALK_SECONDS [T22.5].
 func _advance_walkers(delta: float) -> void:
 	var arrived := []
 	for id in _walkers:
@@ -257,15 +310,31 @@ func _advance_walkers(delta: float) -> void:
 		if puppet == null:
 			arrived.append(id)
 			continue
-		var from: Vector3 = walk["from"]
-		var to: Vector3 = walk["to"]
 		if walk["t"] >= 1.0:
-			puppet.position = to
+			puppet.position = walk["to"]
 			arrived.append(id)
 		else:
-			puppet.position = from.lerp(to, walk["t"])
+			puppet.position = _walk_position(walk, walk["t"])
 	for id in arrived:
 		_walkers.erase(id)
+
+
+## Map t ∈ [0,1] onto the walker's polyline at constant total speed
+## [T22.5]: find the segment holding t·length and lerp inside it.
+static func _walk_position(walk: Dictionary, t: float) -> Vector3:
+	var points: PackedVector3Array = walk["points"]
+	var cum: PackedFloat32Array = walk["cum"]
+	var total: float = walk["length"]
+	if total <= 0.0 or points.size() < 2:
+		return (walk["from"] as Vector3).lerp(walk["to"], t)
+	var goal := t * total
+	var i := 1
+	while i < cum.size() - 1 and cum[i] < goal:
+		i += 1
+	var seg := cum[i] - cum[i - 1]
+	if seg <= 0.0:
+		return points[i]
+	return points[i - 1].lerp(points[i], (goal - cum[i - 1]) / seg)
 
 
 func _stage_position(g: GnomeData) -> Vector3:
@@ -296,10 +365,7 @@ func _build_hud() -> void:
 	aftermath = AftermathPanel.new()
 	hud.add_child(aftermath)
 	heatmap_overlay = HeatmapOverlay.new()
-	var place_of := {}
-	for region in run.graph.regions:
-		place_of[region["id"]] = WorldBootstrap.place_id(region)
-	heatmap_overlay.build(run.runner.colony, run.settlements, place_of)
+	heatmap_overlay.build(run.runner.colony, run.settlements, sid_places)
 	heatmap_overlay.visible = false
 	hud.add_child(heatmap_overlay)
 	var controls := HBoxContainer.new()
@@ -367,6 +433,36 @@ func _refresh_hud() -> void:
 			% [mu, Magic.stage(mu), " · home warded" if run.world.wards.has(run.home) else ""]
 		),
 	]
+	# T22.4 — the run's civilization truth, no longer bare numbers.
+	if not run.settlements.is_empty():
+		var souls := 0.0
+		for sid in run.settlements:
+			souls += run.settlements[sid].pop()
+		var seat := ""
+		if sid_places.has(colony.main_settlement):
+			seat = " · seat %s" % sid_places[colony.main_settlement]
+		var plural := "" if run.settlements.size() == 1 else "s"
+		lines.append(
+			(
+				"frontier: %d settlement%s · %.0f souls%s"
+				% [run.settlements.size(), plural, souls, seat]
+			)
+		)
+	if not run.quickened.is_empty():
+		var held := 0
+		var basins := PackedStringArray()
+		var quickened_sids := run.quickened.keys()
+		quickened_sids.sort()
+		for sid in quickened_sids:
+			held += run.quickened[sid].size()
+			basins.append(sid_places.get(sid, "settlement_%d" % sid))
+		lines.append("the Eye holds %d souls at %s" % [held, ", ".join(basins)])
+	if colony.unrest >= UNREST_WARN_DIRE:
+		lines.append(
+			"⚠ unrest brushes the fracture line (%.1f) — a splinter looms" % Devotion.FRACTURE_LINE
+		)
+	elif colony.unrest >= UNREST_WARN:
+		lines.append("⚠ unrest nears the fracture line (%.1f)" % Devotion.FRACTURE_LINE)
 	if not _feed.is_empty():
 		lines.append("— acts & signs —")
 		lines.append_array(_feed)

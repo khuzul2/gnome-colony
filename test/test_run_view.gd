@@ -6,7 +6,11 @@ extends GutTest
 ## paint routes into GameRun.cast with the aftermath page open, speed
 ## buttons pace the days, and §7.4 autosave cadence emits save
 ## requests. Presentation reads the sim and feeds only legitimate
-## inputs (acts, attention).
+## inputs (acts, attention). [T22.4] the readout also carries the
+## frontier count/souls/main seat, the Eye's quickened knot, and a
+## fracture-risk warning (presentation thresholds 0.6/0.75 against
+## Devotion.FRACTURE_LINE). [T22.6] a paint at a frontier place casts
+## THERE — the root stimulus names that place.
 
 var _runs: Array = []
 
@@ -121,3 +125,80 @@ func test_hud_buttons_request_save_and_menu():
 	assert_signal_emitted_with_parameters(view, "save_requested", ["manual"])
 	view.hud.get_node("controls/menu").pressed.emit()
 	assert_signal_emitted(view, "menu_requested")
+
+
+## The first non-home region — a stand-in frontier basin for HUD tests.
+func _frontier_region(view: RunView) -> Dictionary:
+	for region in view.run.graph.regions:
+		if region["id"] != GameRun.HOME_SID:
+			return region
+	return {}
+
+
+func test_hud_names_the_frontier_and_its_main_seat():
+	var view := _view()
+	var region := _frontier_region(view)
+	var sid: int = region["id"]
+	var s := Settlement.new(sid, 200.0, 2.0)
+	s.by_stage[Enums.LifeStage.ADULT] = 12.0
+	view.run.settlements[sid] = s
+	view.run.runner.colony.main_settlement = sid
+	view._refresh_hud()
+	var text: String = view._hud_label.text
+	assert_string_contains(
+		text, "frontier: 1 settlement", "the readout counts the frontier [T22.4]"
+	)
+	assert_string_contains(text, "12 souls", "…with its aggregate souls")
+	assert_string_contains(
+		text, "seat %s" % WorldBootstrap.place_id(region), "…naming the main seat's place"
+	)
+
+
+func test_hud_reports_the_eyes_quickened_souls():
+	var view := _view()
+	var region := _frontier_region(view)
+	var living: Array = view.run.runner.colony.living()
+	view.run.quickened[region["id"]] = [living[0], living[1]]
+	view._refresh_hud()
+	assert_string_contains(
+		view._hud_label.text,
+		"the Eye holds 2 souls at %s" % WorldBootstrap.place_id(region),
+		"the quickened knot is reported [T22.4]"
+	)
+
+
+func test_hud_warns_as_unrest_nears_the_fracture_line():
+	var view := _view()
+	var colony := view.run.runner.colony
+	colony.unrest = 0.2
+	view._refresh_hud()
+	assert_false("fracture line" in view._hud_label.text, "calm unrest carries no warning")
+	colony.unrest = 0.7
+	view._refresh_hud()
+	assert_string_contains(
+		view._hud_label.text,
+		"fracture line (%.1f)" % Devotion.FRACTURE_LINE,
+		"0.7 warns [T22.4 presentation thresholds 0.6/0.75]"
+	)
+	assert_false("looms" in view._hud_label.text, "…in the milder register below 0.75")
+	colony.unrest = 0.77
+	view._refresh_hud()
+	assert_string_contains(view._hud_label.text, "looms", "≥ 0.75 sharpens the wording")
+
+
+## T22.6 — targeting truth: a paint at a FRONTIER place casts THERE.
+func test_a_cast_lands_at_the_selected_frontier_place():
+	var view := _view()
+	view.set_speed(0.0)
+	var region := _frontier_region(view)
+	var sid: int = region["id"]
+	var place := WorldBootstrap.place_id(region)
+	var s := Settlement.new(sid, 200.0, 2.0)
+	s.by_stage[Enums.LifeStage.ADULT] = 8.0
+	view.run.settlements[sid] = s
+	watch_signals(EventBus)
+	assert_true(view.influence_panel.arm("still_air"))
+	view.select_place(place)
+	assert_signal_emitted(EventBus, "phenomenon", "the paint became a cast [T22.6]")
+	var payload: Dictionary = get_signal_parameters(EventBus, "phenomenon", 0)[0]
+	assert_eq(payload["place"], place, "…and its root stimulus landed at the frontier place")
