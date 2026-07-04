@@ -9,11 +9,13 @@ extends GutTest
 const STORE_DIR := "user://test_shell_saves"
 const CHRON_DIR := "user://test_shell_chronicles"
 const SETTINGS_PATH := "user://test_shell_settings.cfg"
+const CODEX_PATH := "user://test_shell_codex.json"
 
 
 func before_each() -> void:
 	SaveStore.new(STORE_DIR).wipe()
 	ChronicleStore.new(CHRON_DIR).wipe()
+	DirAccess.remove_absolute(CODEX_PATH)
 
 
 func _shell() -> GameShell:
@@ -21,6 +23,7 @@ func _shell() -> GameShell:
 	shell.save_dir = STORE_DIR
 	shell.chronicle_dir = CHRON_DIR
 	shell.settings_path = SETTINGS_PATH
+	shell.codex_path = CODEX_PATH
 	add_child_autofree(shell)
 	return shell
 

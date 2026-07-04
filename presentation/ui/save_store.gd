@@ -9,8 +9,9 @@ extends RefCounted
 ## enters sim logic, and tests stay deterministic). Manual and
 ## autosaves are the same files with a different `kind` — the tabs
 ## filter. Load hands back the exact envelope; restoring it is
-## Serializer.save_from_dict's job. The map thumbnail is a rendering
-## concern deferred to the shell (documented omission).
+## Serializer.save_from_dict's job. The §6.1 map thumbnail [T21.4] is
+## a tiny JSON-safe grid derived from the envelope's region_graph —
+## painting it (glyphs/colored squares) stays the load menu's job.
 
 var _dir: String
 
@@ -74,7 +75,25 @@ static func derive_meta(envelope: Dictionary) -> Dictionary:
 		"day": int(envelope.get("time", {}).get("total_days", 0.0)),
 		"techs": known.size(),
 		"faith": faith,
+		"thumbnail": thumbnail(envelope.get("region_graph", {})),
 	}
+
+
+## §6.1 card thumbnail [T21.4]: one [biome_index, rounded_elevation]
+## cell per region — biome_index into RegionGraph.BIOMES (-1 when the
+## pool doesn't know it), elevation rounded to an int. Cells sort by
+## region id so the same envelope always yields the same array; an
+## envelope without a region_graph (old saves) yields []. Plain ints
+## and nested Arrays only — the card survives the JSON disk trip.
+static func thumbnail(region_graph: Dictionary) -> Array:
+	var regions: Array = (region_graph.get("regions", []) as Array).duplicate()
+	regions.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool: return int(a["id"]) < int(b["id"])
+	)
+	var cells := []
+	for r in regions:
+		cells.append([RegionGraph.BIOMES.find(str(r["biome"])), roundi(float(r["elevation"]))])
+	return cells
 
 
 ## Cards newest-first (timestamp string order — callers feed ISO-style

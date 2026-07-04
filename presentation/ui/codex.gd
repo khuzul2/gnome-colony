@@ -68,6 +68,52 @@ func impressions() -> Array:
 	return out
 
 
+## Plain-data snapshot of the observation counts [T21.4]: the codex
+## is presentation state the shell may keep between sessions — the
+## dict is exactly _seen, so a round trip changes nothing the player
+## could ever see (about()/impressions() stay identical).
+func to_dict() -> Dictionary:
+	return _seen.duplicate(true)
+
+
+## Rebuild from a snapshot. JSON hands counts back as doubles; they
+## re-type to ints so the frequency buckets keep firming correctly
+## after a reload.
+static func from_dict(d: Dictionary) -> FaintCodex:
+	var codex := FaintCodex.new()
+	for type in d:
+		codex._seen[type] = {}
+		for lesson in d[type]:
+			codex._seen[type][lesson] = int(d[type][lesson])
+	return codex
+
+
+## user:// JSON persistence [T21.4]. Hardening (SaveStore precedent):
+## the book lives in user:// territory only — a stray path falls back
+## to the canonical user://codex.json.
+static func save_file(path: String, codex: FaintCodex) -> void:
+	var file := FileAccess.open(_safe_path(path), FileAccess.WRITE)
+	# sort_keys=false: insertion order IS the book's reading order
+	# (about() iterates it), so sorting would reshuffle the impressions
+	# across a reload. Order stays deterministic — it's the observation
+	# order.
+	file.store_string(JSON.stringify(codex.to_dict(), "", false))
+	file.close()
+
+
+## A missing or corrupt file opens a fresh codex — never a crash.
+static func load_file(path: String) -> FaintCodex:
+	var safe := _safe_path(path)
+	if not FileAccess.file_exists(safe):
+		return FaintCodex.new()
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(safe))
+	return from_dict(parsed) if parsed is Dictionary else FaintCodex.new()
+
+
+static func _safe_path(path: String) -> String:
+	return path if path.begins_with("user://") else "user://codex.json"
+
+
 func _frequency(count: int) -> String:
 	if count >= OFTEN_AT:
 		return "often"

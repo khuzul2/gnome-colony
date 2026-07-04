@@ -36,11 +36,12 @@ const CREDITS_LINES := [
 var save_dir := "user://saves"
 var chronicle_dir := "user://chronicles"
 var settings_path := "user://settings.cfg"
+var codex_path := "user://codex.json"
 
 var settings: GameSettings
 var store: SaveStore
 var chronicle_store: ChronicleStore
-var codex := FaintCodex.new()
+var codex: FaintCodex
 var menu: MainMenu
 var wizard: NewGameWizard
 var wizard_view: WizardView
@@ -62,6 +63,7 @@ var _lists := {}
 
 func _ready() -> void:
 	settings = GameSettings.load_from(settings_path)
+	codex = FaintCodex.load_file(codex_path)
 	store = SaveStore.new(save_dir)
 	chronicle_store = ChronicleStore.new(chronicle_dir)
 	sound = SoundDirector.new()
@@ -305,6 +307,9 @@ func _close_into_chronicle() -> void:
 func _on_phenomenon(payload: Dictionary) -> void:
 	if run != null:
 		codex.observe(payload)
+		# The almanac persists between sessions [T21.4] — observations
+		# are rare enough that save-on-observe is the simplest truth.
+		FaintCodex.save_file(codex_path, codex)
 
 
 func _build_screens() -> void:

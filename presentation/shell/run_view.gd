@@ -55,6 +55,7 @@ var attention: AttentionInput
 var pool: PuppetPool
 var influence_panel: InfluencePanel
 var aftermath: AftermathPanel
+var heatmap_overlay: HeatmapOverlay
 var ambience: AmbienceDirector
 var hud: Control
 var place_positions := {}
@@ -170,6 +171,8 @@ func _advance_one_day() -> void:
 		_push_feed("💡 discovered: %s" % id)
 	influence_panel.refresh(run.runner.colony)
 	_refresh_puppets()
+	if heatmap_overlay.visible:
+		heatmap_overlay.refresh()
 	_refresh_hud()
 
 
@@ -292,6 +295,13 @@ func _build_hud() -> void:
 	hud.add_child(influence_panel)
 	aftermath = AftermathPanel.new()
 	hud.add_child(aftermath)
+	heatmap_overlay = HeatmapOverlay.new()
+	var place_of := {}
+	for region in run.graph.regions:
+		place_of[region["id"]] = WorldBootstrap.place_id(region)
+	heatmap_overlay.build(run.runner.colony, run.settlements, place_of)
+	heatmap_overlay.visible = false
+	hud.add_child(heatmap_overlay)
 	var controls := HBoxContainer.new()
 	controls.name = "controls"
 	hud.add_child(controls)
@@ -300,6 +310,11 @@ func _build_hud() -> void:
 		speed_button.text = entry[0]
 		speed_button.pressed.connect(set_speed.bind(entry[1]))
 		controls.add_child(speed_button)
+	var heat_button := Button.new()
+	heat_button.name = "heatmap"
+	heat_button.text = "Heat"
+	heat_button.pressed.connect(func() -> void: heatmap_overlay.toggle())
+	controls.add_child(heat_button)
 	var save_button := Button.new()
 	save_button.name = "save"
 	save_button.text = "Save"

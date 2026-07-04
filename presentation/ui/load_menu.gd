@@ -8,6 +8,11 @@ extends Control
 
 signal load_requested(slot: String)
 
+## §6.1 thumbnail glyphs [T21.4] — presentation strings, one per
+## RegionGraph.BIOMES entry (meadow, forest, ridge, marsh) in that
+## order; a biome index the pool doesn't know reads as "?".
+const BIOME_GLYPHS := [".", "♣", "▲", "~"]
+
 var cards := {}
 
 var _column: VBoxContainer
@@ -34,6 +39,9 @@ func build(store: SaveStore) -> void:
 				meta.get("playtime", ""),
 			]
 		)
+		var thumb: Array = meta.get("thumbnail", [])
+		if not thumb.is_empty():
+			label.text += " · %s" % glyphs(thumb)
 		card.add_child(label)
 		var load_button := Button.new()
 		load_button.name = "load"
@@ -43,6 +51,18 @@ func build(store: SaveStore) -> void:
 		card.set_meta("kind", meta.get("kind", "manual"))
 		_column.add_child(card)
 		cards[slot] = card
+
+
+## The card's map-at-a-glance [T21.4]: each [biome_index, elevation]
+## cell of SaveStore.thumbnail becomes one biome glyph (elevation is
+## carried for a richer renderer later; the label keeps to glyphs).
+## Indices arrive as JSON doubles — int() them before indexing.
+static func glyphs(thumbnail: Array) -> String:
+	var out := ""
+	for cell in thumbnail:
+		var idx := int(cell[0])
+		out += BIOME_GLYPHS[idx] if idx >= 0 and idx < BIOME_GLYPHS.size() else "?"
+	return out
 
 
 ## §6.1's tabs: "manual" / "auto" filter, "" shows everything.

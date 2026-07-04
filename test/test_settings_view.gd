@@ -168,3 +168,57 @@ func test_edits_go_through_set_value_never_raw_values():
 	assert_eq(view.settings.get_value("gameplay", "autosave_slots"), 5, "in-memory via set_value")
 	var reloaded := GameSettings.load_from(CFG_PATH)
 	assert_eq(reloaded.get_value("gameplay", "autosave_slots"), 5, "and saved immediately")
+
+
+func test_every_binding_action_gets_a_single_char_editor_showing_its_default():
+	# T21.4 [§7.3]: the controls/bindings dict finally gets chrome — one
+	# LineEdit per action, capped to single-char key names.
+	var view := _make_view()
+	var defaults: Dictionary = GameSettings.DEFAULTS["controls"]["bindings"]
+	assert_gt(defaults.size(), 0, "the §7.3 default table exists (pan/zoom actions)")
+	for action in defaults:
+		var line := view.binding_editor(action)
+		assert_not_null(line, "an editor per action: %s" % action)
+		assert_eq(line.text, defaults[action], "%s shows its default key" % action)
+		assert_eq(line.max_length, 1, "single-char key names [§7.3 presentation affordance]")
+
+
+func test_a_binding_edit_persists_the_whole_dict_through_load_from():
+	var view := _make_view()
+	var line := view.binding_editor("pan_up")
+	line.text = "I"
+	line.text_changed.emit(line.text)  # LineEdit only signals on user input; simulate it.
+	var reloaded := GameSettings.load_from(CFG_PATH)
+	var bindings: Dictionary = reloaded.get_value("controls", "bindings")
+	assert_eq(bindings["pan_up"], "I", "the edited binding persisted [§7.3]")
+	assert_eq(bindings["pan_down"], "S", "…while untouched actions keep their defaults")
+	assert_eq(
+		_sorted(bindings.keys()),
+		_sorted(GameSettings.DEFAULTS["controls"]["bindings"].keys()),
+		"the WHOLE dict rode through set_value — no action lost, none invented"
+	)
+
+
+func test_an_unknown_binding_action_is_impossible():
+	var view := _make_view()
+	assert_null(view.binding_editor("fly"), "no editor exists for an action outside DEFAULTS")
+	var line := view.binding_editor("zoom_out")
+	line.text = "Z"
+	line.text_changed.emit(line.text)
+	var reloaded := GameSettings.load_from(CFG_PATH)
+	var bindings: Dictionary = reloaded.get_value("controls", "bindings")
+	assert_false(bindings.has("fly"), "the saved dict holds only the spec's actions")
+	assert_eq(bindings["zoom_out"], "Z", "…while a real action rebinds fine")
+	assert_eq(
+		_sorted(bindings.keys()),
+		_sorted(GameSettings.DEFAULTS["controls"]["bindings"].keys()),
+		"the dict is rebuilt from the DEFAULTS action list — the nested whitelist"
+	)
+
+
+## Key order through a ConfigFile round trip is the file's business,
+## not the contract — compare as sorted sets.
+func _sorted(keys: Array) -> Array:
+	var out := keys.duplicate()
+	out.sort()
+	return out

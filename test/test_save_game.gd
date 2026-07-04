@@ -152,6 +152,70 @@ func test_rng_stream_continues_across_a_save():
 	assert_eq(resumed, uninterrupted, "a loaded game continues the exact stream [Phase 12 goal]")
 
 
+## A deliberately id-shuffled two-basin graph dict (the serializer's
+## region_graph shape) for the §6.1 thumbnail tests [T21.4].
+func _region_graph_dict() -> Dictionary:
+	return {
+		"regions":
+		[
+			{"id": 1, "center": [1.0, 0.0], "elevation": 1.4, "biome": "forest", "neighbors": [0]},
+			{"id": 0, "center": [0.0, 0.0], "elevation": 2.6, "biome": "ridge", "neighbors": [1]},
+		],
+		"version": 0,
+	}
+
+
+func test_meta_carries_a_deterministic_thumbnail_when_the_envelope_has_a_region_graph():
+	var state := _rich_world()
+	var envelope := Serializer.save_to_dict(
+		state["colony"],
+		state["world"],
+		state["settlements"],
+		state["config"],
+		state["time"],
+		state["chronicle"]
+	)
+	envelope["region_graph"] = _region_graph_dict()
+	var meta := SaveStore.derive_meta(envelope)
+	assert_eq(
+		meta["thumbnail"],
+		[[2, 3], [1, 1]],
+		"id-sorted cells of [biome index (ridge=2, forest=1), rounded elevation] [§6.1 card]"
+	)
+	assert_eq(
+		SaveStore.derive_meta(envelope)["thumbnail"],
+		meta["thumbnail"],
+		"same envelope, same thumbnail — deterministic"
+	)
+	var reparsed: Variant = JSON.parse_string(JSON.stringify(meta["thumbnail"]))
+	assert_not_null(reparsed, "the grid is JSON-safe — it rides the card to disk")
+
+
+func test_an_envelope_without_a_region_graph_thumbnails_to_empty():
+	var envelope := Serializer.save_to_dict(
+		Colony.new(), WorldState.new(), [], WorldConfig.new(), TimeService.new(), []
+	)
+	var meta := SaveStore.derive_meta(envelope)
+	assert_eq(meta["thumbnail"], [], "old saves stay loadable — an empty grid, not a crash")
+
+
+func test_the_load_card_renders_the_thumbnail_as_biome_glyphs():
+	var store := SaveStore.new("user://test_thumbnail_saves")
+	store.wipe()
+	var envelope := Serializer.save_to_dict(
+		Colony.new(), WorldState.new(), [], WorldConfig.new(), TimeService.new(), []
+	)
+	envelope["region_graph"] = _region_graph_dict()
+	store.save_game("thumbed", envelope, {"kind": "manual", "timestamp": "t1"})
+	var menu := LoadMenu.new()
+	add_child_autofree(menu)
+	menu.build(store)
+	var text: String = menu.cards["thumbed"].get_node("label").text
+	assert_string_contains(text, "▲♣", "id-sorted glyphs: ridge then forest [presentation]")
+	assert_eq(LoadMenu.glyphs([[0, 1], [3, 2], [9, 1]]), ".~?", "meadow, marsh, unknown biome")
+	store.wipe()
+
+
 func test_newest_is_robust_under_tied_timestamps():
 	# [T18.5] whole-second stamps tie under rapid saves; the monotonic
 	# sequence breaks the tie by write order, by construction.

@@ -42,7 +42,19 @@ const DEFAULTS := {
 		"invert_zoom": false,
 		"controller_enabled": true,
 		"controller_layout": "default",
-		"bindings": {},
+		# §7.3 key rebinding [T21.4]: single-char key names, presentation
+		# defaults (input chrome; the sim never reads a key). The action
+		# list here IS the whitelist — SettingsView rebuilds the dict from
+		# these keys only, so an unknown action has nowhere to live.
+		"bindings":
+		{
+			"pan_up": "W",
+			"pan_down": "S",
+			"pan_left": "A",
+			"pan_right": "D",
+			"zoom_in": "E",
+			"zoom_out": "Q",
+		},
 	},
 	"gameplay":
 	{
