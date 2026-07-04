@@ -310,9 +310,10 @@ func _quicken_frontier() -> void:
 ## The live civilization season [T18.2, algo §14]: fold a home mirror,
 ## compute §14's emigration (or the fracture splinter), fold whole
 ## adults out into the best-scoring basin, run every frontier basin's
-## aggregate season, trade knowledge with home, keep the main
-## settlement current, and let the world end only when EVERY basin —
-## individual and aggregate — is empty.
+## aggregate season, trade knowledge with home, then the §14/§17
+## conflict flows [T21.3] — schism and war between the AGGREGATE
+## settlements — keep the main settlement current, and let the world end
+## only when EVERY basin — individual and aggregate — is empty.
 func _frontier_season() -> void:
 	var colony := runner.colony
 	if colony.population() > 0:
@@ -331,14 +332,194 @@ func _frontier_season() -> void:
 			count = int(SettlementSim.emigration(mirror, crowding, pressure))
 		if count >= 1:
 			_send_migrants(mirror, count)
+	# T21.3: snapshot the belief state the season ENDS in, BEFORE the
+	# ticks — the conflict triggers read the eve state (the documented
+	# test_frontier convention: "the flows read the state the season ends
+	# in"). Necessary, not stylistic: season_tick applies a whole season's
+	# relax in one multiplicative step (×0.97²⁴ ≈ 0.48), which would put
+	# §17's 0.5 schism line out of reach of ANY [0,1] belief pair.
+	var eve_beliefs := {}
+	for sid in settlements:
+		eve_beliefs[sid] = settlements[sid].belief.duplicate()
 	for sid in settlements:
 		var s: Settlement = settlements[sid]
 		if s.pop() >= Civilization.ALIVE_EPSILON:
 			SettlementSim.season_tick(colony, s, FRONTIER_FOOD_FACTOR)
 			SettlementSim.trade(colony, HOME_SID, sid)
-	var complete := [Settlement.from_colony(colony, HOME_SID, FRONTIER_BASE_K, FRONTIER_RICHNESS)]
+	var mirror_now := Settlement.from_colony(colony, HOME_SID, FRONTIER_BASE_K, FRONTIER_RICHNESS)
+	_civ_conflicts(_season_settlements(mirror_now), eve_beliefs)
+	var complete: Array = [mirror_now]
 	complete.append_array(settlements.values())
 	Civilization.update_main_settlement(colony, complete)
+
+
+## T21.3 — the season's civilization list [§14]: the home fold plus
+## every live aggregate basin (pop ≥ ALIVE_EPSILON), frontier sorted by
+## sid so every pair scan below is deterministic.
+func _season_settlements(mirror: Settlement) -> Array:
+	var live := []
+	if mirror.pop() >= Civilization.ALIVE_EPSILON:
+		live.append(mirror)
+	var sids := settlements.keys()
+	sids.sort()
+	for sid in sids:
+		if settlements[sid].pop() >= Civilization.ALIVE_EPSILON:
+			live.append(settlements[sid])
+	return live
+
+
+## T21.3 — §14's darkest flows, between AGGREGATES only: home (the
+## mirror) joins the season list but fights and splits in NEITHER — its
+## grain is individual (§14's civ flows are aggregate), and its people
+## already carry their own break line (Devotion.fracture_due, above).
+func _civ_conflicts(season_list: Array, eve_beliefs: Dictionary) -> void:
+	var frontier := []
+	for s in season_list:
+		if s.sid != HOME_SID:
+			frontier.append(s)
+	_season_schism(frontier, eve_beliefs)
+	_season_war(frontier, eve_beliefs)
+
+
+## §14 schism at the civilization season [T21.3]: the FIRST qualifying
+## ordered pair (sorted sids — deterministic) splits the LARGER
+## settlement's faction into the first unsettled basin; then §14's
+## unrest term (+0.01·unrest/season) is rolled ONCE against the LARGEST
+## frontier settlement — this is exactly the deferred orchestrator roll
+## civilization.gd's consumer note names for schism_pressure_per_season.
+func _season_schism(frontier: Array, eve_beliefs: Dictionary) -> void:
+	var colony := runner.colony
+	for a in frontier:
+		var split_done := false
+		for b in frontier:
+			if a == b:
+				continue
+			var eve_a := _eve_shadow(a, eve_beliefs)
+			var eve_b := _eve_shadow(b, eve_beliefs)
+			if Civilization.schism_due(colony, eve_a, eve_b):
+				_schism_split(a if a.pop() >= b.pop() else b)
+				split_done = true
+				break
+		if split_done:
+			break
+	if frontier.is_empty():
+		return
+	if Rng.chance(Devotion.schism_pressure_per_season(colony)):
+		var largest: Settlement = frontier[0]
+		for s in frontier:
+			if s.pop() > largest.pop():
+				largest = s
+		_schism_split(largest)
+
+
+## §17 war at the civilization season [T21.3]: at most ONE war a season
+## — the first adjacent qualifying pair in sorted-sid order (adjacency =
+## the basins neighbor each other in the region graph). §17 fixes the
+## trigger sum ≥ 1.5; the spec is silent on the three inputs at this
+## grain, so each derivation is INTERPRETIVE, documented here:
+##  · religious_distance = mean |Δ| over the pair's belief axes at the
+##    season's eve — the same metric Civilization.schism_due uses.
+##  · resource_pressure = the pair's mean crowding, clamped to [0,1]
+##    (war_due sums three NORMALIZED pressures against one threshold).
+##  · rivalry = min(pop)/max(pop) — evenly-matched neighbors contest
+##    hardest; a hamlet beside a city submits, near-equals collide.
+func _season_war(frontier: Array, eve_beliefs: Dictionary) -> void:
+	var colony := runner.colony
+	for i in frontier.size():
+		for j in range(i + 1, frontier.size()):
+			var a: Settlement = frontier[i]
+			var b: Settlement = frontier[j]
+			if not _adjacent(a.sid, b.sid):
+				continue
+			var distance := _belief_distance(
+				eve_beliefs.get(a.sid, a.belief), eve_beliefs.get(b.sid, b.belief)
+			)
+			var resource_pressure := clampf(
+				0.5 * (a.crowding(colony) + b.crowding(colony)), 0.0, 1.0
+			)
+			var rivalry: float = minf(a.pop(), b.pop()) / maxf(maxf(a.pop(), b.pop()), 0.001)
+			if not Civilization.war_due(rivalry, resource_pressure, distance):
+				continue
+			_wage_war(a, b)
+			return
+
+
+## Land a schism [§14]: the faction takes the first unsettled basin (no
+## free ground → the break has nowhere to go — skip, interpretive), and
+## the day enters telemetry + chronicle [§1.9].
+func _schism_split(s: Settlement) -> void:
+	var new_sid := _free_basin()
+	if new_sid < 0:
+		return
+	var faction := Civilization.split(runner.colony, s, new_sid)
+	settlements[new_sid] = faction
+	telemetry.record({"type": "schism", "day": runner.time.day()})
+	runner.chronicle.append(
+		(
+			"Year %d · schism — a faction of %s breaks away for %s"
+			% [runner.time.year(), _place_of(s.sid), _place_of(new_sid)]
+		)
+	)
+
+
+## §14 war lands [T21.3]: Civilization.war bleeds both sides and writes
+## the fear; the day enters telemetry, winner/loser/losses the chronicle.
+func _wage_war(a: Settlement, b: Settlement) -> void:
+	var outcome := Civilization.war(runner.colony, a, b)
+	var winner: Settlement = outcome["winner"]
+	var loser: Settlement = outcome["loser"]
+	telemetry.record({"type": "war", "day": runner.time.day()})
+	(
+		runner
+		. chronicle
+		. append(
+			(
+				"Year %d · war — %s breaks %s (%d fall against the victors' %d)"
+				% [
+					runner.time.year(),
+					_place_of(winner.sid),
+					_place_of(loser.sid),
+					roundi(outcome["loser_losses"]),
+					roundi(outcome["winner_losses"]),
+				]
+			)
+		)
+	)
+
+
+## A read-only stand-in carrying a settlement's season-eve beliefs so
+## Civilization.schism_due (reused verbatim) judges the doctrine the
+## season ended on — see the snapshot note in _frontier_season.
+func _eve_shadow(s: Settlement, eve_beliefs: Dictionary) -> Settlement:
+	if not eve_beliefs.has(s.sid):
+		return s
+	var shadow := Settlement.new(s.sid, s.base_k, s.richness_sum)
+	shadow.belief = eve_beliefs[s.sid]
+	return shadow
+
+
+## The T6.5/§14 belief metric — mean |Δ| over the aggregate axes; the
+## same computation Civilization.schism_due runs, reused for §17's
+## religious_distance input.
+func _belief_distance(a_belief: Dictionary, b_belief: Dictionary) -> float:
+	var total := 0.0
+	for axis in a_belief:
+		total += absf(a_belief[axis] - b_belief[axis])
+	return total / a_belief.size()
+
+
+func _adjacent(a_sid: int, b_sid: int) -> bool:
+	for region in graph.regions:
+		if region["id"] == a_sid:
+			return b_sid in region["neighbors"]
+	return false
+
+
+func _free_basin() -> int:
+	for region in graph.regions:
+		if region["id"] != HOME_SID and not settlements.has(region["id"]):
+			return region["id"]
+	return -1
 
 
 func _send_migrants(mirror: Settlement, count: int) -> void:
