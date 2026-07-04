@@ -220,6 +220,19 @@ From the full Phase-21 review (reviewer agent, 2026-07-04). UNCHECKED = not star
 - [x] T22.6 (T17.4 line superseded-annotated; GLYPH_CAP 8+ellipsis; dead branch commented as future-proofing; frontier targeting test): stale T17.4 "NavWorld stays a library" ledger line annotated; LoadMenu glyph column width-capped; unreachable s==null branch in _quicken_frontier removed/commented; targeting test for casting at a frontier place. (NOTE: the s==null dequicken guard in _quicken_frontier survived wave A; game_run.gd is off-limits to this wave, so that dead-branch cleanup remains open.)
 - [x] Phase-Exit 22 (conservation regression proven discriminating; every sound/music asset reachable; suite 669/669 ALL green, lint clean) → tagged phase-22-complete. conservation regression green under gaze+migration; every shipped sound/music asset reachable by a live code path; suite green → tag phase-22-complete.
 
+## Phase 23 — The human input & render layer (user request 2026-07-04)
+The last gap before hands-on playtest: 669 headless tests prove every SYSTEM, but the
+in-run 3D world has no light (renders black), no camera control, and no mouse-picking —
+so a human can watch a run but cannot SEE it, look around, or perform the core verb
+(target + cast a phenomenon). Presentation-only; NO new sim surface. Analytic
+ground-plane picking so targeting is headless-testable; the "does it actually render"
+half is the one manual check only the human can sign.
+- [ ] T23.1 Lighting & camera visibility — RunView adds a DirectionalLight3D + WorldEnvironment (ambient/sky) so world + puppets are lit; CameraRig camera explicitly current. Test: nodes present, camera.current true.
+- [ ] T23.2 Camera control — RunView _unhandled_input/_process reads GameSettings controls.bindings (WASD pan on the ground plane, E/Q + mouse wheel zoom) → CameraRig.focus/zoom; deliberate dwell (moving the gaze) re-enables frontier quickening. Tests: synthetic key/wheel events pan/zoom the rig; a bound key from settings drives it.
+- [ ] T23.3 Mouse-picking → targeting — RunView _unhandled_input maps a click through camera.project_ray to the ground plane, resolves the NEAREST basin place (and nearest gnome puppet for individual-kind Visions), routes to select_place/select_gnome so arm-act + click-world = cast. Tests (analytic, headless): a synthetic click at a basin's screen projection selects that place and fires the cast; individual-kind picks the nearest gnome.
+- [ ] T23.4 Targeting affordance — hover highlight of the pick under the cursor while an act is armed (small, learnability). Test: hover updates the highlighted place; clears on disarm.
+- [ ] Phase-Exit 23: headless input-sim green (pan, zoom, click-to-cast, hover); manual RENDER+PLAY check written to AWAIT_PLAYTEST-free doc note (human signs "it renders and click-to-cast works") → tag phase-23-complete.
+
 ## Notes
 - T15.2 reviewer minors (informational, open): wizard setters silently no-op on typo'd keys (could push_warning); pages 2–4 are logic-first without widget chrome (same pattern as MainMenu); quicken_budget stays the WorldConfig ~300 constant — §3.6's per-scale INDIVIDUAL budget is already Tuning.resolve's SCALE_INDIVIDUAL_BUDGET (T12.3), and no spec number maps scale→quicken_budget.
 (The agent appends one-line notes here when checking tasks off, and records any public-API changes other tasks depend on.)
