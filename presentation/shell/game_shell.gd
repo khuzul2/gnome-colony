@@ -46,8 +46,11 @@ var wizard: NewGameWizard
 var load_menu: LoadMenu
 var chronicle_screen: ChronicleScreen
 var run: GameRun = null
+var run_view: RunView = null
 var screens := {}
 var playtime_seconds := 0.0
+
+var _auto_counter := 0
 
 var _ui: CanvasLayer
 var _lists := {}
@@ -92,6 +95,7 @@ func start_run(cfg: WorldConfig) -> void:
 	playtime_seconds = 0.0
 	_arm_chronicle_watch()
 	show_screen("run")
+	_mount_run_view()
 
 
 func quick_start() -> void:
@@ -169,12 +173,52 @@ func _load_slot(slot: String) -> void:
 			break
 	_arm_chronicle_watch()
 	show_screen("run")
+	_mount_run_view()
 
 
 func _drop_run() -> void:
+	if run_view != null:
+		run_view.run = null
+		run_view.hud.queue_free()
+		run_view.queue_free()
+		run_view = null
 	if run != null:
 		run.shutdown()
 		run = null
+
+
+## The in-run binding (T17.4): the 3D/attention half lives under the
+## shell root, the HUD reparents into the run screen so show_screen
+## keeps governing visibility.
+func _mount_run_view() -> void:
+	run_view = RunView.new()
+	run_view.run = run
+	run_view.settings = settings
+	run_view.save_requested.connect(_on_save_requested)
+	run_view.menu_requested.connect(_on_menu_requested)
+	add_child(run_view)
+	run_view.remove_child(run_view.hud)
+	screens["run"].add_child(run_view.hud)
+
+
+## §7.4 autosaves roll over autosave_slots; manual saves name
+## themselves after the colony and its day.
+func _on_save_requested(kind: String) -> void:
+	if run == null:
+		return
+	if kind == "auto":
+		var slots: int = settings.get_value("gameplay", "autosave_slots")
+		save_current("auto_%d" % (_auto_counter % maxi(1, slots)), "auto")
+		_auto_counter += 1
+	else:
+		save_current("%s_day%d" % [run.config.colony_name, run.runner.time.day()], "manual")
+
+
+## Leaving to the menu drops the live run — an exit autosave first, so
+## a misclick never costs a world.
+func _on_menu_requested() -> void:
+	save_current("auto_exit", "auto")
+	close_run_to_menu()
 
 
 ## A fresh NewGameWizard per New Game entry [T17.3 reviewer catch]: a

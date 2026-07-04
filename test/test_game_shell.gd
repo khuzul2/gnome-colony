@@ -143,6 +143,62 @@ func test_extinction_closes_the_run_into_a_chronicle():
 	assert_true(shell.screens["chronicles"].visible, "…and is shown")
 
 
+func test_the_run_view_mounts_with_the_run():
+	Rng.seed_with(17308)
+	var shell := _shell()
+	shell.start_run(_cfg(17308))
+	assert_not_null(shell.run_view, "starting a run raises its view [T17.4]")
+	assert_eq(shell.run_view.run, shell.run)
+	assert_eq(
+		shell.run_view.hud.get_parent(),
+		shell.screens["run"],
+		"the HUD lives in the run screen so show_screen governs it"
+	)
+	assert_eq(shell.run_view.puppet_count(), 4, "the band is on stage")
+	shell.close_run_to_menu()
+	assert_null(shell.run_view, "leaving the run drops its view")
+
+
+func test_manual_save_button_writes_a_named_slot():
+	Rng.seed_with(17309)
+	var shell := _shell()
+	shell.start_run(_cfg(17309))
+	for day in 3:
+		shell.run.advance_day()
+	shell.run_view.hud.get_node("controls/save").pressed.emit()
+	var saves := shell.store.list_saves("manual")
+	assert_eq(saves.size(), 1, "the Save button writes one manual slot")
+	assert_eq(saves[0]["slot"], "Shelltest_day3", "…named after the colony and its day")
+
+
+func test_autosaves_roll_over_their_slots():
+	Rng.seed_with(17310)
+	var shell := _shell()
+	shell.start_run(_cfg(17310))
+	shell.run.advance_day()
+	for i in 4:
+		shell.run_view.save_requested.emit("auto")
+	assert_eq(
+		shell.store.list_saves("auto").size(),
+		shell.settings.get_value("gameplay", "autosave_slots"),
+		"§7.4: rolling autosaves never exceed the slot count"
+	)
+
+
+func test_menu_button_exit_autosaves_and_returns():
+	Rng.seed_with(17311)
+	var shell := _shell()
+	shell.start_run(_cfg(17311))
+	shell.run.advance_day()
+	shell.run_view.hud.get_node("controls/menu").pressed.emit()
+	assert_null(shell.run, "back at the menu, no live run")
+	assert_true(shell.screens["menu"].visible)
+	var kinds := []
+	for entry in shell.store.list_saves("auto"):
+		kinds.append(entry["slot"])
+	assert_has(kinds, "auto_exit", "a misclick never costs a world")
+
+
 func test_a_new_run_after_an_ended_world_stays_open():
 	Rng.seed_with(17305)
 	var shell := _shell()
