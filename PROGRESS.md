@@ -190,6 +190,19 @@ in-file + here. Fixture numbers stay fixture numbers.
 - [x] T18.5 SaveStore ordering robustness — monotonic sequence tiebreaker in meta; Continue's "newest" robust by construction (open minor closed).
 - [x] Phase-Exit 18: test_phase18_exit.gd (2) — drained larder tags drought and weeping_sky lands on it; crowding opens the frontier; the founding enters the chronicle; wizard chrome reaches the config (succession/world-end legs in test_frontier.gd). Suite 624/625 — the one red is test_scale's container tripwire, same environment-bound marginality measured and disclosed at Phase-Exit 17 (baseline trips too; reference-hardware ruling governs). → tagged phase-18-complete. THE PLAN IS FULLY COMPLETE: zero unchecked items across phases 0–18.
 
+## Phase 19 — Sound (user request 2026-07-04)
+Diegetic discipline holds [design §2.7c / T14.4]: world sounds fire ONLY off EventBus
+(landed phenomena, life events) — never as act-confirmation stingers; UI clicks are
+menu-side only (setup §7.2 has a UI bus). Placeholder-quality assets, well named.
+- [ ] T19.1 Sound assets — assets/sounds/: one wav per catalog phenomenon (15), per consequence marker (16), per core event (born/died/stage/knowledge_lost/belief_formed/main_settlement_changed/world_ended/settlement_founded/discovery/fracture), season ambience beds ×4 + wrongness + ward, UI click/back/save/refused (~50). CC0 downloads where sourceable (SOURCES.md records origin+license), synthesized drafts otherwise (deterministic generator committed).
+- [ ] T19.2 SoundDirector — presentation/audio/sound_director.gd: EventBus-driven playback (phenomenon/tail/consequence → its wav; core events likewise), GameSettings master/sfx/ui volumes honored, missing files skipped silently; ui() entry for menu clicks; wired into GameShell/RunView. Tests: manifest complete (every id has a file), resolution correct, and the diegetic invariant — an armed panel press plays NOTHING.
+- [ ] Phase-Exit 19: suite green, every sound in the manifest present and resolvable → tag phase-19-complete.
+
+## Phase 20 — Music (user request 2026-07-04)
+- [ ] T20.1 Track set — assets/music/: empty .mp3 placeholders + one .md per track (description + a Suno.ai "dungeon synth" prompt): menu_theme, season beds ×4, rite_melody, hymn_warm, hymn_urgent, world_end_lament, frontier_founding (10 — covers every AmbienceDirector music state + menu/chronicle moments).
+- [ ] T20.2 MusicDirector — presentation/audio/music_director.gd: state → track resolution (AmbienceDirector.music first, season bed fallback, menu/lament by screen), GameSettings music volume, empty/missing files skipped gracefully. Tests: every referenced track file + its .md exist; every music state resolves.
+- [ ] Phase-Exit 20: suite green → tag phase-20-complete.
+
 ## Notes
 - T15.2 reviewer minors (informational, open): wizard setters silently no-op on typo'd keys (could push_warning); pages 2–4 are logic-first without widget chrome (same pattern as MainMenu); quicken_budget stays the WorldConfig ~300 constant — §3.6's per-scale INDIVIDUAL budget is already Tuning.resolve's SCALE_INDIVIDUAL_BUDGET (T12.3), and no spec number maps scale→quicken_budget.
 (The agent appends one-line notes here when checking tasks off, and records any public-API changes other tasks depend on.)
