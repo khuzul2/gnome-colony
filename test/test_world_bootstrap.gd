@@ -39,7 +39,11 @@ func test_ridge_basins_carry_the_slice_pattern():
 	assert_eq(stone.type, "stone", "ridge basins get the slice's stone site")
 	assert_eq(stone.capacity, 40.0)
 	assert_eq(world.hidden_resources["ridge_1"][0].type, "iron", "…with iron under the scar")
-	assert_eq(world.affordances["ridge_1"], ["slope"], "…and ground a landslide can act on")
+	assert_eq(
+		world.affordances["ridge_1"],
+		["slope", "wilds"],
+		"…ground a landslide can act on, beyond the settled edge [T18.1]"
+	)
 	assert_true(world.paths["ridge_1_path"], "…reachable until something buries the road")
 	assert_false(world.paths.has("forest_0_path"), "home needs no road to itself")
 
@@ -85,7 +89,11 @@ func test_a_ridge_home_stays_the_cleared_hollow():
 	assert_eq(world.sites["ridge_0"].type, "food", "the band cleared its ground — larder, not scar")
 	assert_false(world.affordances.has("ridge_0"), "no hazard affordance on home, ever [slice]")
 	assert_false(world.hidden_resources.has("ridge_0"))
-	assert_eq(world.affordances["ridge_1"], ["slope"], "other ridge basins still carry the pattern")
+	assert_eq(
+		world.affordances["ridge_1"],
+		["slope", "wilds"],
+		"other ridge basins still carry the pattern"
+	)
 	assert_eq(world.sites["ridge_1"].type, "stone")
 
 

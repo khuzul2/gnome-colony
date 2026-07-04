@@ -59,6 +59,11 @@ static func build(cfg: WorldConfig) -> Dictionary:
 		if place == home:
 			continue
 		world.paths["%s_path" % place] = true
+		# World-gen truth [T18.1, §18 "near wilds"]: every basin beyond
+		# the settled edge is wild, and so is the edge you cross to
+		# reach it (the id namespace RunView's edge paint uses).
+		world.affordances[place] = ["wilds"]
+		world.affordances["%s_edge" % place] = ["wilds"]
 		if region["biome"] == "ridge":
 			world.sites[place] = ResourceNode.new(
 				"stone",
@@ -72,7 +77,7 @@ static func build(cfg: WorldConfig) -> Dictionary:
 					"iron", IRON_CAPACITY * abundance, IRON_CAPACITY * abundance, 0.0, IRON_RICHNESS
 				)
 			]
-			world.affordances[place] = ["slope"]
+			world.affordances[place] = ["slope", "wilds"]
 	return {
 		"graph": graph,
 		"world": world,

@@ -98,6 +98,7 @@ func shutdown() -> void:
 ## discovered} so the HUD can narrate without re-deriving.
 func advance_day() -> Dictionary:
 	var colony := runner.colony
+	Terrain.refresh(colony, world, home, food, capacity, HOME_SID)
 	_stage_locations()
 	Lod.assign(colony, attention_places, config.quicken_budget, _individual_budget)
 	runner.tick()
