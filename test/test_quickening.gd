@@ -130,6 +130,99 @@ func test_the_gaze_leaving_folds_them_back():
 	)
 
 
+func _home_pop(run: GameRun) -> int:
+	var count := 0
+	for g in run.runner.colony.living():
+		if g.home_settlement == GameRun.HOME_SID:
+			count += 1
+	return count
+
+
+## The migrant tally the chronicle reports for the LATEST departure —
+## "Year N · X souls strike out for <place>".
+func _last_migrants_from_chronicle(run: GameRun) -> int:
+	var migrants := 0
+	for line in run.runner.chronicle:
+		if "souls strike out" not in line:
+			continue
+		var words: PackedStringArray = line.split(" ")
+		for i in range(1, words.size()):
+			if words[i] == "souls":
+				migrants = int(words[i - 1])
+	return migrants
+
+
+## T22.1 regression [PROGRESS Phase 22 BLOCKER]: a fracture fires in the
+## SAME season a gaze holds quickened souls. Home-grain heads must
+## conserve exactly — before the fix, quickened frontier adults (fresh,
+## notability 0) sorted to the front of the migrant pool and were folded
+## into the target basin while still referenced by `quickened`, minting
+## phantom heads. Also pins T22.2's boundary fold and that a later
+## gaze-off still restores the basin exactly, migration and all.
+func test_a_same_season_fracture_under_the_gaze_conserves_heads():
+	var run := _run_game(2201)
+	var found := _found_frontier(run)
+	var sid: int = found[0]
+	run.attention_places = [found[1]]
+	run.advance_day()
+	assert_true(run.quickened.has(sid), "precondition: the gaze holds a quickened knot")
+	_to_season_eve(run)
+	run.runner.colony.unrest = 0.9
+	var colony: Colony = run.runner.colony
+	# Home folk carry lived notability; the fresh-sampled quickened sit
+	# at 0.0 — exactly the state that put them FIRST in the old migrant
+	# sort (least notable leave). The fix must ignore them regardless.
+	for g in colony.living():
+		if g.home_settlement == GameRun.HOME_SID:
+			g.notability = 0.5
+	var home_eve := _home_pop(run)
+	var births := [0]
+	var home_deaths := [0]
+	var on_born := func(p: Dictionary) -> void:
+		if colony.gnomes[p["id"]].home_settlement == GameRun.HOME_SID:
+			births[0] += 1
+	var on_died := func(p: Dictionary) -> void:
+		if colony.gnomes[p["id"]].home_settlement == GameRun.HOME_SID:
+			home_deaths[0] += 1
+	EventBus.born.connect(on_born)
+	EventBus.gnome_died.connect(on_died)
+	run.advance_day()  # the boundary: fracture emigration + the T22.2 fold
+	EventBus.born.disconnect(on_born)
+	EventBus.gnome_died.disconnect(on_died)
+	assert_eq(run.quickened, {}, "the boundary folds every quickened soul back [T22.2]")
+	var migrants := _last_migrants_from_chronicle(run)
+	assert_gt(migrants, 0, "precondition: the fracture sent a splinter this season")
+	assert_eq(
+		_home_pop(run),
+		home_eve + births[0] - home_deaths[0] - migrants,
+		(
+			"home-grain heads conserve exactly through a gaze-season fracture — "
+			+ "a quickened soul picked as a HOME migrant would mint a phantom head [T22.1]"
+		)
+	)
+	# The holding gaze re-materializes the day after the fold…
+	run.advance_day()
+	assert_true(run.quickened.has(sid), "the holding gaze re-quickens after the boundary fold")
+	for g in run.quickened[sid]:
+		assert_true(colony.gnomes.has(g.id), "quickened arrays reference only registry souls")
+		assert_eq(g.home_settlement, sid, "…each belonging to its own basin")
+	# …and a gaze-off still restores the basin head-for-head, exactly as
+	# the pre-migration invariant proved.
+	var basin_pop: float = run.settlements[sid].pop()
+	var live := 0
+	for g in run.quickened[sid]:
+		if g.is_alive():
+			live += 1
+	run.attention_places = []
+	run.advance_day()
+	assert_almost_eq(
+		run.settlements[sid].pop(),
+		basin_pop + live,
+		0.0001,
+		"gaze-off after a same-season migration still conserves heads [T22.1]"
+	)
+
+
 func test_save_and_resume_regroup_the_quickened():
 	var run := _run_game(2104)
 	var found := _found_frontier(run)

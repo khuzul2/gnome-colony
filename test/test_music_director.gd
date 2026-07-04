@@ -37,6 +37,19 @@ func test_states_and_seasons_resolve():
 	assert_eq(director.screen_track("chronicles"), "res://assets/music/world_end_lament.mp3")
 
 
+## T22.3 — EVENT_TRACKS goes live: a frontier founding interrupts the
+## bed with its track (the next season boundary restores the bed).
+func test_a_founding_interrupts_the_bed():
+	var director := MusicDirector.new()
+	add_child_autofree(director)
+	EventBus.settlement_founded.emit({"sid": 1, "place": "x", "day": 0})
+	assert_eq(
+		director.last_track,
+		"res://assets/music/frontier_founding.mp3",
+		"the founding cue resolves off the EventBus wiring [T22.3]"
+	)
+
+
 func test_empty_placeholders_play_as_silence():
 	var director := MusicDirector.new()
 	add_child_autofree(director)

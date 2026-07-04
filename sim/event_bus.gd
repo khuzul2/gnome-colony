@@ -16,3 +16,19 @@ signal phenomenon(payload: Dictionary)
 signal main_settlement_changed(payload: Dictionary)
 ## The run closes into the Chronicle [design §1.9]; no re-founding (T11.4).
 signal world_ended(payload: Dictionary)
+## [T22.3] Migrants found a frontier basin [algo §14] — emitted by the
+## shell where the founding enters telemetry. Payload {"sid": basin id,
+## "place": its place id, "day": sim day}.
+signal settlement_founded(payload: Dictionary)
+## [T22.3] A §13 research season lands a discovery — one emission per
+## discovered id. Payload {"id": tech id, "day": sim day}.
+signal discovery_made(payload: Dictionary)
+## [T22.3] Unrest crossed the §10 fracture line and a splinter walked
+## out of the colony [algo §14]. Payload {"day": sim day}.
+signal colony_fractured(payload: Dictionary)
+## [T22.3] A §17 war resolved between aggregate settlements. Payload
+## {"winner": sid, "loser": sid, "day": sim day}.
+signal war_waged(payload: Dictionary)
+## [T22.3] A §14 doctrinal schism split a settlement's faction into a
+## free basin. Payload {"from": source sid, "to": new sid, "day": sim day}.
+signal schism_split(payload: Dictionary)

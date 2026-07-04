@@ -26,7 +26,23 @@ const AMBIENCE := [
 	"ambience_ward",
 ]
 const UI := ["ui_click", "ui_back", "ui_save", "ui_refused"]
-const EXTRA_EVENTS := ["event_settlement_founded", "event_discovery", "event_fracture"]
+## Civilization-season cues [T22.3]: EventBus signal → wav base, the
+## same _on_event path as CORE_EVENTS (kept separate — these arrive
+## from the shell's season flows, not SimRunner's daily tick).
+const EXTRA_EVENT_SIGNALS := {
+	"settlement_founded": "event_settlement_founded",
+	"discovery_made": "event_discovery",
+	"colony_fractured": "event_fracture",
+	"war_waged": "event_war",
+	"schism_split": "event_schism",
+}
+const EXTRA_EVENTS := [
+	"event_settlement_founded",
+	"event_discovery",
+	"event_fracture",
+	"event_war",
+	"event_schism",
+]
 const POOL := 6
 
 var settings: GameSettings = null
@@ -44,12 +60,16 @@ func _ready() -> void:
 	EventBus.phenomenon.connect(_on_phenomenon)
 	for signal_name in CORE_EVENTS:
 		EventBus.connect(signal_name, _on_event.bind(CORE_EVENTS[signal_name]))
+	for signal_name in EXTRA_EVENT_SIGNALS:
+		EventBus.connect(signal_name, _on_event.bind(EXTRA_EVENT_SIGNALS[signal_name]))
 
 
 func _exit_tree() -> void:
 	EventBus.phenomenon.disconnect(_on_phenomenon)
 	for signal_name in CORE_EVENTS:
 		EventBus.disconnect(signal_name, _on_event.bind(CORE_EVENTS[signal_name]))
+	for signal_name in EXTRA_EVENT_SIGNALS:
+		EventBus.disconnect(signal_name, _on_event.bind(EXTRA_EVENT_SIGNALS[signal_name]))
 
 
 ## Menu chrome only — never wired to influence acts.

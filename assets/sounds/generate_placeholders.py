@@ -487,6 +487,37 @@ def snd_event_fracture(name):
     return fade(norm(snapc * 1.2 + ringing, 0.6), 0.001, 0.5)
 
 
+def snd_event_war(name):  # T22.3: harsh low brass-like clash swell
+    rng = rng_for(name)
+    t = t_axis(2.0)
+    n = len(t)
+    out = np.zeros(n)
+    for f in (73.42, 77.78, 110.0):  # D2 against Eb2 rub, A2 on top
+        for h in range(1, 8):  # bright harmonic stack = brassy rasp
+            out += sine(f * h, t, rng.uniform(0, 6)) / (h**1.1)
+    swell = np.linspace(0.2, 1.0, n) ** 2
+    growl = 1 + 0.35 * sine(19, t)
+    clash = bandpass(rng.standard_normal(n), 700, 2600)
+    clash *= decay_env(np.maximum(t - 1.25, 0), 0.18) * (t > 1.25) * 0.9
+    return fade(norm(out * swell * growl * 0.25 + clash, 0.7), 0.02, 0.4)
+
+
+def snd_event_schism(name):  # T22.3: a held chord tearing apart
+    rng = rng_for(name)
+    t = t_axis(2.0)
+    n = len(t)
+    tear = np.clip((t - 0.7) / 1.1, 0.0, 1.0) ** 1.5
+    out = np.zeros(n)
+    # C-E-G holds, then E bends down to Eb and G up to A — riven.
+    for f0, drift in ((261.63, 0.0), (329.63, -0.056), (392.0, 0.122)):
+        freq = f0 * (1.0 + drift * tear)
+        ph = 2 * np.pi * np.cumsum(freq) / SR
+        out += np.sin(ph + rng.uniform(0, 6))
+    snap = sine(1400, t) * decay_env(np.maximum(t - 0.7, 0), 0.02) * (t > 0.7) * 0.8
+    body = out * (0.85 + 0.15 * sine(5.3, t) * tear)
+    return fade(norm(body * 0.3 + snap, 0.55), 0.02, 0.4)
+
+
 def _season_bed(name, tone_fn, noise_band, noise_amp, dur=6.0):
     rng = rng_for(name)
     t = t_axis(dur)
@@ -639,6 +670,8 @@ SPECS = {
     "event_settlement_founded": snd_event_settlement_founded,
     "event_discovery": snd_event_discovery,
     "event_fracture": snd_event_fracture,
+    "event_war": snd_event_war,
+    "event_schism": snd_event_schism,
     "ambience_season_0": snd_ambience_season_0,
     "ambience_season_1": snd_ambience_season_1,
     "ambience_season_2": snd_ambience_season_2,

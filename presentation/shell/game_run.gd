@@ -55,7 +55,9 @@ const QUICKENED_PER_BASIN := 16
 var settlements := {}
 ## Eye-quickened frontier souls [T21.1]: sid → Array of the GnomeData
 ## this gaze materialized out of that basin's aggregate. Maintained
-## daily by _quicken_frontier; rebuilt on resume from home_settlement.
+## daily by _quicken_frontier; rebuilt on resume from home_settlement;
+## emptied at every civilization season boundary — _frontier_season
+## folds the whole knot back before the conflict flows [T22.2].
 var quickened := {}
 
 var config: WorldConfig
@@ -274,11 +276,17 @@ func _stage_locations() -> void:
 ## colony, standing at the basin's place); the gaze leaving (or the
 ## settlement vanishing) folds them back via Promotion.dematerialize —
 ## heads conserved by the proven T11.3 pair, the dead skipped there.
+## The civilization season boundary ALSO folds them back — every
+## boundary, gaze or no gaze — so the §14 conflict flows act on
+## complete aggregates; a holding gaze simply re-materializes here the
+## next day [T22.2].
 ## DISCLOSED DIVERGENCE [§14: "minor divergence is acceptable — and,
 ## under the Eye, intended"]: while quickened these souls live the
 ## individual day through SimRunner, so they share home's single larder
 ## (the sim has one food node) instead of their basin's food_factor
-## economy, and their drained heads sit out SettlementSim.season_tick.
+## economy, and their drained heads sit out SettlementSim.season_tick;
+## the boundary fold [T22.2] means their identities churn across every
+## conflict season (fresh bodies are sampled after each boundary).
 func _quicken_frontier() -> void:
 	var colony := runner.colony
 	for sid in quickened.keys():
@@ -310,21 +318,26 @@ func _quicken_frontier() -> void:
 ## The live civilization season [T18.2, algo §14]: fold a home mirror,
 ## compute §14's emigration (or the fracture splinter), fold whole
 ## adults out into the best-scoring basin, run every frontier basin's
-## aggregate season, trade knowledge with home, then the §14/§17
-## conflict flows [T21.3] — schism and war between the AGGREGATE
-## settlements — keep the main settlement current, and let the world end
-## only when EVERY basin — individual and aggregate — is empty.
+## aggregate season, trade knowledge with home, fold every quickened
+## soul back [T22.2], then the §14/§17 conflict flows [T21.3] — schism
+## and war between the AGGREGATE settlements — keep the main settlement
+## current, and let the world end only when EVERY basin — individual
+## and aggregate — is empty. Every HOME count here is home-grain only
+## [T22.1]: quickened frontier souls share the registry but belong to
+## their basins — counting them as home people double-folds heads.
 func _frontier_season() -> void:
 	var colony := runner.colony
-	if colony.population() > 0:
+	var home_pop := _home_population()
+	if home_pop > 0:
 		var mirror := Settlement.from_colony(colony, HOME_SID, FRONTIER_BASE_K, FRONTIER_RICHNESS)
-		var crowding := clampf(colony.population() / capacity, 0.0, 1.0)
+		var crowding := clampf(home_pop / capacity, 0.0, 1.0)
 		var pressure := clampf(_phenomena_pressure, 0.0, 1.0)
 		_phenomena_pressure = 0.0
 		var count := 0
 		if Devotion.fracture_due(colony):
-			count = int(colony.population() * FRACTURE_FRACTION)
+			count = int(home_pop * FRACTURE_FRACTION)
 			colony.unrest = 0.0
+			EventBus.colony_fractured.emit({"day": runner.time.day()})
 			runner.chronicle.append(
 				"Year %d · the colony fractures — a splinter walks out" % runner.time.year()
 			)
@@ -346,6 +359,18 @@ func _frontier_season() -> void:
 		if s.pop() >= Civilization.ALIVE_EPSILON:
 			SettlementSim.season_tick(colony, s, FRONTIER_FOOD_FACTOR)
 			SettlementSim.trade(colony, HOME_SID, sid)
+	# T22.2 [RULED FIX] — fold EVERY quickened soul back BEFORE the
+	# conflict flows: war casualties, schism splits and the war's
+	# crowding reads all act on COMPLETE aggregates (one mechanism for
+	# all three). The next day's _quicken_frontier re-materializes fresh
+	# bodies under a holding gaze — the identity churn across a conflict
+	# season is the disclosed §14 divergence ("minor divergence is
+	# acceptable — and, under the Eye, intended").
+	for sid in quickened:
+		var basin: Settlement = settlements.get(sid)
+		if basin != null:
+			Promotion.dematerialize(colony, basin, quickened[sid])
+	quickened.clear()
 	var mirror_now := Settlement.from_colony(colony, HOME_SID, FRONTIER_BASE_K, FRONTIER_RICHNESS)
 	_civ_conflicts(_season_settlements(mirror_now), eve_beliefs)
 	var complete: Array = [mirror_now]
@@ -372,6 +397,10 @@ func _season_settlements(mirror: Settlement) -> Array:
 ## mirror) joins the season list but fights and splits in NEITHER — its
 ## grain is individual (§14's civ flows are aggregate), and its people
 ## already carry their own break line (Devotion.fracture_due, above).
+## Runs only after _frontier_season folded every quickened soul back
+## [T22.2], so casualties and splits hit COMPLETE aggregates — the
+## identity churn that fold costs a watched basin across a conflict
+## season is the disclosed §14 divergence.
 func _civ_conflicts(season_list: Array, eve_beliefs: Dictionary) -> void:
 	var frontier := []
 	for s in season_list:
@@ -454,6 +483,7 @@ func _schism_split(s: Settlement) -> void:
 	var faction := Civilization.split(runner.colony, s, new_sid)
 	settlements[new_sid] = faction
 	telemetry.record({"type": "schism", "day": runner.time.day()})
+	EventBus.schism_split.emit({"from": s.sid, "to": new_sid, "day": runner.time.day()})
 	runner.chronicle.append(
 		(
 			"Year %d · schism — a faction of %s breaks away for %s"
@@ -469,6 +499,7 @@ func _wage_war(a: Settlement, b: Settlement) -> void:
 	var winner: Settlement = outcome["winner"]
 	var loser: Settlement = outcome["loser"]
 	telemetry.record({"type": "war", "day": runner.time.day()})
+	EventBus.war_waged.emit({"winner": winner.sid, "loser": loser.sid, "day": runner.time.day()})
 	(
 		runner
 		. chronicle
@@ -538,6 +569,8 @@ func _send_migrants(mirror: Settlement, count: int) -> void:
 	var target: Settlement = Civilization.choose_basin(colony, mirror, candidates)
 	var adults := []
 	for g in colony.living():
+		if g.home_settlement != HOME_SID:
+			continue  # quickened frontier souls are never HOME migrants [T22.1]
 		if g.stage == Enums.LifeStage.ADULT:
 			adults.append(g)
 	adults.sort_custom(
@@ -550,6 +583,9 @@ func _send_migrants(mirror: Settlement, count: int) -> void:
 	if not settlements.has(target.sid):
 		settlements[target.sid] = target
 		telemetry.record({"type": "settlement_founded", "day": runner.time.day()})
+		EventBus.settlement_founded.emit(
+			{"sid": target.sid, "place": _place_of(target.sid), "day": runner.time.day()}
+		)
 	Promotion.dematerialize(colony, target, leaving)
 	runner.chronicle.append(
 		(
@@ -557,6 +593,19 @@ func _send_migrants(mirror: Settlement, count: int) -> void:
 			% [runner.time.year(), leaving.size(), _place_of(target.sid)]
 		)
 	)
+
+
+## T22.1 — the colony's HOME-grain head-count. Quickened frontier souls
+## [T21.1] share the registry but belong to their basins: any count or
+## selection of HOME people that includes them double-folds heads (their
+## bucket seats are already drained). Every _frontier_season read of
+## "the colony's people" goes through this.
+func _home_population() -> int:
+	var count := 0
+	for g in runner.colony.living():
+		if g.home_settlement == HOME_SID:
+			count += 1
+	return count
 
 
 func _place_of(sid: int) -> String:
@@ -579,6 +628,7 @@ func _research_season() -> Array:
 	var discovered := Research.season_tick(colony, HOME_SID, needs, surplus)
 	for id in discovered:
 		telemetry.record({"type": "discovery", "id": id, "day": runner.time.day()})
+		EventBus.discovery_made.emit({"id": id, "day": runner.time.day()})
 	return discovered
 
 

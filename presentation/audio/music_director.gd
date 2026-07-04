@@ -28,6 +28,20 @@ var _player: AudioStreamPlayer
 func _ready() -> void:
 	_player = AudioStreamPlayer.new()
 	add_child(_player)
+	# T22.3: the founding cue wires HERE, not in RunView — event tracks
+	# interrupt the bed; the next season boundary's ambience pass
+	# restores it.
+	EventBus.settlement_founded.connect(_on_settlement_founded)
+
+
+func _exit_tree() -> void:
+	EventBus.settlement_founded.disconnect(_on_settlement_founded)
+
+
+## T22.3 — EVENT_TRACKS goes live: a frontier founding plays its track
+## over whatever bed is running.
+func _on_settlement_founded(_payload: Dictionary) -> void:
+	play("%s/%s.mp3" % [DIR, EVENT_TRACKS["settlement_founded"]])
 
 
 func track_for(music_state: String, season: int) -> String:

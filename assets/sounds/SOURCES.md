@@ -15,7 +15,7 @@ directory (seeded per file name — re-running reproduces byte-identical output)
 | phenomenon_thing_in_dark.wav | "CC0 Deep Monster Roar" by trazzz123, https://opengameart.org/content/cc0-deep-monster-roar (first 5.8 s) | CC0 |
 | phenomenon_birds_silent.wav | "Bird chirping sounds" by syncopika, https://opengameart.org/content/bird-chirping-sounds (2.2 s of song, then abrupt cut to near-silence) | CC0 |
 
-## Synthesized (46) — all "synthesized (generate_placeholders.py)"
+## Synthesized (48) — all "synthesized (generate_placeholders.py)"
 
 phenomenon_still_air, phenomenon_long_dark, phenomenon_ground_remembers,
 phenomenon_standing_stones, phenomenon_the_swallowing, phenomenon_the_quickening,
@@ -28,7 +28,8 @@ consequence_predator_follows, consequence_hunt_heroism, consequence_rite_crystal
 consequence_schism_seed, consequence_mass_conversion, consequence_heresy_schism;
 event_born, event_died, event_stage_changed, event_knowledge_lost,
 event_belief_formed, event_main_settlement_changed, event_world_ended,
-event_settlement_founded, event_discovery, event_fracture;
+event_settlement_founded, event_discovery, event_fracture, event_war,
+event_schism (the last two added at T22.3);
 ambience_season_0, ambience_season_1, ambience_season_2, ambience_season_3,
 ambience_wrongness, ambience_ward;
 ui_click, ui_back, ui_save, ui_refused.

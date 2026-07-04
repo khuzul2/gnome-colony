@@ -104,6 +104,80 @@ func test_distance_without_a_rival_creed_stays_whole():
 	assert_eq(_events_of(run, "schism"), 0)
 
 
+func _place_for(run: GameRun, sid: int) -> String:
+	for region in run.graph.regions:
+		if region["id"] == sid:
+			return WorldBootstrap.place_id(region)
+	return ""
+
+
+## The tolls the chronicle reports — "… (%d fall against the
+## victors' %d)" → [loser_losses, winner_losses].
+func _losses_from_chronicle(run: GameRun) -> Array:
+	for line in run.runner.chronicle:
+		if "war — " in line:
+			var inside: String = line.get_slice("(", 1)
+			return [
+				inside.get_slice(" ", 0).to_int(),
+				inside.get_slice("victors' ", 1).trim_suffix(")").to_int(),
+			]
+	return [-1, -1]
+
+
+## T22.2 [RULED FIX]: a quickened basin that loses a war bleeds — the
+## boundary folds the gaze's souls back BEFORE the conflict flows, so
+## casualties hit the COMPLETE aggregate; `quickened` is empty right
+## after the boundary day and nobody rides out the war as an individual.
+func test_a_quickened_basin_folds_back_before_it_bleeds():
+	var run := _run_game(2221)
+	# Stop one day short of the eve so the gaze has a day to quicken.
+	while (run.runner.time.day() + 2) % TimeService.DAYS_PER_SEASON != 0:
+		run.advance_day()
+	var stronger := _settle(run, 2, 300.0, {"faith": 0.9})
+	var weaker := _settle(run, 3, 280.0)
+	run.attention_places = [_place_for(run, 3)]
+	run.advance_day()  # the eve: the gaze quickens the doomed basin
+	assert_true(run.quickened.has(3), "precondition: the loser basin is quickened")
+	var knot: int = run.quickened[3].size()
+	assert_gt(knot, 0)
+	assert_almost_eq(weaker.pop(), 280.0 - knot, 0.0001, "materialize drained the buckets")
+	var before: float = stronger.pop() + weaker.pop()
+	run.advance_day()  # the boundary: fold first, then the war
+	assert_eq(_events_of(run, "war"), 1, "the war fired [§17]")
+	assert_eq(run.quickened, {}, "quickened is empty right after the boundary day [T22.2]")
+	for g in run.runner.colony.living():
+		assert_eq(g.home_settlement, GameRun.HOME_SID, "no soul rode out the war quickened")
+	var losses := _losses_from_chronicle(run)
+	var loser_pop_at_war: float = weaker.pop() + losses[0]
+	assert_gt(
+		loser_pop_at_war,
+		272.0,
+		"casualties hit the COMPLETE aggregate — unfolded, the basin fights ~16 heads light"
+	)
+	# §14's exact toll — loser fraction = 0.15·min(2, strength ratio) —
+	# recomputed from the war-time pops (post-war pop + chronicle toll).
+	var colony: Colony = run.runner.colony
+	var strength_w := TechEffects.war_strength(
+		stronger.pop() + losses[1],
+		TechEffects.level(colony, 2, "metallurgy"),
+		Leadership.quality(colony, 2)
+	)
+	var strength_l := TechEffects.war_strength(
+		loser_pop_at_war, TechEffects.level(colony, 3, "metallurgy"), Leadership.quality(colony, 3)
+	)
+	var ratio: float = minf(
+		Civilization.CASUALTY_RATIO_CAP,
+		maxf(strength_w, strength_l) / maxf(0.001, minf(strength_w, strength_l))
+	)
+	assert_almost_eq(
+		losses[0] / loser_pop_at_war,
+		Civilization.LOSER_CASUALTY * ratio,
+		0.01,
+		"…and it bled by §14's casualty fraction of that complete pop"
+	)
+	assert_lt(stronger.pop() + weaker.pop(), before - 30.0, "a major mortality event [§14]")
+
+
 func test_crowded_evenly_matched_neighbors_go_to_war():
 	var run := _run_game(2133)
 	_to_season_eve(run)

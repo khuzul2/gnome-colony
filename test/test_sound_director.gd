@@ -44,6 +44,23 @@ func test_stimuli_resolve_to_their_wavs():
 	assert_eq(director.last_played, "res://assets/sounds/ui_click.wav")
 
 
+## T22.3 — the once-dead audio paths live: every civilization-season
+## signal resolves to its wav, including the two authored for war and
+## schism (no cue existed for either before).
+func test_civilization_season_signals_resolve_to_their_wavs():
+	var director := _director()
+	EventBus.settlement_founded.emit({"sid": 1, "place": "x", "day": 3})
+	assert_eq(director.last_played, "res://assets/sounds/event_settlement_founded.wav")
+	EventBus.discovery_made.emit({"id": "fire", "day": 3})
+	assert_eq(director.last_played, "res://assets/sounds/event_discovery.wav")
+	EventBus.colony_fractured.emit({"day": 3})
+	assert_eq(director.last_played, "res://assets/sounds/event_fracture.wav")
+	EventBus.war_waged.emit({"winner": 1, "loser": 2, "day": 3})
+	assert_eq(director.last_played, "res://assets/sounds/event_war.wav")
+	EventBus.schism_split.emit({"from": 1, "to": 2, "day": 3})
+	assert_eq(director.last_played, "res://assets/sounds/event_schism.wav")
+
+
 func test_pressing_a_panel_button_reaches_no_sound():
 	var director := _director()
 	var panel := InfluencePanel.new()
