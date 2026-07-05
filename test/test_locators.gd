@@ -30,11 +30,11 @@ func _view(seed_value := 1801) -> RunView:
 func test_a_locator_floats_over_each_colony():
 	var view := _view()
 	var rows := view._roster_rows()
-	assert_gt(view._locators.size(), 0, "at least the home locator exists")
+	assert_gt(view.settlement_locators.count(), 0, "at least the home locator exists")
 	for model in rows:
 		var sid: int = model["sid"]
-		assert_true(view._locators.has(sid), "a locator per colony")
-		var label: Label3D = view._locators[sid]
+		assert_true(view.settlement_locators.has_locator(sid), "a locator per colony")
+		var label: Label3D = view.settlement_locators.locator(sid)
 		var place: String = view.sid_places.get(sid, view.run.home)
 		var basin: Vector3 = view.place_positions[place]
 		assert_almost_eq(label.position.x, basin.x, 0.001, "the plate sits over the basin (x)")

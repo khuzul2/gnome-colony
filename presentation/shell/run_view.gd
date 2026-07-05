@@ -66,16 +66,6 @@ const PUPPET_ZOOM_SCALE := {
 	CameraRig.Zoom.SETTLEMENT: 2.2,
 	CameraRig.Zoom.INDIVIDUAL: 1.0,
 }
-## R6.3 [leg §L-hud] — on-world settlement locators: a floating name-plate + tier
-## glyph above each basin so colonies are findable on the map; alpha fades with
-## distance from the focus so distant plates don't clutter. Presentation numbers,
-## tuned at Gate A2.
-const LOCATOR_HEIGHT := 4.0
-const LOCATOR_PIXEL_SIZE := 0.05
-const LOCATOR_FADE_NEAR := 6.0
-const LOCATOR_FADE_FAR := 30.0
-const LOCATOR_FADE_FLOOR := 0.15
-const TIER_GLYPH := {"hamlet": "·", "village": "◦", "town": "◆", "city": "☩"}
 ## Presentation walk time [T21.2]: wall-clock seconds a puppet spends
 ## crossing to a new basin — a render flourish, never a sim number (the
 ## sim already wrote the location; the body just catches up on screen).
@@ -118,6 +108,8 @@ var heatmap_overlay: HeatmapOverlay
 var settlement_roster: SettlementRoster
 ## R6.4 [leg §L-hud] — the living chronicle feed (recent story beats).
 var chronicle_feed: ChronicleFeed
+## R6.3 [leg §L-hud] — floating on-world settlement name-plates.
+var settlement_locators: SettlementLocators
 ## R7.3 [leg §L-acts] — transient on-map markers for landed phenomena.
 var cast_markers: CastMarkers
 var ambience: AmbienceDirector
@@ -144,8 +136,6 @@ var _hud_label: Label
 ## R1.6 — place → its belief-tag medallion node (gold blessed / red cursed).
 var _motifs := {}
 var _motif_kinds := {}
-## R6.3 [leg §L-hud] — sid → floating settlement locator (Label3D).
-var _locators := {}
 ## R6.3 [leg §L-hud] — the life pulse: births/deaths since the season turned.
 var _season_births := 0
 var _season_deaths := 0
@@ -196,6 +186,10 @@ func _ready() -> void:
 	add_child(attention)
 	pool = PuppetPool.new()
 	stage_world.add_child(pool)
+	# R6.3 [leg §L-hud]: floating settlement name-plates, inside the stage so they
+	# render through the mosaic.
+	settlement_locators = SettlementLocators.new()
+	stage_world.add_child(settlement_locators)
 	# R7.3 [leg §L-acts]: landed phenomena flash a medallion on the map. Inside the
 	# stage so the markers render through the mosaic; it owns its own subscription.
 	cast_markers = CastMarkers.new()
@@ -560,38 +554,11 @@ func _refresh_motifs() -> void:
 ## basin (home + frontier), so the player can find settlements on the map. Reads
 ## the roster models; billboarded and depth-test-off so it reads over the relief,
 ## and fades with distance from the focus. Presentation-only.
+## R6.3 [leg §L-hud] — keep the on-world name-plates in step with the fold.
 func _refresh_locators() -> void:
-	var wanted := {}
-	for model in _roster_rows():
-		wanted[model["sid"]] = model
-	for sid in _locators.keys():
-		if not wanted.has(sid):
-			_locators[sid].queue_free()
-			_locators.erase(sid)
-	for sid in wanted:
-		var model: Dictionary = wanted[sid]
-		var place: String = sid_places.get(sid, run.home)
-		if not place_positions.has(place):
-			continue
-		var label: Label3D = _locators.get(sid)
-		if label == null:
-			label = Label3D.new()
-			label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-			label.no_depth_test = true
-			label.pixel_size = LOCATOR_PIXEL_SIZE
-			label.outline_size = 8
-			label.outline_modulate = Palette.COLORS[Palette.NIGHT_LAPIS]
-			stage_world.add_child(label)
-			_locators[sid] = label
-		var glyph: String = TIER_GLYPH.get(model["tier"], "·")
-		label.text = "%s %s" % [glyph, model["name"]]
-		var pos: Vector3 = place_positions[place] + Vector3(0.0, LOCATOR_HEIGHT, 0.0)
-		label.position = pos
-		var tint: Color = Palette.COLORS[Palette.GOLD_LIT if model["seat"] else Palette.GOLD]
-		var span := LOCATOR_FADE_FAR - LOCATOR_FADE_NEAR
-		var d := camera.position.distance_to(pos)
-		tint.a = clampf(1.0 - (d - LOCATOR_FADE_NEAR) / span, LOCATOR_FADE_FLOOR, 1.0)
-		label.modulate = tint
+	settlement_locators.refresh(
+		_roster_rows(), sid_places, place_positions, camera.position, run.home
+	)
 
 
 func _on_cast_requested(act_id: String, target: String, _selection: Dictionary) -> void:
