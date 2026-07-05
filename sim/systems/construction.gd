@@ -198,7 +198,10 @@ static func _priority(colony: Colony, s: Settlement, id: String, pressures: Dict
 		"well":
 			return pressures.get("water", 0.0)
 		"granary":
-			return surplus if s.tier >= Enums.SettlementTier.TOWN else 0.0
+			# §R-set says "Town+", but Town REQUIRES a granary — that deadlocks
+			# progression, so a prosperous VILLAGE stores its surplus (the fix
+			# is documented in docs/redesign-ravenna.md §R-set).
+			return surplus if s.tier >= Enums.SettlementTier.VILLAGE else 0.0
 		"workshop":
 			return pressures.get("has_ore", 0.0) + s.mean_traits.get("curious", 0.5)
 		"shrine":

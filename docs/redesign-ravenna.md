@@ -98,7 +98,7 @@ top-priority **buildable** structure (tech prerequisite met **and** below its pe
 | dwelling | `crowding` |
 | farm | `hunger_pressure + 0.3` |
 | well / cistern | `water_pressure` |
-| granary | `surplus` (only at Town+) |
+| granary | `surplus` (at Village+) — *corrected from "Town+": Town requires a granary, so gating the granary at Town+ would deadlock progression; a prosperous village stores its surplus and so becomes a town* |
 | workshop | `has_ore + curiosity` |
 | shrine | `faith · (1 − has_shrine)` |
 | basilica (temple) | `faith · devotion_tier` (only at Village+) |
