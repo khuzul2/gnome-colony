@@ -112,6 +112,8 @@ var chronicle_feed: ChronicleFeed
 var settlement_locators: SettlementLocators
 ## R7.3 [leg §L-acts] — transient on-map markers for landed phenomena.
 var cast_markers: CastMarkers
+## R7.4 [leg §L-acts] — a faint ring at each place the Eye is attending.
+var attention_eye: AttentionEye
 var ambience: AmbienceDirector
 var hud: Control
 var place_positions := {}
@@ -195,6 +197,9 @@ func _ready() -> void:
 	cast_markers = CastMarkers.new()
 	cast_markers.place_positions = place_positions
 	stage_world.add_child(cast_markers)
+	# R7.4 [leg §L-acts]: a faint ring shows where the Eye is quickening souls.
+	attention_eye = AttentionEye.new()
+	stage_world.add_child(attention_eye)
 	ambience = AmbienceDirector.new()
 	add_child(ambience)
 	_build_hud()
@@ -291,6 +296,8 @@ func _process(delta: float) -> void:
 		return
 	attention.update(delta, _gazed_place(), camera.level)
 	run.attention_places = attention.attended()
+	# R7.4 [leg §L-acts]: mark where the Eye is quickening souls right now.
+	attention_eye.refresh(run.attention_places, place_positions)
 	_accum += delta * days_per_sec
 	var steps := 0
 	while _accum >= 1.0 and steps < MAX_STEPS_PER_FRAME:
