@@ -16,10 +16,31 @@ var baked_version := -1
 var walkable_faces := PackedVector3Array()
 
 var _graph: RegionGraph
+## R1.5 — a matte, vertex-colored terrain material (palette bands by
+## elevation), so the ground reads as tesserae through the mosaic pass.
+var _material := StandardMaterial3D.new()
 
 
 func _ready() -> void:
+	_material.vertex_color_use_as_albedo = true
+	_material.roughness = 1.0
+	mesh_instance.material_override = _material
 	add_child(mesh_instance)
+
+
+## R1.5 [rav §R-art] — elevation → palette band: lapis lowlands/water, sage
+## and pale-green mid-slopes, ochre uplands, gold peaks. Pure; unit-tested.
+static func terrain_color(t: float) -> Color:
+	t = clampf(t, 0.0, 1.0)
+	if t < 0.20:
+		return Palette.COLORS[1]  # deep-lapis (low ground / water)
+	if t < 0.45:
+		return Palette.COLORS[4]  # sage-green
+	if t < 0.70:
+		return Palette.COLORS[5]  # pale-green
+	if t < 0.88:
+		return Palette.COLORS[9]  # ochre
+	return Palette.COLORS[8]  # gold-lit peaks
 
 
 ## Lazy re-bake: only when the graph's version moved since the last bake.
@@ -45,6 +66,14 @@ func height_at(point: Vector2) -> float:
 
 
 func _bake() -> void:
+	# Elevation bounds for the palette bands — the IDW height stays within the
+	# region elevations, so their min/max normalize the vertex colors [R1.5].
+	var min_e := INF
+	var max_e := -INF
+	for region in _graph.regions:
+		min_e = minf(min_e, region["elevation"])
+		max_e = maxf(max_e, region["elevation"])
+	var span := maxf(0.001, max_e - min_e)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	walkable_faces = PackedVector3Array()
@@ -63,7 +92,9 @@ func _bake() -> void:
 			for c in corners:
 				verts.append(Vector3(c.x, height_at(c), c.y))
 			for index in [0, 1, 2, 0, 2, 3]:
-				st.add_vertex(verts[index])
-				walkable_faces.append(verts[index])
+				var v: Vector3 = verts[index]
+				st.set_color(terrain_color((v.y - min_e) / span))
+				st.add_vertex(v)
+				walkable_faces.append(v)
 	st.generate_normals()
 	mesh_instance.mesh = st.commit()

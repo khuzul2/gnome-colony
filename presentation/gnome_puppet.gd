@@ -15,18 +15,39 @@ const STAGE_SCALE := {
 	Enums.LifeStage.DEAD: 1.0,
 }
 
+## R1.5 [rav §R-art] — a gnome is holy (gets a halo) when it is a prophet or
+## has reached the §14 notability promotion line.
+const HALO_NOTABILITY := 0.6
+
 var data: GnomeData
 var body := MeshInstance3D.new()
 ## NavigationAgent3D, attached by NavWorld.route on first routing (T13.3).
 var agent: NavigationAgent3D
+## R1.5 — the gold nimbus behind a holy figure (prophet / high notability).
+var halo := MeshInstance3D.new()
 
 var _material := StandardMaterial3D.new()
+var _halo_material := StandardMaterial3D.new()
 
 
 func _ready() -> void:
 	body.mesh = CapsuleMesh.new()
+	# R1.5 — a matte body with a warm rim, so figures read luminous on the
+	# dark ground (the mosaic idiom); the mosaic shader quantizes on screen.
+	_material.roughness = 1.0
+	_material.rim_enabled = true
+	_material.rim = StageLighting.FIGURE_RIM_STRENGTH
 	body.material_override = _material
 	add_child(body)
+	# R1.5 — a gold billboard disc read as a nimbus through the mosaic pass.
+	halo.mesh = QuadMesh.new()
+	_halo_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_halo_material.albedo_color = Palette.COLORS[Palette.GOLD_LIT]
+	_halo_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	halo.material_override = _halo_material
+	halo.position = Vector3(0.0, 1.1, 0.0)
+	halo.visible = false
+	add_child(halo)
 
 
 func bind(gnome: GnomeData) -> void:
@@ -46,9 +67,20 @@ func refresh() -> void:
 		data.get_feeling(Devotion.YOU, "fear"), data.get_feeling(data.location, "fear")
 	)
 	var faith: float = data.get_feeling(Devotion.YOU, "faith")
+	# R1.5 — Ravenna tones: a warm cream base pulls toward gold with faith and
+	# toward oxblood-red with dread (fear still raises the red channel, read at
+	# a glance, same direction as the slice).
 	_material.albedo_color = Color(
-		0.5 + 0.5 * fear, 0.5 + 0.4 * faith - 0.2 * fear, 0.62 - 0.3 * fear
+		0.62 + 0.30 * fear + 0.10 * faith,
+		0.55 + 0.30 * faith - 0.25 * fear,
+		0.42 - 0.20 * fear - 0.10 * faith
 	)
+	halo.visible = is_holy()
+
+
+## A prophet or a figure past the notability promotion line wears a nimbus.
+func is_holy() -> bool:
+	return not data.prophet.is_empty() or data.notability >= HALO_NOTABILITY
 
 
 func tint() -> Color:
