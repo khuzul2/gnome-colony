@@ -142,6 +142,9 @@ func _ready() -> void:
 	for place in place_positions:
 		nav.place_site(place, place_positions[place])
 	camera = CameraRig.new()
+	# R5.2 [leg §L-relief]: pixel-snap the presented camera so the mosaic grout
+	# doesn't crawl on pan; the rig's logical position stays continuous.
+	camera.snap_enabled = true
 	stage_world.add_child(camera)
 	camera.focus(place_positions[run.home])
 	attention = AttentionInput.new()
@@ -346,7 +349,13 @@ func _ground_point(screen_pos: Vector2) -> Vector3:
 	# The camera renders into the low-res stage, so a window-space click must
 	# be scaled to viewport space before the ray [R1.2]; identity in headless.
 	var viewport_pos := stage.to_viewport(screen_pos)
-	var origin := cam.project_ray_origin(viewport_pos)
+	# Target from the PRE-snap (continuous) camera pose [R5.2, leg §L-ui]: the
+	# presented camera is pixel-quantized for anti-shimmer, but the pixel grid is
+	# metres wide, so picking must read the true aim or a click could resolve to the
+	# wrong basin. The snap is a pure planar translation held in the child camera's
+	# x/z offset — undo it on the ray origin; the direction is unaffected.
+	var snap_off := Vector3(cam.position.x, 0.0, cam.position.z)
+	var origin := cam.project_ray_origin(viewport_pos) - snap_off
 	var normal := cam.project_ray_normal(viewport_pos)
 	var hit: Variant = Plane(Vector3.UP, _pick_plane_y).intersects_ray(origin, normal)
 	if hit == null:

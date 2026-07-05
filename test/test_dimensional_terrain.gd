@@ -93,3 +93,54 @@ func test_height_at_agrees_with_the_mesh_field():
 		view.height_at(ex["hi"]["center"]) >= view.height_at(ex["lo"]["center"]),
 		"a higher basin sits at least as high on the skin (monotonic relief)"
 	)
+
+
+# --- R5.2: oblique camera + pixel-snap --------------------------------------
+
+
+func test_camera_is_oblique_and_descends_per_spec():
+	# The Gate-A view looked near-top-down (−60°), hiding relief; tilt oblique
+	# [leg §L-relief]. Heights still fall civ→settlement→individual.
+	assert_eq(CameraRig.PITCHES_DEG[CameraRig.Zoom.CIVILIZATION], -72.0)
+	assert_eq(CameraRig.PITCHES_DEG[CameraRig.Zoom.SETTLEMENT], -45.0)
+	assert_eq(CameraRig.PITCHES_DEG[CameraRig.Zoom.INDIVIDUAL], -28.0)
+	assert_eq(CameraRig.HEIGHTS[CameraRig.Zoom.SETTLEMENT], 42.0)
+	var rig := CameraRig.new()
+	add_child_autofree(rig)
+	assert_almost_eq(rig.camera.rotation_degrees.x, -45.0, 0.001, "the settlement view is oblique")
+
+
+func test_pixel_snap_quantizes_the_presented_camera_but_not_the_rig():
+	# Anti-shimmer: the PRESENTED camera holds its pixel cell under a sub-pixel
+	# pan, while the rig's logical position stays continuous so pan precision
+	# (T23.2) is intact. This resolves the R1.2 deferral [leg §L-relief, §L-ui].
+	var rig := CameraRig.new()
+	add_child_autofree(rig)
+	rig.snap_enabled = true
+	var g: float = CameraRig.PIXEL_GRID_KM[CameraRig.Zoom.SETTLEMENT]
+	rig.focus(Vector3(5.0, 0.0, 0.0))
+	var cell_x: float = rig.camera.global_position.x
+	rig.focus(Vector3(5.0 + g * 0.25, 0.0, 0.0))  # a sub-pixel nudge
+	assert_almost_eq(
+		rig.camera.global_position.x, cell_x, 1e-5, "the presented camera holds its pixel cell"
+	)
+	assert_almost_eq(
+		rig.position.x,
+		5.0 + g * 0.25,
+		1e-5,
+		"the rig's logical aim stays continuous (pan precision)"
+	)
+	rig.focus(Vector3(5.0 + g, 0.0, 0.0))  # one whole pixel over
+	assert_gt(
+		absf(rig.camera.global_position.x - cell_x),
+		g * 0.5,
+		"a whole-pixel pan steps to the next cell"
+	)
+
+
+func test_snap_is_off_by_default_so_bare_rig_logic_is_exact():
+	var rig := CameraRig.new()
+	add_child_autofree(rig)
+	rig.focus(Vector3(5.123, 0.0, -2.777))
+	assert_almost_eq(rig.camera.global_position.x, 5.123, 1e-5, "no snap when disabled")
+	assert_almost_eq(rig.camera.global_position.z, -2.777, 1e-5, "no snap when disabled")

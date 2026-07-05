@@ -156,15 +156,45 @@ func test_bindings_drive_the_camera():
 
 func test_a_click_targets_the_basin_under_the_cursor():
 	# [T23.3] THE core verb: arm an act, click the world, it casts there.
+	# [R5.2, leg §L-ui] and picking reads the PRE-snap aim under the pixel-snapped
+	# presented camera: with the rig deliberately parked off the pixel grid (so the
+	# snap correction is ~half a cell, not zero), _ground_point must equal the
+	# UNSNAPPED hit and differ from the naive post-snap hit by exactly the offset —
+	# a load-bearing guard (reverting the fix makes _ground_point return `post`).
 	var view := _view()
 	view.set_speed(0.0)
+	assert_true(view.camera.snap_enabled, "the presented camera is pixel-snapped")
+	var home: String = view.run.home
+	var home_pos: Vector3 = view.place_positions[home]
+	var g: float = CameraRig.PIXEL_GRID_KM[view.camera.level]
+	var aim := home_pos
+	aim.x = (floorf(aim.x / g) + 0.5) * g  # halfway between grid lines
+	view.camera.focus(aim)
+	var cam := view.camera.camera
+	var snap_off := Vector3(cam.position.x, 0.0, cam.position.z)
+	assert_gt(snap_off.length(), g * 0.2, "the presented camera is really displaced off-grid")
+	var screen := cam.unproject_position(home_pos)
+	var vp := view.stage.to_viewport(screen)
+	var normal := cam.project_ray_normal(vp)
+	var plane := Plane(Vector3.UP, view._pick_plane_y)
+	var pre: Vector3 = plane.intersects_ray(cam.project_ray_origin(vp) - snap_off, normal)
+	var post: Vector3 = plane.intersects_ray(cam.project_ray_origin(vp), normal)
+	assert_almost_eq(
+		pre.distance_to(post), snap_off.length(), 1e-4, "snap shifts the naive pick by the offset"
+	)
+	assert_almost_eq(
+		(view._ground_point(screen) as Vector3).distance_to(pre),
+		0.0,
+		1e-4,
+		"picking reads the pre-snap aim, not the quantized one"
+	)
+	# …and the core verb still lands the cast at that basin.
 	assert_eq(Devotion.total(view.run.runner.colony), 0.0)
 	assert_true(view.influence_panel.arm("still_air"))
-	var home_pos: Vector3 = view.place_positions[view.run.home]
 	var click := InputEventMouseButton.new()
 	click.button_index = MOUSE_BUTTON_LEFT
 	click.pressed = true
-	click.position = view.camera.camera.unproject_position(home_pos)
+	click.position = cam.unproject_position(home_pos)
 	view._unhandled_input(click)
 	assert_gt(
 		Devotion.total(view.run.runner.colony),
