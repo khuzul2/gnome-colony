@@ -31,6 +31,10 @@ const MAINTENANCE_LOAD := 0.33  # §17 maintenance ≈ 0.33 actions/day
 const BASILICA_DEVOTION_TIER := 3
 const WALL_CAP := 4.0
 const PAIR_CAP := 2.0  # granary / workshop / market
+## Regression [rav §R-set]: under-tended structures decay; upkeep scales with
+## the total stock, so a shrinking settlement can't hold all it built.
+const DECAY_RATE := 0.05
+const UPKEEP_PER_STRUCTURE := 0.1
 
 
 ## Surplus adult labor available this season [rav §R-set].
@@ -56,6 +60,32 @@ static func season_tick(colony: Colony, s: Settlement, pressures: Dictionary = {
 	SettlementSim.update_tier(colony, s)
 	EventBus.structure_built.emit({"sid": s.sid, "building": pick, "tier": s.tier})
 	return pick
+
+
+## Regression & abandonment [rav §R-set, R2.5]. When a settlement can't tend
+## all it built (labor below its upkeep = 0.1·total stock), every structure
+## decays by 0.05·shortfall, floored at 0 (empties are dropped). A regional
+## dark age that loses the enabling craft (§7) strips the workshop outright.
+## The tier is re-derived and may fall.
+static func decay_tick(colony: Colony, s: Settlement) -> void:
+	# A dark age took the craft → the workshop can no longer stand.
+	if s.structure_count("workshop") > 0.0 and not _prereq_met(colony, s, "workshop", {}):
+		s.structures.erase("workshop")
+	var total := 0.0
+	for id in s.structures:
+		total += s.structures[id]
+	if total > 0.0:
+		var upkeep := UPKEEP_PER_STRUCTURE * total
+		var shortfall := maxf(0.0, 1.0 - labor(s) / upkeep) if upkeep > 0.0 else 0.0
+		if shortfall > 0.0:
+			var decay := DECAY_RATE * shortfall
+			for id in s.structures.keys():
+				var left := maxf(0.0, s.structures[id] - decay)
+				if left <= 0.0:
+					s.structures.erase(id)
+				else:
+					s.structures[id] = left
+	SettlementSim.update_tier(colony, s)
 
 
 ## The single highest-priority structure the settlement can build now
