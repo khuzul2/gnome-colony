@@ -25,6 +25,8 @@ var belief := {"faith": 0.0, "awe": 0.0, "fear": 0.0}
 var structures := {}
 ## Development tier [rav §R-set], re-derived each season by SettlementSim (R2.2).
 var tier := Enums.SettlementTier.HAMLET
+## Accumulated construction labor toward the next structure [rav §R-set, R2.3].
+var build_progress := 0.0
 
 
 func _init(settlement_id: int = 0, k_base: float = 0.0, richness: float = 0.0) -> void:
