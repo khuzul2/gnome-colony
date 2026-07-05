@@ -6,6 +6,8 @@
 *.pck
 *.exe
 *.zip
+# Project-local Godot engine (kept out of history; ~170 MB binary)
+/godot/
 # OS / editor junk
 .DS_Store
 *~
