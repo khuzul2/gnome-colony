@@ -1,127 +1,58 @@
-# 🎮 PLAYTEST GATE A — "Does it read as Ravenna?"
+# 🎮 PLAYTEST GATE A2 — "Now can you read it, and does it read as 3-D Ravenna?"
 
-**Phase R1 (Ravenna mosaic render) is complete and headless-green (709/709).** But automated
-tests cannot judge whether it *looks* like a Galla Placidia mosaic — that is your call. The render
-is GPU-only (headless uses a dummy rasterizer with no pixel readback), so **this gate needs a human
-running the real build.**
+**The R5–R8 Gate-A remediation is code-complete, tagged, and headless-green (full suite 800/800, lint
+clean).** This gate re-judges the 2026-07-05 **Gate-A NO-GO** — palette/mood were approved then, but
+gnomes/settlements/halos weren't perceivable, the HUD/menu were unreadable, acts gave no feedback, and
+the terrain read as a flat sheet of oversized tesserae. All of that is now addressed. **Automated tests
+can't judge whether it *looks* right or *feels* right — that's your call, on the real GPU build.**
 
 ## How to look
+`git pull` (or use your local tree), launch, **New Game** (note the menu is redesigned), let a colony run
+a few seasons, **pan/zoom** around and **change zoom levels** (WASD + E/Q/wheel), click a **roster row**
+to jump to a settlement, and cast a few acts — `still air`, then `weeping sky` (watch it get refused with
+a reason), then hover **long dark** to see why it's locked.
 
-Launch the game (main menu → New Game), let a colony run a few seasons, pan/zoom around, and cast a
-couple of acts (e.g. `still_air`, then something that blesses or curses a place).
+## What changed since Gate A — judge each
 
-## What to judge
+**1. Terrain reads as literal 3-D, in the mosaic style (R5).** The heightfield existed but was flat
+(elevations ~0.1% of the map width) and the camera looked near-straight-down. Now: relief amplified to a
+2.6 km envelope with a flat water plane, the camera tilted **oblique** (so hills read in profile),
+**slope-shaded** tesserae, and **finer** cells (512×288, grout 3 — the "tesserae too large" fix). *Does
+the ground read as rolling 3-D relief now? Tesserae the right size at the three zooms?*
 
-1. **Palette & mood** — deep lapis grounds, gold tesserae, warm gold key light, figures glowing
-   against the dark? Or muddy / too bright / not mosaic-like? (Palette is `docs/redesign-ravenna.md`
-   §R-art — 16 colors; all tunable.)
-2. **Tesserae feel** — does the grout lattice + per-cell jitter read as *laid stone*, or as generic
-   pixelation / noise? Is `grout_px = 4` the right tile size at the three zooms?
-3. **Figures on dark** — do gnomes read as luminous mosaic figures? Do **prophets / notable gnomes**
-   wear a legible **gold halo**? Are the Ravenna **tints** (gold with faith, oxblood-red with dread)
-   readable at a glance?
-4. **Iconography** — over a **blessed** place, does the **gold sacred medallion** (the Chi-Rho-like
-   monogram — the gnomes' own mark of the unseen will) read? Over a **cursed** place, the red ring?
-5. **Christian-like register** — does the whole thing evoke late-antique Christian mosaic, or does it
-   miss? (Basilicas and city medallions arrive in R3 — settlement visuals — so judge only figures +
-   ground + belief markers here.)
-6. **Legibility not lost** — can you still see what's happening (pan/zoom/pick/cast all work)? The
-   HUD overlays the mosaic at full resolution by design.
+**2. You can see gnomes, settlements, halos (R6 — the blockers).** A **camera-framing bug** was found and
+fixed (the oblique tilt had pushed the watched basin off the bottom of the frame — gnomes were literally
+out of view). Figures are now scaled to read at the play zooms; a **settlement roster** (top-left) lists
+every colony (name · tier · pop · seat monogram, click to focus); **floating name-plates** mark each
+basin on the map; a **life pulse** shows births/deaths; a **chronicle feed** streams the story beats.
+*Can you see gnomes and settlements now? Do prophets/notables wear a legible gold halo? Does the HUD tell
+you what/where/doing/improving?*
 
-## Known, deliberate deferrals (not bugs — decide if they matter)
+**3. Acts explain themselves (R7).** Each act shows its **precondition** ("weeping sky — needs drought")
+and mutes when unmet; **locked acts name the tier to reach** ("🔒 Tier II — deepen devotion"); a
+**refused cast says why** (banner + refused sound) instead of the silent no-op; a **landed act flashes a
+medallion** on the map; a **faint ring** shows where the Eye is quickening souls. *Is it now clear what
+each act needs, why one's locked, and what happened when you cast?*
 
-- **Camera pixel-snap** deferred (would fight the tested pan precision); you may see slight shimmer
-  when panning. If it bothers you, flag it and I'll do a dedicated snap pass.
-- **Full-screen gold-leaf `bless_mask`** deferred; the blessed shine currently comes from the gold
-  medallion geometry + bloom, not a screen-space mask. Flag if you want the whole blessed *ground*
-  to shine.
-- Internal resolution is `384×216`; raise/lower in §R-art if you want chunkier or finer tesserae.
+**4. Menu clean + camera smooth (R8).** The New-Game **overlap is gone** (root cause: the wizard was a
+zero-size control whose cards overflowed the buttons) and the menu/wizard wear the **Ravenna skin**
+(night-lapis, cream/gold, monogram, meander). The **camera eases** on pan instead of snapping. *Is the
+menu clean and readable now? Does pan/zoom feel good?*
+
+## Known, deliberate deferrals (decide if they matter)
+- **Wizard two-pane** (preset-list left / detail right): deferred — it would rewrite the wizard's
+  heavily test-pinned 5-page structure. The overlap + skin are fixed; the literal two-pane is a polish.
+- **Zoom-transition easing:** pan eases, but the discrete zoom *level* change is still instant (easing the
+  height/pitch fought the camera tests). Flag if the zoom jump bothers you.
+- **Full-screen gold-leaf `bless_mask`** (from Gate A) still deferred; blessed shine comes from the
+  medallion geometry + bloom.
+- A pre-existing **wizard-remint node leak** is spawned as a separate follow-up task (not user-visible).
 
 ## To proceed
+Record **GO** (+ any tuning asks — **every `[leg §X]` number is a starting value, tunable in one edit**:
+relief height, camera pitch, tessera size, puppet scale, HUD thresholds, pan smoothing, palette). Then the
+loop continues to **R3 (settlement visuals — mosaic building props)**. A **NO-GO** with specifics is just
+as useful — I'll turn it into tasks the same way Gate A's became R5–R8.
 
-Record **GO** (and any tuning asks — palette tweaks, grout size, halo size, monogram shape) and I'll
-apply them, then continue to **R3 (settlement visuals)**. Meanwhile I am proceeding with **R2
-(living settlements — pure sim logic)**, which is independent of this visual gate.
-
-*(Reference: the Galla Placidia Mausoleum mosaics you shared — star-field vault, gold-ground
-figures, meander/wave borders, the deer-at-spring lunette.)*
-
----
-
-# ⛔ PLAYTEST VERDICT — 2026-07-05 — **NO-GO**
-
-Human (alessandro) ran the real GPU build. **Palette & mood are approved.** But the build is
-**blocked on legibility**: the player cannot see gnomes, settlements, halos, or iconography, cannot
-read the HUD, and cannot follow the colony's evolution — so **the actual subject of the gate
-(figures / halos / iconography) cannot be judged at all.** Do not proceed to R3 on visuals until the
-legibility items below are addressed. Turn this into planned, TDD'd tasks per the plan workflow.
-
-## Gate 6-point results (human)
-1. **Palette & mood** — ✅ good, right direction. **Keep.**
-2. **Tesserae feel** — ✅ texture good, BUT **tesserae are too large**; and they should read with
-   depth/elevation (see terrain direction below), not as a flat sheet.
-3. **Figures / halos** — ❌ *cannot even tell there are gnomes or settlements*; no halo visible.
-4. **Iconography** — ❌ unjudgeable (only tesserae visible).
-5. **Christian-like register** — ➖ ok for now.
-6. **Legibility** — ❌ "it's a mess." This is the blocker.
-
-## Issues to turn into tasks (severity ordered)
-
-- **[BLOCKER] Figures/settlements/halos invisible.** Player can't perceive gnomes, where colonies
-  are, or that anything is alive. The gate's core deliverable (luminous mosaic figures + gold halo on
-  prophets/`notability ≥ 0.6` per §R-art) is not landing. Investigate whether it's scale (puppets too
-  small at default zoom), draw order (mosaic covering puppets), or a render regression. This must be
-  fixed for the gate to be judgeable.
-
-- **[BLOCKER] HUD is unreadable.** Player cannot tell: which tools/acts are available vs locked, how
-  many settlements exist and where, where gnomes are and whether they're doing anything, or how the
-  colony is evolving over time. Needs a legibility-first HUD pass (settlement roster + locations,
-  gnome/activity indication, act availability affordances, a readable running chronicle). Should adopt
-  the Ravenna palette.
-
-- **[HIGH] Main-menu UX is broken.** New Game menu has **overlapping labels** and messy navigation
-  (see screenshot 1). Redesign the main/new-game menu: clean navigation, no overlaps, styled to the
-  Ravenna aesthetic + palette.
-
-- **[HIGH] Act feedback is absent (mechanics are NOT broken — do not "fix" the sim).** Confirmed
-  working-as-designed:
-  - `still_air` — precondition `any`, applies fine; **only feedback is a sound.**
-  - `weeping_sky` — precondition is **`drought`** (`sim/phenomena/catalog.gd`); with no drought it is
-    correctly a **no-op**, but the UI let the player select it and gave **no rejection feedback**.
-  - `long_dark` — it's **tier 2**; player `magic 0.000` so it's correctly **locked/disabled**, but
-    nothing tells the player *why* or *how to unlock*.
-  Fix is presentation-only: show preconditions, show why an act is locked and its unlock path,
-  reject-with-feedback when a precondition isn't met, and give **on-map + chronicle feedback** when an
-  act resolves.
-
-- **[MED] Pan/zoom feels clunky.** Do the feel pass (and reconsider the deferred camera pixel-snap).
-
-## Terrain direction — DECISION from human (needs spec authority before building)
-Human wants **literal 3D terrain with real elevation, rendered *through* the mosaic style** — i.e.
-keep the tesserae/grout/palette shader look, but apply it to actual 3D height geometry, not a flat
-plane. **This supersedes the flat-plane assumption in `redesign-ravenna.md §R-art`.**
-
-⚠️ `redesign-ravenna.md` is READ-ONLY once authored and currently specifies a flat `384×216` internal
-plane; it defines **no** elevation/geometry/camera-projection numbers. Per the hard invariants, the
-loop must **not invent** these. Before implementing 3D terrain, a human must author the numeric
-spec (heightmap source & scale, projection/camera, how the mosaic shader maps onto 3D surfaces, LOD /
-tesserae size vs. distance so cells stop reading "too large") — otherwise write `STUCK.md`. Also fold
-in **"tesserae too large"** here.
-
-## Human's chosen process
-Recorded as **NO-GO for the loop** — loop turns this into planned, tested tasks. No source-of-truth
-docs edited by this session.
-
-## ✅ RESOLUTION (2026-07-05) — remediation authored; loop RESUMES
-This NO-GO is now converted into a full spec + plan + ledger. **The loop is no longer halted at Gate
-A** — work the new tasks:
-- **Spec:** `docs/redesign-ravenna-legibility.md` (read-only, `[leg §X]`) — dimensional-terrain,
-  HUD, act-feedback, menu, camera-feel constants. Terrain direction resolved: **literal 3-D relief
-  rendered in the mosaic style** (amplify the existing WorldView heightfield + oblique camera +
-  slope-shade + finer tesserae — no rebuild). Supersedes `[rav §R-art]` internal-res/`grout_px`.
-- **Plan:** `docs/redesign-plan-legibility.md` — **Phases R5–R8** (dimensional terrain · figures &
-  HUD legibility · act affordance/feedback · menu & camera feel), presentation-only, then **🎮 Gate
-  A2**.
-- **Ledger:** `PROGRESS.md` — R5–R8 + Gate A2 inserted **before** R3; **R3 is gated on Gate A2**.
-  Loop's next task = **R5.1** (first unchecked with deps checked). Palette/mood approved — keep as-is.
-A **fresh `AWAIT_PLAYTEST.md`** will be written at **Gate A2**, replacing this file's gate.
+*(Reference: the Galla Placidia Mausoleum mosaics — gold-ground figures, star-field vault, meander/wave
+borders. Settlement basilicas + city medallions arrive in R3.)*
