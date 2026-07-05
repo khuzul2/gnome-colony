@@ -22,6 +22,14 @@ const RULE_LEVELS := {
 	"faith_enlightenment": WorldConfig.FAITH_MODES,
 }
 const SUMMARY_KEYS := ["preset", "seed", "colony_name", "band_size", "region_size"]
+## Per-page heading so the raw widgets have context [R8.1 leg §L-ui].
+const PAGE_TITLES := {
+	1: "Choose a saga",
+	2: "The founding band",
+	3: "The world",
+	4: "The rules",
+	5: "Ready",
+}
 
 ## Injected before entering the tree; _ready() builds around it.
 var wizard: NewGameWizard
@@ -33,15 +41,30 @@ var _temperament_boxes := {}
 
 func _ready() -> void:
 	assert(wizard != null, "inject a NewGameWizard before adding WizardView to the tree")
+	# R8.1 [leg §L-ui]: fill the screen (was a 0-size Control that overflowed onto
+	# the action buttons — the Gate-A overlap) on a night-lapis ground, Ravenna-
+	# skinned. Structure (column → page_N + nav) is preserved for the wizard tests.
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	size_flags_vertical = Control.SIZE_EXPAND_FILL
+	add_child(RavennaUI.ground())
 	var defaults := WorldConfig.new()
 	var column := VBoxContainer.new()
 	column.name = "column"
+	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	column.add_theme_constant_override("separation", 6)
 	add_child(column)
+	var title := RavennaUI.heading("%s New Game" % RavennaUI.SEAT_MARK, RavennaUI.HEADING_FONT)
+	title.name = "title"
+	column.add_child(title)
+	column.add_child(RavennaUI.meander_rule())
 	for n in range(1, NewGameWizard.PAGES + 1):
 		var page := VBoxContainer.new()
 		page.name = "page_%d" % n
+		page.add_theme_constant_override("separation", 4)
 		column.add_child(page)
 		_pages[n] = page
+		page.add_child(RavennaUI.heading(PAGE_TITLES[n]))
 	_build_presets()
 	_build_founding(defaults)
 	_build_world(defaults)
@@ -58,6 +81,8 @@ func _build_presets() -> void:
 	if wizard.get_child_count() == 0:
 		wizard.build()
 	_pages[1].add_child(wizard)
+	for card in wizard.find_children("*", "Button", true, false):
+		RavennaUI.skin_button(card)
 
 
 ## Page 2 [§5]: founding — band size, names, temperament leanings.
@@ -155,14 +180,17 @@ func _build_nav(column: VBoxContainer) -> void:
 	var nav := HBoxContainer.new()
 	nav.name = "nav"
 	column.add_child(nav)
+	nav.add_theme_constant_override("separation", int(RavennaUI.GUTTER))
 	var back := Button.new()
 	back.name = "back"
 	back.text = "Back"
+	RavennaUI.skin_button(back)
 	back.pressed.connect(_go_back)
 	nav.add_child(back)
 	var next := Button.new()
 	next.name = "next"
 	next.text = "Next"
+	RavennaUI.skin_button(next)
 	next.pressed.connect(_go_next)
 	nav.add_child(next)
 

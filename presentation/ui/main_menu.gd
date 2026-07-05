@@ -27,12 +27,28 @@ var buttons := {}
 
 
 func build() -> void:
+	# R8.1 [leg §L-ui]: a night-lapis ground with a centred, Ravenna-skinned column
+	# (title + monogram + meander rule + the entries) — no more raw buttons jammed
+	# at the origin.
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var ground := RavennaUI.ground()
+	add_child(ground)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ground.add_child(center)
 	var column := VBoxContainer.new()
-	add_child(column)
+	column.name = "column"
+	column.add_theme_constant_override("separation", 6)
+	center.add_child(column)
+	var title := RavennaUI.heading("%s Gnome Colony" % RavennaUI.SEAT_MARK, RavennaUI.TITLE_FONT)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(title)
+	column.add_child(RavennaUI.meander_rule())
 	for entry in ENTRIES:
 		var button := Button.new()
 		button.name = entry
 		button.text = LABELS[entry]
+		RavennaUI.skin_button(button)
 		button.pressed.connect(func() -> void: selected.emit(entry))
 		column.add_child(button)
 		buttons[entry] = button

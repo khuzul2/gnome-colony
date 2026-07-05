@@ -343,19 +343,29 @@ func _build_screens() -> void:
 
 
 func _wizard_screen() -> Control:
+	# R8.1 [leg §L-ui]: the screen fills the viewport; the wizard view (added at
+	# index 0 by _remint_wizard) is EXPAND_FILL, so it takes the space and the action
+	# buttons sit cleanly below — no more overflow-overlap onto them (Gate A). The
+	# quick_start/begin buttons stay direct children so the shell tests find them.
 	var box := VBoxContainer.new()
 	box.name = "wizard_screen"
+	box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	box.add_theme_constant_override("separation", 8)
 	var quick := Button.new()
 	quick.name = "quick_start"
-	quick.text = "Quick Start — Balanced Saga, random world"
+	quick.text = "%s Quick Start — Balanced Saga, random world" % RavennaUI.SEAT_MARK
+	RavennaUI.skin_button(quick)
 	quick.pressed.connect(quick_start)
 	box.add_child(quick)
 	var begin_button := Button.new()
 	begin_button.name = "begin"
 	begin_button.text = "Begin"
+	RavennaUI.skin_button(begin_button)
 	begin_button.pressed.connect(begin)
 	box.add_child(begin_button)
-	box.add_child(_back_button())
+	var back := _back_button()
+	RavennaUI.skin_button(back)
+	box.add_child(back)
 	return box
 
 

@@ -32,7 +32,9 @@ const NIGHT_LAPIS := 0
 const GOLD := 7
 const GOLD_LIT := 8
 const TERRACOTTA := 10
+const CREAM := 12
 const BONE_WHITE := 13
+const SLATE_GREY := 14
 const GROUT := 15
 
 
