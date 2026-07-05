@@ -61,18 +61,22 @@ func structure_count(building_id: String) -> float:
 	return structures.get(building_id, 0.0)
 
 
-## §17: K = base_K · Σrichness · (1 + 0.5·agriculture + 0.3·construction).
+## §17: K = base_K · Σrichness · (1 + 0.5·agriculture + 0.3·construction); built
+## farms raise it further (capped ≈ the ag term, inert without farms) [R2.4].
 func k(colony: Colony) -> float:
-	return TechEffects.carrying_capacity(
+	var base := TechEffects.carrying_capacity(
 		base_k,
 		richness_sum,
 		TechEffects.level(colony, sid, "agriculture"),
 		TechEffects.level(colony, sid, "construction")
 	)
+	return base * StructureEffects.farm_k_bonus(self)
 
 
+## crowding = pop / (K + dwelling housing) [R2.4]; without dwellings the housing
+## term is 0, so this stays the §14 pop/K.
 func crowding(colony: Colony) -> float:
-	var capacity := k(colony)
+	var capacity := k(colony) + StructureEffects.housing_capacity(self)
 	return pop() / capacity if capacity > 0.0 else 1.0
 
 

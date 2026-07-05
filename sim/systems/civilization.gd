@@ -217,8 +217,14 @@ static func check_world_end(colony: Colony, settlements: Array) -> bool:
 
 
 static func _strength(colony: Colony, s: Settlement) -> float:
-	return TechEffects.war_strength(
-		s.pop(), TechEffects.level(colony, s.sid, "metallurgy"), Leadership.quality(colony, s.sid)
+	# Walls multiply war strength (×1..×2), inert without them [R2.4 §R-build].
+	return (
+		TechEffects.war_strength(
+			s.pop(),
+			TechEffects.level(colony, s.sid, "metallurgy"),
+			Leadership.quality(colony, s.sid)
+		)
+		* StructureEffects.war_strength_mult(s)
 	)
 
 
