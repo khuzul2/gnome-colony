@@ -39,6 +39,10 @@ extends Node
 
 signal save_requested(kind: String)
 signal menu_requested
+## R7.2 [leg §L-acts] — a cast was refused (precondition unmet / wrong-or-no
+## target); the shell plays the refused UI sound, and RunView shows the reason
+## at the cursor. Emitted with a short player-facing reason.
+signal cast_refused(reason: String)
 
 ## Slice presentation numbers, promoted verbatim.
 const SPEEDS := [["pause", 0.0], ["1 d/s", 1.0], ["7 d/s", 7.0], ["30 d/s", 30.0]]
@@ -84,6 +88,8 @@ const WALK_EPSILON := 0.001
 ## the readout warns at UNREST_WARN and sharpens at UNREST_WARN_DIRE.
 const UNREST_WARN := 0.6
 const UNREST_WARN_DIRE := 0.75
+## R7.2 [leg §L-acts] — how long the refusal message lingers at the cursor.
+const REJECT_MSG_SECONDS := 2.0
 ## Camera control [T23.2] — presentation numbers: km/sec panned across
 ## the ground at sensitivity 1.
 const PAN_SPEED := 12.0
@@ -148,6 +154,9 @@ var _zoom_keys := {}
 var _pan_held := {}
 var _pick_plane_y := 0.0
 var _highlight: MeshInstance3D
+## R7.2 [leg §L-acts] — the refusal banner + its fade countdown.
+var _reject_label: Label
+var _reject_timer := 0.0
 
 
 func _ready() -> void:
@@ -290,6 +299,11 @@ func _process(delta: float) -> void:
 	_advance_walkers(delta)
 	_apply_pan(delta)
 	ambience.update(delta)
+	if _reject_timer > 0.0:
+		_reject_timer -= delta
+		_reject_label.modulate.a = clampf(_reject_timer / REJECT_MSG_SECONDS, 0.0, 1.0)
+		if _reject_timer <= 0.0:
+			_reject_label.visible = false
 
 
 ## Resolve the settings key bindings (T21.4) into keycode → action maps
@@ -386,6 +400,8 @@ func _pick(screen_pos: Vector2) -> void:
 		var g := _nearest_gnome(point)
 		if g != null:
 			select_gnome(g.id)
+		else:
+			_show_reject("No soul stands there to touch.")
 	else:
 		select_place(_nearest_place(point))
 
@@ -479,7 +495,7 @@ func select_place(place: String) -> void:
 		"region-edge":
 			influence_panel.paint({"edge": "%s_edge" % place})
 		"individual":
-			pass
+			_show_reject("Choose a gnome — this vision needs a soul.")
 		_:
 			influence_panel.paint({"place": place})
 
@@ -575,9 +591,29 @@ func _on_cast_requested(act_id: String, target: String, _selection: Dictionary) 
 	aftermath.begin(act_id)
 	# The landed stimuli reach the chronicle feed via EventBus.phenomenon (R6.4);
 	# the diegetic story-beat channel, not a re-summary of the request (T14.4).
-	run.cast(act_id, target)
+	var stimuli := run.cast(act_id, target)
+	# R7.2 [leg §L-acts]: a cast that lands nothing was refused — the precondition
+	# wasn't met at that place (or the ground was warded). Say so, don't sit silent.
+	# (arm() already refuses tier-locked acts, so an empty result here is always a
+	# precondition/target miss, never a tier gate — safe to name the affordance.)
+	if stimuli.is_empty():
+		var req: String = Catalog.defs()[act_id].get("affordance_req", "any")
+		if req != "any":
+			_show_reject("%s needs %s here." % [act_id.replace("_", " "), req.replace("_", " ")])
+		else:
+			_show_reject("The omen found no purchase here.")
 	influence_panel.refresh(run.runner.colony, _met_affordances())
 	_refresh_hud()
+
+
+## R7.2 [leg §L-acts] — flash a refusal at the cursor and ring the refused UI sound
+## (the shell wires cast_refused → SoundDirector). A UI cue, not a diegetic stinger.
+func _show_reject(reason: String) -> void:
+	_reject_label.text = "✕ %s" % reason
+	_reject_label.modulate.a = 1.0
+	_reject_label.visible = true
+	_reject_timer = REJECT_MSG_SECONDS
+	cast_refused.emit(reason)
 
 
 ## R6.2 [leg §L-hud] — a roster row click pans the camera to that settlement's
@@ -810,6 +846,15 @@ func _build_hud() -> void:
 	hud = VBoxContainer.new()
 	hud.name = "run_hud"
 	add_child(hud)
+	# R7.2 [leg §L-acts]: the refusal banner leads the HUD so it's always on-screen
+	# (the HUD is a tall VBox reparented into the run screen, so a cursor-float would
+	# need a separate overlay layer — a Gate-A2 polish; a top banner reads fine).
+	_reject_label = Label.new()
+	_reject_label.name = "reject"
+	_reject_label.add_theme_color_override("font_color", Palette.COLORS[Palette.TERRACOTTA])
+	_reject_label.add_theme_font_size_override("font_size", 16)
+	_reject_label.visible = false
+	hud.add_child(_reject_label)
 	# R6.2 [leg §L-hud]: the roster leads the HUD — colonies, where, what tier.
 	settlement_roster = SettlementRoster.new()
 	settlement_roster.focus_settlement.connect(_on_focus_settlement)

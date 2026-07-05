@@ -212,6 +212,9 @@ func _mount_run_view() -> void:
 	run_view.music = music
 	run_view.save_requested.connect(_on_save_requested)
 	run_view.menu_requested.connect(_on_menu_requested)
+	# R7.2 [leg §L-acts]: a refused cast rings the refused UI cue (menu bus, §7.2 —
+	# a UI signal, not a diegetic world stinger; the on-screen reason is RunView's).
+	run_view.cast_refused.connect(func(_reason: String) -> void: sound.ui("ui_refused"))
 	add_child(run_view)
 	run_view.remove_child(run_view.hud)
 	screens["run"].add_child(run_view.hud)
