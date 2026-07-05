@@ -171,7 +171,7 @@ func test_a_click_targets_the_basin_under_the_cursor():
 	aim.x = (floorf(aim.x / g) + 0.5) * g  # halfway between grid lines
 	view.camera.focus(aim)
 	var cam := view.camera.camera
-	var snap_off := Vector3(cam.position.x, 0.0, cam.position.z)
+	var snap_off := view.camera.snap_offset
 	assert_gt(snap_off.length(), g * 0.2, "the presented camera is really displaced off-grid")
 	var screen := cam.unproject_position(home_pos)
 	var vp := view.stage.to_viewport(screen)

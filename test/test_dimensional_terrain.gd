@@ -142,8 +142,10 @@ func test_snap_is_off_by_default_so_bare_rig_logic_is_exact():
 	var rig := CameraRig.new()
 	add_child_autofree(rig)
 	rig.focus(Vector3(5.123, 0.0, -2.777))
-	assert_almost_eq(rig.camera.global_position.x, 5.123, 1e-5, "no snap when disabled")
-	assert_almost_eq(rig.camera.global_position.z, -2.777, 1e-5, "no snap when disabled")
+	assert_eq(rig.snap_offset, Vector3.ZERO, "no pixel-snap component when disabled")
+	# x carries no framing offset, so the presented camera tracks the focus x exactly
+	# (z carries the fixed look-at framing pull-back, R6.1 — asserted via picking elsewhere).
+	assert_almost_eq(rig.camera.global_position.x, 5.123, 1e-5, "camera tracks the focus x")
 
 
 # --- R5.3: finer tesserae + slope-shade -------------------------------------

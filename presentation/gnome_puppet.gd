@@ -19,6 +19,13 @@ const STAGE_SCALE := {
 ## has reached the §14 notability promotion line.
 const HALO_NOTABILITY := 0.6
 
+## R6.1 [leg §L-hud] — a per-zoom visibility multiplier applied on top of the
+## life-stage scale so gnomes read as legible figures at the aggregate zooms
+## (they were ~6 px and vanished into the mosaic at Gate A). Oversizing figures
+## over a miniature landscape is apt for the Ravenna hieratic register. RunView
+## sets this from the camera zoom; 1.0 (natural size) for a bare puppet.
+var view_scale := 1.0
+
 var data: GnomeData
 var body := MeshInstance3D.new()
 ## NavigationAgent3D, attached by NavWorld.route on first routing (T13.3).
@@ -62,7 +69,7 @@ func refresh() -> void:
 		visible = false
 		return
 	visible = true
-	scale = Vector3.ONE * STAGE_SCALE[data.stage]
+	scale = Vector3.ONE * STAGE_SCALE[data.stage] * view_scale
 	var fear: float = maxf(
 		data.get_feeling(Devotion.YOU, "fear"), data.get_feeling(data.location, "fear")
 	)

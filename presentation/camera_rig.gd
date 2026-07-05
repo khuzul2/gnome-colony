@@ -28,6 +28,9 @@ var level: int = Zoom.SETTLEMENT
 var camera := Camera3D.new()
 ## Enabled by RunView on the presented stage; off for bare-rig logic/tests.
 var snap_enabled := false
+## The planar pixel-snap translation applied to the presented camera this frame
+## (x/z, y always 0). Picking subtracts it to read the true pre-snap aim [R5.2].
+var snap_offset := Vector3.ZERO
 
 
 func _ready() -> void:
@@ -67,10 +70,16 @@ func _apply() -> void:
 	# The child camera hangs at the per-zoom height/pitch. When snapping, its
 	# planar offset quantizes the GLOBAL camera position to the pixel grid while
 	# the rig's own `position` stays continuous [R5.2, leg §L-relief].
-	var offset := Vector2.ZERO
+	var snap := Vector2.ZERO
 	if snap_enabled:
 		var g: float = PIXEL_GRID_KM[level]
-		offset.x = roundf(position.x / g) * g - position.x
-		offset.y = roundf(position.z / g) * g - position.z
-	camera.position = Vector3(offset.x, HEIGHTS[level], offset.y)
+		snap.x = roundf(position.x / g) * g - position.x
+		snap.y = roundf(position.z / g) * g - position.z
+	snap_offset = Vector3(snap.x, 0.0, snap.y)
+	# R6.1 framing fix (over R5.2): pull the camera UP and BACK along its pitch so
+	# its centre ray lands on the focus (the rig's position). Hanging it straight
+	# above at an oblique pitch pushed the focus off the bottom of the frame —
+	# gnomes at the watched basin fell out of view. back = H / tan(pitch).
+	var back: float = HEIGHTS[level] / tan(deg_to_rad(-float(PITCHES_DEG[level])))
+	camera.position = Vector3(snap.x, HEIGHTS[level], back + snap.y)
 	camera.rotation_degrees = Vector3(PITCHES_DEG[level], 0.0, 0.0)

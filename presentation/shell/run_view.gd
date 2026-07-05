@@ -49,6 +49,20 @@ const SCATTER_ANGLE := 2.399
 const SCATTER_BASE := 0.15
 const SCATTER_STEP := 75
 const SCATTER_SCALE := 300.0
+## R6.1 [leg §L-hud]: gnomes were ~6 px and invisible at the aggregate zooms. A
+## per-zoom visibility multiplier scales the figures up so they read (calibrated
+## by the projection test to clear PUPPET_MIN_PX). Hieratic oversizing over a
+## miniature landscape is apt for the Ravenna register. Tuned at Gate A2.
+const PUPPET_MIN_PX := 6.0
+## Legibility floor holds at the two PLAY zooms (settlement, individual). The
+## civilization view is the world map — settlements read via their locators /
+## medallions (R6.2/R6.3), so gnome bodies stay modest there (scaling one to 6 px
+## at map range would make it dwarf the whole map).
+const PUPPET_ZOOM_SCALE := {
+	CameraRig.Zoom.CIVILIZATION: 3.0,
+	CameraRig.Zoom.SETTLEMENT: 2.2,
+	CameraRig.Zoom.INDIVIDUAL: 1.0,
+}
 ## Presentation walk time [T21.2]: wall-clock seconds a puppet spends
 ## crossing to a new basin — a render flourish, never a sim number (the
 ## sim already wrote the location; the body just catches up on screen).
@@ -145,6 +159,8 @@ func _ready() -> void:
 	# R5.2 [leg §L-relief]: pixel-snap the presented camera so the mosaic grout
 	# doesn't crawl on pan; the rig's logical position stays continuous.
 	camera.snap_enabled = true
+	# R6.1 [leg §L-hud]: rescale the figures for legibility whenever the zoom changes.
+	camera.zoom_changed.connect(func(_level: int) -> void: _apply_puppet_view_scale())
 	stage_world.add_child(camera)
 	camera.focus(place_positions[run.home])
 	attention = AttentionInput.new()
@@ -352,10 +368,9 @@ func _ground_point(screen_pos: Vector2) -> Vector3:
 	# Target from the PRE-snap (continuous) camera pose [R5.2, leg §L-ui]: the
 	# presented camera is pixel-quantized for anti-shimmer, but the pixel grid is
 	# metres wide, so picking must read the true aim or a click could resolve to the
-	# wrong basin. The snap is a pure planar translation held in the child camera's
-	# x/z offset — undo it on the ray origin; the direction is unaffected.
-	var snap_off := Vector3(cam.position.x, 0.0, cam.position.z)
-	var origin := cam.project_ray_origin(viewport_pos) - snap_off
+	# wrong basin. The snap is a pure planar translation the rig exposes — undo it
+	# on the ray origin (the direction, and the framing offset, are unaffected).
+	var origin := cam.project_ray_origin(viewport_pos) - camera.snap_offset
 	var normal := cam.project_ray_normal(viewport_pos)
 	var hit: Variant = Plane(Vector3.UP, _pick_plane_y).intersects_ray(origin, normal)
 	if hit == null:
@@ -513,8 +528,18 @@ func _refresh_puppets() -> void:
 			_puppets[id].position = _stage_position(g)
 			_last_place[id] = g.location
 		var puppet: GnomePuppet = _puppets[id]
+		puppet.view_scale = PUPPET_ZOOM_SCALE[camera.level]
 		puppet.refresh()
 		_stage_walk(id, puppet, g)
+
+
+## R6.1 [leg §L-hud] — rescale every live puppet for the current zoom so gnomes
+## stay legible figures at the aggregate views (not ~6 px specks).
+func _apply_puppet_view_scale() -> void:
+	for id in _puppets:
+		var puppet: GnomePuppet = _puppets[id]
+		puppet.view_scale = PUPPET_ZOOM_SCALE[camera.level]
+		puppet.refresh()
 
 
 ## Decide how one puppet meets its target stage position [T21.2/T22.5]:
@@ -614,7 +639,11 @@ func _stage_position(g: GnomeData) -> Vector3:
 	var anchor: Vector3 = place_positions.get(g.location, place_positions[run.home])
 	var angle := g.id * SCATTER_ANGLE
 	var radius := SCATTER_BASE + float((g.id * 29) % SCATTER_STEP) / SCATTER_SCALE
-	return anchor + Vector3(cos(angle) * radius, 0.0, sin(angle) * radius)
+	var spot := anchor + Vector3(cos(angle) * radius, 0.0, sin(angle) * radius)
+	# R6.1: sit the figure on the LOCAL relief surface, not the basin-centre
+	# height — so amplified terrain (R5.1) neither buries nor floats it.
+	spot.y = world_view.height_at(Vector2(spot.x, spot.z))
+	return spot
 
 
 func _push_feed(line: String) -> void:
