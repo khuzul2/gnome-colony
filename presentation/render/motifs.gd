@@ -12,6 +12,8 @@ extends RefCounted
 
 const BLESSED := "blessed"
 const CURSED := "cursed"
+## R7.3 [leg §L-acts] — a neutral landed-act pulse (bone-white ring, no monogram).
+const NEUTRAL := "neutral"
 
 
 ## The tessera-border color for a belief tag (transparent = no marker).
@@ -21,6 +23,8 @@ static func border_color(kind: String) -> Color:
 			return Palette.COLORS[Palette.GOLD]
 		CURSED:
 			return Palette.COLORS[Palette.TERRACOTTA]
+		NEUTRAL:
+			return Palette.COLORS[Palette.BONE_WHITE]
 	return Color(0.0, 0.0, 0.0, 0.0)
 
 

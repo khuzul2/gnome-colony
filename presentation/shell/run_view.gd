@@ -118,6 +118,8 @@ var heatmap_overlay: HeatmapOverlay
 var settlement_roster: SettlementRoster
 ## R6.4 [leg §L-hud] — the living chronicle feed (recent story beats).
 var chronicle_feed: ChronicleFeed
+## R7.3 [leg §L-acts] — transient on-map markers for landed phenomena.
+var cast_markers: CastMarkers
 var ambience: AmbienceDirector
 var hud: Control
 var place_positions := {}
@@ -194,6 +196,11 @@ func _ready() -> void:
 	add_child(attention)
 	pool = PuppetPool.new()
 	stage_world.add_child(pool)
+	# R7.3 [leg §L-acts]: landed phenomena flash a medallion on the map. Inside the
+	# stage so the markers render through the mosaic; it owns its own subscription.
+	cast_markers = CastMarkers.new()
+	cast_markers.place_positions = place_positions
+	stage_world.add_child(cast_markers)
 	ambience = AmbienceDirector.new()
 	add_child(ambience)
 	_build_hud()
