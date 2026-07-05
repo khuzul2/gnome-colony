@@ -64,12 +64,8 @@ const UNREST_WARN_DIRE := 0.75
 ## Camera control [T23.2] — presentation numbers: km/sec panned across
 ## the ground at sensitivity 1.
 const PAN_SPEED := 12.0
-## Lighting [T23.1] — a low afternoon sun + a cool ambient fill so lit
-## materials (the puppets, the heightmap) are visible; the background is
-## a plain daylit sky colour (no HDRI dependency).
-const SUN_ANGLE_DEG := Vector3(-55.0, -35.0, 0.0)
-const SKY_COLOR := Color(0.42, 0.55, 0.68)
-const AMBIENT_COLOR := Color(0.60, 0.62, 0.68)
+## Lighting & mood [R1.4] live in StageLighting (Ravenna gold-on-lapis),
+## replacing T23.1's plain daylight.
 
 var run: GameRun
 var settings: GameSettings
@@ -179,24 +175,14 @@ func _build_stage() -> void:
 		)
 
 
-## Light the world [T23.1]: a directional sun plus an ambient/sky
-## WorldEnvironment, inside the pixel stage's world [R1.2]. Without them the
-## lit puppet/heightmap materials render black and the player sees only the
-## HUD.
+## Light the world [T23.1] in the Ravenna register [R1.4]: a low gold key
+## light + deep-lapis ambient (StageLighting), inside the pixel stage's world
+## [R1.2]. Without them the lit puppet/heightmap materials render black.
 func _build_environment() -> void:
-	var sun := DirectionalLight3D.new()
-	sun.name = "sun"
-	sun.rotation_degrees = SUN_ANGLE_DEG
-	stage_world.add_child(sun)
-	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = SKY_COLOR
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = AMBIENT_COLOR
-	env.ambient_light_energy = 0.6
+	stage_world.add_child(StageLighting.build_sun())
 	var world_env := WorldEnvironment.new()
 	world_env.name = "environment"
-	world_env.environment = env
+	world_env.environment = StageLighting.build_environment()
 	stage_world.add_child(world_env)
 	# A faint unshaded ring under the cursor while an act is armed [T23.4].
 	_highlight = MeshInstance3D.new()
