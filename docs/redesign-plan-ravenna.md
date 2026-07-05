@@ -1,4 +1,4 @@
-# Redesign Plan — "Ravenna": mosaic render + living settlements (Gnome Colony)
+# Redesign Plan — "Ravenna": mosaic render + living settlements (late-antique Christian-like gnomes)
 
 *Loop-ready, test-gated. Companion to `docs/implementation-plan.md` (same operating contract, §0
 there still applies), `PROGRESS.md` (phases 0–23, the live task ledger), and
@@ -6,16 +6,27 @@ there still applies), `PROGRESS.md` (phases 0–23, the live task ledger), and
 authoritative spec, `docs/redesign-ravenna.md` (authored in Phase R0), and **extends** algo
 §14/§17 — it never silently invents a number.*
 
-**Scope (per user, 2026-07-05):** keep **gnomes** and the name **"Gnome Colony"** — there is **no
-rename and no thematic reskin**. Two workstreams only:
+**Setting & mood (per user, 2026-07-05):** an **alternate late-antique / early-medieval Earth**
+inhabited by gnomes, orcs, goblins, and other fantastic creatures. *This game is about the
+**gnomes*** — late-antique gnomes with a **Christian-like** faith. So: **keep gnomes and the name
+"Gnome Colony"** (no rename to "people"), but render and flavor them in the **Ravenna Christian
+mosaic register** — gold-ground tesserae, halos, the sacred monogram (a Chi-Rho-like mark), basilica
+architecture — reframed as the gnomes' *own* religion of the unseen will, not literal Christianity.
+The other creatures are the world's context (fodder for the existing Beasts/monsters and
+frontier-threat flavor); they are **out of task scope** here — the redesign is render + settlements.
+The game's existing emergent theology, prophets, schisms and heresies map cleanly onto this register
+(Ravenna itself was split Arian vs. Orthodox), so this is a **visual + light-copy reskin, not a
+mechanics change**.
+
+**Two workstreams:**
 
 - **A — Ravenna mosaic render.** Keep the existing 3D scene; layer a low-res pixelation +
   palette-mapping + mosaic post-process on top, in the Galla Placidia palette (deep lapis grounds,
-  gold tesserae, luminous figures on dark, meander/wave/rosette borders). The gnomes stay gnomes —
-  they're simply *rendered as mosaic*.
-- **B — Living settlements.** Autonomous farms/housing/religious/civic buildings; **hamlet →
-  village → town → city**; player actions steer development *indirectly* (design §1.3). Includes
-  the sim mechanics and the settlement visuals.
+  gold tesserae, luminous figures on dark, meander/wave/rosette borders, halos, the sacred
+  monogram). The gnomes stay gnomes — *rendered as late-antique Christian mosaic*.
+- **B — Living settlements.** Autonomous farms/housing/religious/civic buildings (basilicas,
+  shrines, walls); **hamlet → village → town → city**; player actions steer development *indirectly*
+  (design §1.3). Includes the sim mechanics and the settlement visuals.
 
 **Rebased on `main` @ Phase 23 (2026-07-05).**
 
@@ -42,7 +53,7 @@ Grep-confirmed absences (the work this plan covers):
 |---|---|---|---|
 | **A · mosaic render** | Build a render scene from scratch (`main.tscn` empty) | **Scene exists** (`RunView`), lit for plain daylight. No `SubViewport`/shader/palette. | **Re-scoped:** don't build a scene — **insert a pixel `SubViewport` + mosaic shader into `RunView`** and **replace its lighting**. |
 | **B · living settlements** | Settlement pure stats; no live civ data | Still pure stats (no `structures`/`tier`), but there's now a live `GameRun.settlements` + `sid_places`, and **`sim/systems/terrain.gd`** derives lived tags (`farmland`/`built_up`/`crowded`/`drought`). | **Still needed; better anchored** — read `run.settlements`; **integrate with `terrain.gd`** rather than duplicate. |
-| ~~C · people, not gnomes~~ | ~~rename~~ | — | **Dropped by request** — gnomes and "Gnome Colony" stay. |
+| ~~C · people, not gnomes~~ | ~~rename~~ | — | **Dropped by request** — gnomes and "Gnome Colony" stay; the late-antique **Christian-like** mood is delivered as art + light copy (workstream A), not a rename. |
 
 **Two new systems to respect (don't fight them):**
 - **`sim/systems/terrain.gd`** — "living terrain": rewrites the home place's affordance tags from
@@ -132,20 +143,24 @@ through the viewport (picking survives the reparent).
   warm gold key light, deep-blue ambient/bg, strong figure rim (luminous-on-dark), mild bloom on
   gold, crushed blacks. tests: environment/light resource values equal spec (headless: assert
   resources, not a render).
-- **R1.5 — Material reskin (terrain, water, gnomes).** files: `presentation/world_view.gd`,
+- **R1.5 — Material reskin + halos (terrain, water, gnomes).** files: `presentation/world_view.gd`,
   `presentation/gnome_puppet.gd`. do: terrain material in palette bands by elevation/biome
   (sage/ochre/gold, lapis water); keep the **gnome** puppet mesh/silhouette (do not turn them into
   anything else) and remap the existing fear→red / faith→gold tint (reuse `get_feeling`, no new sim
-  read) onto palette entries so gnomes read as glowing tesserae figures. tests: `test_puppet_tint.gd`
-  — tints resolve to palette colors; dead→hidden holds; stage-scale unchanged.
-- **R1.6 — Mosaic motif borders & belief masks.** files: `presentation/render/motifs.gd`. do: draw
-  the reference decorative vocabulary — **meander (Greek key)**, **wave-scroll**, **rosette/star
-  roundels**, and a **radiant sacred medallion** (the game's own "unseen will" mark — an eye or
-  radiant star, *not* Christian iconography, since the theme stays Gnome Colony) — as decal/quads
-  around sacred/blessed places and settlement edges; feed a blessed/high-devotion screen mask to
-  R1.3's gold pass so revered ground shines; render `cursed`/`blessed` place-tags as red-tessera /
-  gold-tessera borders. tests: `test_motifs.gd` — blessed emits gold border + mask pixels; cursed
-  red; neither when untagged.
+  read) onto palette entries so gnomes read as glowing tesserae figures. **Halo (the Ravenna
+  touch):** a gold nimbus quad behind a gnome whose sim state already marks it holy — prophet
+  (`prophet` set) or high `notability` — reusing data presentation already reads, no new sim
+  channel. tests: `test_puppet_tint.gd` — tints resolve to palette colors; dead→hidden holds;
+  stage-scale unchanged; a prophet/high-notability gnome shows a halo, an ordinary one does not.
+- **R1.6 — Mosaic motifs, Christian-like iconography & belief masks.** files:
+  `presentation/render/motifs.gd`. do: draw the Ravenna vocabulary — **meander (Greek key)**,
+  **wave-scroll**, **rosette/star roundels**, the **star-field ground**, and the **sacred monogram**
+  (a **Chi-Rho-like mark** that is *the gnomes' own* monogram of the unseen will — late-antique
+  Christian in style, diegetically their faith) — as decal/quads around sacred/blessed places and
+  settlement edges; feed a blessed/high-devotion screen mask to R1.3's gold pass so revered ground
+  shines; render `cursed`/`blessed` place-tags as red-tessera / gold-tessera borders. tests:
+  `test_motifs.gd` — a blessed place emits the gold monogram border + mask pixels; cursed red;
+  neither when untagged.
 
 🎮 **PLAYTEST GATE A — "Does it read as Ravenna?"** `AWAIT_PLAYTEST.md`: judge palette fidelity,
 tesserae/grout feel, gnomes-on-dark luminosity, and motifs vs. the reference images. Halt for GO.
@@ -206,15 +221,16 @@ the sim's structure stock and tier, growing building-by-building as the sim buil
 child of the **existing** `RunView`, reading the live `run.settlements` + `sid_places` it already
 computes, rendered through R1's mosaic pipeline. **Presentation-only — reads the sim, never writes.**
 **Phase-Exit Test:** `test_settlement_view.gd` — driving a scripted sim village→city spawns/upgrades
-the correct props (village = huts + field + shrine; town = +granary/+workshop/+temple/partial wall;
-city = dense dwellings, temple-hall, market, full wall), props appear on `structure_built`, and the
-civ-map medallion matches the tier.
+the correct props (village = huts + field + shrine; town = +granary/+workshop/+basilica/partial
+wall; city = dense dwellings, basilica with the monogram gable, market, full wall), props appear on
+`structure_built`, and the civ-map medallion matches the tier.
 
 - **R3.1 — Building prop library.** files: `presentation/settlement/props.gd`,
   `presentation/settlement/*.tscn`. do: simple low-poly meshes per `[rav §R-build]` id (gabled
-  dwelling, field patch, granary, colonnaded workshop, shrine aedicula, temple-hall, cistern/well,
-  wall segment, market stoa), styled to read as mosaic architecture through the R1 post-process.
-  tests: every id has a prop scene; loads headless.
+  dwelling, field patch, granary, colonnaded workshop, shrine aedicula, **basilica** — the temple,
+  a late-antique gabled hall bearing the sacred monogram on its pediment — cistern/well, wall
+  segment, market stoa), styled to read as Christian-mosaic architecture through the R1
+  post-process. tests: every id has a prop scene; loads headless.
 - **R3.2 — Settlement renderer.** files: `presentation/settlement/settlement_view.gd`, edit
   `run_view.gd` to add it as a child. do: for each `Settlement` in `run.settlements`, place props at
   `place_positions[sid_places[sid]]` (RunView already maps these), scattered golden-angle-by-sid
@@ -224,9 +240,9 @@ civ-map medallion matches the tier.
   placement deterministic per sid; empty/dead settlement renders nothing.
 - **R3.3 — Growth & tier feedback.** files: `settlement_view.gd`. do: on `structure_built` a prop
   scales/fades in; on `settlement_tier_changed` a civ-map medallion updates (rosette=village,
-  star-roundel=town, radiant-medallion=city) and a mosaic band tightens around the settlement; add a
-  line to the RunView HUD/chronicle when a settlement changes tier. tests: event→prop appears; tier
-  event→medallion swap.
+  star-roundel=town, **monogram-medallion**=city — the Chi-Rho-like sacred mark for the seat of a
+  basilica) and a mosaic band tightens around the settlement; add a line to the RunView HUD/chronicle
+  when a settlement changes tier. tests: event→prop appears; tier event→medallion swap.
 - **R3.4 — Chronicle & aftermath vocabulary.** files: `presentation/ui/chronicle.gd`, aftermath. do:
   settlement history reads as civic development ("the hollow grew from village to town in year 40;
   the temple rose after the Long Dark"); aftermath surfaces *"what they built, and why"*, tying
@@ -288,6 +304,17 @@ strength `0.5`; gold-leaf luminance lift `+0.25` on the blessed mask. **Lighting
 bg `#0d1b3e`, ambient energy `0.35`; figure rim `#f2d488` `0.4`; bloom threshold `0.85` (gold only);
 black crush `0.04`.
 
+**Mood & iconography (late-antique Christian-like — the gnomes' own faith):** the register is the
+Ravenna Christian mosaic. Iconography set: **sacred monogram** — a Chi-Rho-like mark, the gnomes'
+symbol of the unseen will (on the blessed border, the basilica pediment, the city medallion);
+**halo/nimbus** — gold `#d6a53a`→`#f2d488` disc, outer radius ≈ 0.6× puppet height, behind any gnome
+that is a prophet or `notability ≥ 0.6`; **star-field ground** — bone-white `#f5efe0` stars scattered
+on night-lapis for sacred vaults/roundels; **orant/frontal** figure staging for the haloed.
+Borders: meander (Greek key), wave-scroll, rosette. Architecture register: basilica, aediculae,
+colonnade, gabled pediment. Diegesis: this is the gnomes' religion (emergent theology of the player),
+rendered Christian-like — *not* a claim of literal Christianity; the game's schisms/heresies read as
+the era's own creed disputes (Arian vs. Orthodox is the natural analog).
+
 ## Appendix B — `[rav §R-set]` settlement development (extends algo §14)
 
 **Tiers** (population **and** structure gates; hysteresis ±10% pop):
@@ -320,7 +347,7 @@ re-derived (can drop). Dark age can zero the workshop.
 | granary | agriculture | famine deaths `−30%` |
 | workshop | smithing/stoneworking | craft research pressure `×1.2`; enables metallurgy uptake |
 | shrine | — | belief-crystallization duration `−1 season` |
-| temple | construction + devotion tier ≥ III | terror-unrest growth `×0.8`; devotion mass `×1.05` here |
+| basilica (temple) | construction + devotion tier ≥ III | terror-unrest growth `×0.8`; devotion mass `×1.05` here; the seat's Christian-like faith house |
 | wall | construction | `war_strength ×(1 + 0.25·wall_count)`, cap ×2 — consistent with `terrain.gd` `built_up` |
 | market | writing ∨ trade route | trade mood-lift `×1.5`; knowledge-spread `+1 partner` |
 
@@ -351,5 +378,6 @@ The rule (design §1.3): you author the *cause* (a drought, an omen, a devotion)
 
 `R0 → {R1, R2}` (render and settlement-sim independent) `→ R3` (needs R1's pixel stage + R2's
 structures) `→ R4`. Gate A after R1, Gate B after R3. ~20 atomic tasks across 5 phases; each one
-green commit, tests-first, numbers only from `docs/redesign-ravenna.md`. No rename; gnomes and
-"Gnome Colony" unchanged.
+green commit, tests-first, numbers only from `docs/redesign-ravenna.md`. **No rename** — gnomes and
+"Gnome Colony" unchanged; the late-antique **Christian-like** register is a visual + light-copy
+reskin over the existing (already schism-and-prophet-driven) theology, not a mechanics change.
