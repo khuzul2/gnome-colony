@@ -265,10 +265,61 @@ crossing, famine strips buildings & drops tier) + full suite green + lint.
 - [x] Phase-Exit R2: test_settlement_development.gd (integration, 2) — a settlement climbs hamlet→village→town→city IN ORDER (one settlement_tier_changed per crossing, structures verified), then a famine strips its stock and drops the tier. SPEC FIX (docs/redesign-ravenna.md §R-set): granary priority gated Village+ not Town+ — Town REQUIRES a granary, so the Town+ gate deadlocked progression (villages could never become towns); corrected + documented in the doc and construction.gd. FULL SUITE 751/751 green (133 scripts), lint clean; 1 benign orphan at exit (own_world_3d teardown). R2 reviewer: NO blockers.
 - [x] R2 review follow-ups (reviewer, non-blocking): wired market→Civilization.trade_route (×1.5 mood, inert without a market) so a 4th structure effect is live; documented decay's total-stock upkeep interpretation in §R-set; the remaining 4 unconsumed StructureEffects (well drought, granary famine, workshop research, basilica unrest/devotion) are TRACKED here for R4 wiring at their event/colony consumers (helpers + isolation tests already in place). test: market-mood test added to test_structure_effects.gd; regressions green.
 
-## Phase R3 — Settlement visuals (presentation; plug into RunView) — deps: R1, R2
+## Phases R5–R8 — Gate-A remediation: dimensional terrain + legibility (from PLAYTEST GATE A NO-GO, 2026-07-05)
+Spec: docs/redesign-ravenna-legibility.md (read-only, [leg §X]). Plan: docs/redesign-plan-legibility.md.
+Gate A approved palette+mood but was a NO-GO: gnomes/settlements/halos/iconography not perceivable,
+HUD+menu unreadable, acts give no feedback, terrain reads as flat oversized tesserae. These phases fix
+legibility FIRST, presentation-only (sim/ untouched; influence stays indirect), then re-judge at
+🎮 Gate A2 before R3. Listed BEFORE R3 so the loop picks them first; R3 is gated on Gate A2.
+
+### Phase R5 — Dimensional mosaic terrain (make the existing heightfield read as literal 3-D) — deps: R1
+The 3-D terrain already exists (WorldView heightfield) but is invisible: region elevations ≈1–3 units on
+a 28 km plane (~0.1% relief) and the camera looks near-straight-down (−60°). Fix = amplify + tilt + shade
++ finer tesserae [leg §L-relief]. No new geometry; don't rebuild WorldView. Phase-Exit:
+test_dimensional_terrain.gd (relief span ≈ RELIEF_KM; height_at agrees so picking lands; camera pitch/
+height per spec; stage 512×288 & grout_px 3; pixel-snap framebuffer-hash invariant under sub-pixel pan).
+- [ ] R5.1 Amplified relief in the bake (WorldView: y = RELIEF_KM·(elev−min_e)/span; clamp sub-SEA_LEVEL_T to a water plane; height_at/normals/walkable_faces stay consistent). test: test_dimensional_terrain.gd + test_world_view regression. deps: R1.
+- [ ] R5.2 Oblique camera & pixel-snap (CameraRig PITCHES/HEIGHTS → −72/−45/−28, 135/42/9 [leg §L-relief]; camera pixel-snap on the presented stage, pick uses pre-snap transform — closes the R1.2 shimmer deferral). test: pitch/height values; snap hash-invariance; pick survives snap. deps: R1.
+- [ ] R5.3 Slope-shade & finer tesserae (internal res 512×288, grout_px 3 — supersede [rav §R-art], cite [leg §L-relief]; SLOPE_SHADE slope-darkening; keep hard palette-band terraces). test: test_mosaic_shader/test_pixel_stage updated; slope-shade darkens steep vs flat (CPU mirror). deps: R1.
+
+### Phase R6 — Legibility: figures, settlements & a readable HUD (BLOCKERS) — deps: R1, R2
+See gnomes/settlements, know how many colonies & where, watch them act, follow the evolution. Anchored
+non-overlapping Ravenna HUD + on-world locators + guaranteed-visible puppets/halos [leg §L-hud].
+Presentation-only, reads sim read-only. Phase-Exit: test_hud_legibility.gd (roster lists both settlements
+name/tier/pop/seat; locators at sid places; chronicle feed last-N in order, updates on structure_built;
+puppet ≥ PUPPET_MIN_PX drawn over terrain; halo only for prophet/notability≥0.6).
+- [ ] R6.1 Puppet & halo visibility fix — BLOCKER (diagnose invisibility post-R1.2 reparent: scale/draw-order/regression; enforce PUPPET_MIN_PX, correct draw order+rim so gnomes read luminous & halos legible). test: on-screen size floor; over terrain; halo-only-for-holy; test_puppet_tint regression. deps: R1.
+- [ ] R6.2 Settlement roster panel (settlement_roster.gd: row/settlement name·tier·pop·seat-monogram, ROSTER_ROWS cap +N more, row→camera focus; Ravenna skin, no overlap). test: rows track settlements; reads fold verbatim; seat on main_settlement; click focuses. deps: R2.1, R1.2.
+- [ ] R6.3 On-world locators + life pulse (floating gold name-plate + tier glyph over each place, distance-fade, never over pick target; pop/quickened/births-deaths-Δ strip). test: locator per settlement at its place; pulse reads living/quickened. deps: R1.2, R2.1.
+- [ ] R6.4 Live chronicle feed (chronicle_feed.gd: last CHRONICLE_LINES diegetic events, EventBus/telemetry, newest-bottom, older fading). test: appends on a real event; caps at N; arrival order. deps: R1.2.
+
+### Phase R7 — Acts you can understand (affordance & feedback) — deps: R1
+Preconditions, lock reasons/unlock path, reject feedback, landed on-map markers + chronicle lines. Sim
+mechanics are CORRECT — do not change them; presentation reads catalog+colony read-only [leg §L-acts].
+Phase-Exit: test_act_legibility.gd (weeping_sky shows drought precond & mutes where none; refused cast →
+on-screen line + refused sound; long_dark shows "Tier II — deepen devotion"; landed still_air paints
+marker + chronicle line; armed-but-unpressed paints nothing & is silent — T14.4 discipline).
+- [ ] R7.1 Precondition & lock display (InfluencePanel: catalog affordance + met/unmet at target; gated act shows tier/magic reason + unlock path, qualitative — design §3.8; reads unlocked_tier/catalog, never re-derives ladder). test: precondition shown; unmet→muted; gated→reason. deps: R1.
+- [ ] R7.2 Reject-with-feedback (refused cast → cursor line REJECT_MSG_SECONDS + existing refused UI sound; valid paint does not). test: refused paint emits message+refused-sound; valid does not. deps: R1.
+- [ ] R7.3 On-map cast marker + chronicle line (landed EventBus.phenomenon → transient Motifs marker gold/oxblood/neutral CAST_MARKER_SECONDS + chronicle line; strictly off landed event). test: landed→marker+line; armed-unpressed→nothing (T14.4 silence re-proven). deps: R6.4 (chronicle_feed), R1.6 (Motifs).
+- [ ] R7.4 Eye/attention affordance (faint indicator of the attended region so quickening is legible). test: tracks run.attention_places; clears on release. deps: R1.
+
+### Phase R8 — Menu & camera feel — deps: R1
+Clean non-overlapping Ravenna-skinned main menu + New-Game wizard; smooth pan/zoom. Logic/entries
+unchanged (MainMenu/NewGameWizard API/signals intact); layout+skin+feel only [leg §L-ui]. Phase-Exit:
+test_menu_and_feel.gd (wizard preset-list & detail panes are non-overlapping rects — the Gate-A overlap
+bug; menu uses Ravenna palette; camera eases to pan target framerate-independently + pixel-snaps, pick
+still lands).
+- [ ] R8.1 Main-menu & wizard layout + skin (centered single-column menu; two-pane non-overlapping wizard ≥16px gutter; Ravenna skin night-lapis/cream/gold+gold-lit, meander rule, monogram emblem, min fonts; keyboard+mouse focus highlighted). test: pane rects disjoint; palette applied; signals unchanged. deps: R1.
+- [ ] R8.2 Camera-feel smoothing (exponential framerate-independent PAN_SMOOTH; ZOOM_EASE_SECONDS; PAN_SPEED_KMPS by zoom height; compose with R5.2 pixel-snap; pick uses pre-snap transform). test: held pan converges to same place under two dts; pick lands after snap; discrete zooms preserved. deps: R1 (compose w/ R5.2 if landed).
+
+### 🎮 PLAYTEST GATE A2 — "Now can you read it, and does the terrain read as 3-D?" (HUMAN go/no-go — HALT) — deps: R5, R6, R7, R8
+- [ ] After R5–R8: write AWAIT_PLAYTEST.md and HALT. Re-judge the six Gate-A points + terrain-reads-as-3D, figures/settlements/halos legible, HUD answers what/where/doing/improving, acts self-explain, menu clean, pan/zoom feels good. Record GO (+ tuning asks; all [leg §X] numbers tunable) before R3.
+
+## Phase R3 — Settlement visuals (presentation; plug into RunView) — deps: R1, R2, 🎮 Gate A2 (do NOT start until Gate A2 records GO)
 Mosaic building props from run.settlements, growing on structure_built; medallions by tier.
 Phase-Exit: test_settlement_view.gd + full suite green + lint.
-- [ ] R3.1 Building prop library (presentation/settlement/props.gd + *.tscn; basilica w/ monogram). test: test_settlement_props.gd. deps: R2.1.
+- [ ] R3.1 Building prop library (presentation/settlement/props.gd + *.tscn; basilica w/ monogram). test: test_settlement_props.gd. deps: R2.1, Gate A2.
 - [ ] R3.2 Settlement renderer (settlement_view.gd child of RunView; props from structures at sid places; deterministic scatter). test: test_settlement_view.gd. deps: R3.1, R1.2.
 - [ ] R3.3 Growth & tier feedback (structure_built → prop; settlement_tier_changed → medallion + HUD line). test: test_settlement_growth.gd. deps: R3.2, R2.2.
 - [ ] R3.4 Chronicle & aftermath vocabulary (civic development; what they built & why). test: test_chronicle_settlement.gd. deps: R3.3.

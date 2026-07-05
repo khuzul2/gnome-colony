@@ -111,3 +111,17 @@ in **"tesserae too large"** here.
 ## Human's chosen process
 Recorded as **NO-GO for the loop** — loop turns this into planned, tested tasks. No source-of-truth
 docs edited by this session.
+
+## ✅ RESOLUTION (2026-07-05) — remediation authored; loop RESUMES
+This NO-GO is now converted into a full spec + plan + ledger. **The loop is no longer halted at Gate
+A** — work the new tasks:
+- **Spec:** `docs/redesign-ravenna-legibility.md` (read-only, `[leg §X]`) — dimensional-terrain,
+  HUD, act-feedback, menu, camera-feel constants. Terrain direction resolved: **literal 3-D relief
+  rendered in the mosaic style** (amplify the existing WorldView heightfield + oblique camera +
+  slope-shade + finer tesserae — no rebuild). Supersedes `[rav §R-art]` internal-res/`grout_px`.
+- **Plan:** `docs/redesign-plan-legibility.md` — **Phases R5–R8** (dimensional terrain · figures &
+  HUD legibility · act affordance/feedback · menu & camera feel), presentation-only, then **🎮 Gate
+  A2**.
+- **Ledger:** `PROGRESS.md` — R5–R8 + Gate A2 inserted **before** R3; **R3 is gated on Gate A2**.
+  Loop's next task = **R5.1** (first unchecked with deps checked). Palette/mood approved — keep as-is.
+A **fresh `AWAIT_PLAYTEST.md`** will be written at **Gate A2**, replacing this file's gate.
