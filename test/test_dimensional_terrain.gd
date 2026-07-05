@@ -144,3 +144,27 @@ func test_snap_is_off_by_default_so_bare_rig_logic_is_exact():
 	rig.focus(Vector3(5.123, 0.0, -2.777))
 	assert_almost_eq(rig.camera.global_position.x, 5.123, 1e-5, "no snap when disabled")
 	assert_almost_eq(rig.camera.global_position.z, -2.777, 1e-5, "no snap when disabled")
+
+
+# --- R5.3: finer tesserae + slope-shade -------------------------------------
+
+
+func test_finer_internal_resolution_and_grout():
+	# Gate-A "tesserae too large": raise the internal res and tighten the grout so
+	# cells read as laid stone over the relief [leg §L-relief].
+	assert_eq(PixelStage.INTERNAL_WIDTH, 512, "finer internal width")
+	assert_eq(PixelStage.INTERNAL_HEIGHT, 288, "finer internal height")
+	assert_eq(Mosaic.GROUT_PX, 3.0, "tighter grout pitch")
+
+
+func test_slope_shade_darkens_steep_faces():
+	# A flat tessera keeps its palette color; a steep one is darkened up to
+	# SLOPE_SHADE so relief reads dimensional [leg §L-relief].
+	var c: Color = Palette.COLORS[5]  # pale-green mid-slope
+	assert_eq(WorldView.slope_shade(c, 0.0), c, "flat ground keeps its tessera color")
+	var steep: Color = WorldView.slope_shade(c, 1.0)
+	assert_lt(steep.v, c.v, "a steep face is darker (mosaic relief)")
+	assert_almost_eq(
+		steep.r, c.r * (1.0 - WorldView.SLOPE_SHADE), 1e-5, "darkened by up to SLOPE_SHADE"
+	)
+	assert_eq(steep.a, c.a, "alpha is preserved")

@@ -29,7 +29,9 @@ func test_material_is_wired_to_the_palette_and_spec_constants():
 	assert_not_null(lut, "the palette LUT is bound")
 	assert_eq(lut.get_width(), 16, "…a 16-entry LUT")
 	assert_eq(
-		material.get_shader_parameter("grout_px"), Mosaic.GROUT_PX, "grout pitch = 4 [§R-art]"
+		material.get_shader_parameter("grout_px"),
+		Mosaic.GROUT_PX,
+		"grout pitch = 3 [R5.3, leg §L-relief]"
 	)
 	assert_eq(
 		material.get_shader_parameter("grout_color"),

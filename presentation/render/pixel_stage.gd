@@ -8,15 +8,19 @@ extends Control
 ## `_screen` via set_screen_material(). Presentation-only; the sim never sees
 ## any of this.
 ##
-## Coordinate note: because the camera renders INTO `world` (384×216), a
+## Coordinate note: because the camera renders INTO `world` (INTERNAL_WIDTH×
+## INTERNAL_HEIGHT), a
 ## window-space mouse point must be scaled to viewport space before it meets
 ## the camera's project_ray — RunView does that via to_viewport(), using this
 ## stage's displayed size. Headless (no display) leaves the size at 0, and
 ## to_viewport is the identity, so the analytic picking tests round-trip
 ## unchanged.
 
-const INTERNAL_WIDTH := 384
-const INTERNAL_HEIGHT := 216
+# R5.3 [leg §L-relief]: finer internal resolution than §R-art's 384×216 so the
+# tesserae read as laid stone over the 3-D relief, not chunky flat tiles (Gate-A
+# "tesserae too large"). Still 16:9, nearest upscale. Tuned at Gate A2.
+const INTERNAL_WIDTH := 512
+const INTERNAL_HEIGHT := 288
 
 var world: SubViewport
 var _screen: TextureRect

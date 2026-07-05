@@ -1,7 +1,7 @@
 extends GutTest
 
 ## Phase-Exit R1 — the Ravenna mosaic render pipeline, end to end on a live
-## RunView: the 3D world renders into a 384×216 stage, the mosaic material maps
+## RunView: the 3D world renders into the low-res stage, the mosaic material maps
 ## to the 16 tesserae, the lighting is gold-on-lapis, motifs mark belief, and
 ## picking still round-trips through the reparented viewport. GPU-exact
 ## quantization/grout is the human's call at Playtest Gate A (headless uses a
@@ -34,7 +34,11 @@ func _view(seed_value: int = 1791) -> RunView:
 
 func test_the_world_renders_into_a_low_res_stage():
 	var view := _view()
-	assert_eq(view.stage_world.size, Vector2i(384, 216), "internal resolution 384×216")
+	assert_eq(
+		view.stage_world.size,
+		Vector2i(PixelStage.INTERNAL_WIDTH, PixelStage.INTERNAL_HEIGHT),
+		"internal resolution = the pixel stage's [R5.3: 512×288]"
+	)
 	assert_true(view.stage_world.own_world_3d, "the stage owns its World3D")
 	assert_eq(view.camera.camera.get_viewport(), view.stage_world, "the camera renders into it")
 

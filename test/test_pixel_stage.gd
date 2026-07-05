@@ -31,8 +31,8 @@ func _view(seed_value: int = 1751) -> RunView:
 func test_stage_is_a_low_res_subviewport():
 	var view := _view()
 	assert_not_null(view.stage, "the pixel stage exists")
-	assert_eq(view.stage_world.size.x, PixelStage.INTERNAL_WIDTH, "internal width 384")
-	assert_eq(view.stage_world.size.y, PixelStage.INTERNAL_HEIGHT, "internal height 216")
+	assert_eq(view.stage_world.size.x, PixelStage.INTERNAL_WIDTH, "internal width 512 [R5.3]")
+	assert_eq(view.stage_world.size.y, PixelStage.INTERNAL_HEIGHT, "internal height 288 [R5.3]")
 	assert_true(view.stage_world.own_world_3d, "the stage owns its World3D")
 	assert_eq(
 		view.stage.get_node("screen").texture_filter,
@@ -62,13 +62,12 @@ func test_to_viewport_is_identity_when_undisplayed():
 
 
 func test_to_viewport_scales_a_displayed_window():
-	# When shown at a real window size, a window point maps into the 384×216
-	# viewport by the display ratio.
+	# When shown at a real window size, a window point maps into the internal
+	# viewport by the display ratio (robust to the R5.3 resolution change).
 	var view := _view()
-	view.stage.fit_to(Vector2(768, 432))  # exactly 2× the internal size
-	assert_almost_eq(
-		view.stage.to_viewport(Vector2(384.0, 216.0)), Vector2(192.0, 108.0), Vector2(0.5, 0.5)
-	)
+	var internal := Vector2(PixelStage.INTERNAL_WIDTH, PixelStage.INTERNAL_HEIGHT)
+	view.stage.fit_to(internal * 2.0)  # exactly 2× the internal size
+	assert_almost_eq(view.stage.to_viewport(internal), internal * 0.5, Vector2(0.5, 0.5))
 
 
 func test_picking_survives_the_reparent():

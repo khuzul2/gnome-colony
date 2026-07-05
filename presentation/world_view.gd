@@ -15,6 +15,11 @@ const EXTENT_KM := 14.0
 ## ground reads as literal 3-D in the mosaic style. Both tuned at Gate A2.
 const RELIEF_KM := 2.6  ## peak-to-trough vertical span (≈9% of the 28 km plane)
 const SEA_LEVEL_T := 0.15  ## normalized heights below this clamp up to the sea plane
+## R5.3 [leg §L-relief]: darken a tessera by up to this fraction of its face slope
+## (0 flat → 1 vertical) — the tesserae equivalent of an ambient-occlusion crease,
+## so hillsides read dimensional. The shader then quantizes toward a darker palette
+## entry. Tuned at Gate A2.
+const SLOPE_SHADE := 0.28
 
 var mesh_instance := MeshInstance3D.new()
 var baked_version := -1
@@ -52,6 +57,13 @@ static func terrain_color(t: float) -> Color:
 	if t < 0.88:
 		return Palette.COLORS[9]  # ochre
 	return Palette.COLORS[8]  # gold-lit peaks
+
+
+## R5.3 [leg §L-relief] — darken a tessera color by its face slope (0 flat, 1
+## vertical) up to SLOPE_SHADE, so relief reads as laid, lit stone. Pure; tested.
+static func slope_shade(color: Color, slope: float) -> Color:
+	var f := 1.0 - SLOPE_SHADE * clampf(slope, 0.0, 1.0)
+	return Color(color.r * f, color.g * f, color.b * f, color.a)
 
 
 ## Lazy re-bake: only when the graph's version moved since the last bake.
@@ -125,10 +137,17 @@ func _bake() -> void:
 				var t := _relief_t(c)
 				bands.append(t)
 				verts.append(Vector3(c.x, _relief_y(t), c.y))
-			for index in [0, 1, 2, 0, 2, 3]:
-				var v: Vector3 = verts[index]
-				st.set_color(terrain_color(bands[index]))
-				st.add_vertex(v)
-				walkable_faces.append(v)
+			# Two triangles per quad; each is slope-shaded by its own face normal so
+			# relief reads dimensional in the tesserae [R5.3, leg §L-relief].
+			for tri in [[0, 1, 2], [0, 2, 3]]:
+				var a: Vector3 = verts[tri[0]]
+				var b: Vector3 = verts[tri[1]]
+				var c2: Vector3 = verts[tri[2]]
+				var face_normal := (b - a).cross(c2 - a).normalized()
+				var slope := 1.0 - absf(face_normal.y)
+				for index in tri:
+					st.set_color(slope_shade(terrain_color(bands[index]), slope))
+					st.add_vertex(verts[index])
+					walkable_faces.append(verts[index])
 	st.generate_normals()
 	mesh_instance.mesh = st.commit()

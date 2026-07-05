@@ -9,7 +9,9 @@ extends RefCounted
 
 const SHADER_PATH := "res://presentation/render/mosaic.gdshader"
 
-const GROUT_PX := 4.0
+# R5.3 [leg §L-relief]: grout pitch 3 (was §R-art's 4) — finer tesserae over the
+# higher internal resolution. Tuned at Gate A2.
+const GROUT_PX := 3.0
 const GROUT_ALPHA := 0.35
 const JITTER := 0.06
 const DITHER_STRENGTH := 0.5

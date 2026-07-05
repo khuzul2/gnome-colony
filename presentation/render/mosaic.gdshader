@@ -8,8 +8,10 @@ shader_type canvas_item;
 //       ground (gold-leaf shine). Presentation-only.
 
 uniform sampler2D palette_lut : filter_nearest;
-uniform vec2 internal_size = vec2(384.0, 216.0);
-uniform float grout_px = 4.0;
+// Defaults are always overridden by Mosaic.make_material(); kept in sync with
+// [leg §L-relief] R5.3 values for standalone-shader sanity.
+uniform vec2 internal_size = vec2(512.0, 288.0);
+uniform float grout_px = 3.0;
 uniform vec4 grout_color : source_color = vec4(0.031, 0.039, 0.071, 1.0);
 uniform float grout_alpha = 0.35;
 uniform float jitter = 0.06;
