@@ -99,6 +99,8 @@ var pool: PuppetPool
 var influence_panel: InfluencePanel
 var aftermath: AftermathPanel
 var heatmap_overlay: HeatmapOverlay
+## R6.2 [leg §L-hud] — the settlement roster (how many colonies, where, what tier).
+var settlement_roster: SettlementRoster
 var ambience: AmbienceDirector
 var hud: Control
 var place_positions := {}
@@ -491,6 +493,66 @@ func _on_cast_requested(act_id: String, target: String, _selection: Dictionary) 
 	_refresh_hud()
 
 
+## R6.2 [leg §L-hud] — a roster row click pans the camera to that settlement's
+## basin (read-only: it moves the Eye, it never commands the settlement).
+func _on_focus_settlement(sid: int) -> void:
+	var place: String = sid_places.get(sid, run.home)
+	if place_positions.has(place):
+		camera.focus(place_positions[place])
+
+
+## R6.2 [leg §L-hud] — the roster row models: the home colony first (it lives at
+## the individual grain, absent from run.settlements) then the frontier fold, so
+## the player sees EVERY colony. Home has no structure-tier (development is a
+## frontier mechanic), so its tier is a population display heuristic; frontier
+## rows carry their real §R-set tier. Seat = colony.main_settlement (home when
+## none is elected yet, main_settlement < 0).
+func _roster_rows() -> Array:
+	var colony := run.runner.colony
+	var seat: int = colony.main_settlement
+	var rows: Array = [
+		{
+			"sid": GameRun.HOME_SID,
+			"name": _pretty_place(run.home),
+			"tier": _display_tier(colony.population()),
+			"pop": colony.population(),
+			"seat": seat == GameRun.HOME_SID or seat < 0,
+		}
+	]
+	var sids := run.settlements.keys()
+	sids.sort()
+	for sid in sids:
+		var s: Settlement = run.settlements[sid]
+		(
+			rows
+			. append(
+				{
+					"sid": sid,
+					"name": _pretty_place(sid_places.get(sid, "settlement_%d" % sid)),
+					"tier": SettlementRoster.TIER_NAMES.get(s.tier, "hamlet"),
+					"pop": int(round(s.pop())),
+					"seat": sid == seat,
+				}
+			)
+		)
+	return rows
+
+
+func _pretty_place(place_id: String) -> String:
+	return place_id.capitalize()
+
+
+## Population-only display tier for the home row (the §R-set pop thresholds).
+func _display_tier(population: int) -> String:
+	if population >= 250:
+		return "city"
+	if population >= 60:
+		return "town"
+	if population >= 12:
+		return "village"
+	return "hamlet"
+
+
 func _gazed_place() -> String:
 	var eye := Vector2(camera.position.x, camera.position.z)
 	var best := run.home
@@ -656,6 +718,10 @@ func _build_hud() -> void:
 	hud = VBoxContainer.new()
 	hud.name = "run_hud"
 	add_child(hud)
+	# R6.2 [leg §L-hud]: the roster leads the HUD — colonies, where, what tier.
+	settlement_roster = SettlementRoster.new()
+	settlement_roster.focus_settlement.connect(_on_focus_settlement)
+	hud.add_child(settlement_roster)
 	_hud_label = Label.new()
 	_hud_label.name = "readout"
 	_hud_label.add_theme_font_size_override("font_size", 12)
@@ -772,3 +838,5 @@ func _refresh_hud() -> void:
 	var chronicle := run.runner.chronicle
 	lines.append_array(chronicle.slice(maxi(0, chronicle.size() - 5)))
 	_hud_label.text = "\n".join(PackedStringArray(lines))
+	# R6.2 [leg §L-hud]: keep the roster in step with the fold.
+	settlement_roster.refresh(_roster_rows())
