@@ -71,6 +71,39 @@ func test_locked_categories_appear_only_when_earned():
 	assert_false(panel.category_boxes[7].visible, "Wonders still wait")
 
 
+func test_a_precondition_is_shown_and_mutes_when_unmet():
+	# [R7.1 leg §L-acts] "weeping sky does nothing" — because it needs a drought.
+	# Show that precondition; with none active, mute the act (but keep it castable
+	# so the R7.2 reject can fire).
+	var panel := _panel()
+	panel.refresh(_colony_at_dbar(0.9, 1200), [])  # deep faith, nothing met
+	var weeping: Button = panel.buttons["weeping_sky"]
+	assert_true("drought" in weeping.text, "the precondition is on the button")
+	assert_true("drought" in weeping.tooltip_text, "…and explained in the tooltip")
+	assert_lt(weeping.modulate.v, 1.0, "an unmet precondition mutes the act")
+	assert_false(weeping.disabled, "…but it stays castable (R7.2 gives the reject)")
+	assert_true(panel.arm("weeping_sky"), "an unmet act still arms")
+
+
+func test_a_met_precondition_is_not_muted():
+	# [R7.1] once a drought is active somewhere, weeping sky reads ready.
+	var panel := _panel()
+	panel.refresh(_colony_at_dbar(0.9, 1200), ["drought"])
+	var weeping: Button = panel.buttons["weeping_sky"]
+	assert_almost_eq(weeping.modulate.v, 1.0, 0.001, "a met precondition is not muted")
+	assert_true("present now" in weeping.tooltip_text, "…and the tooltip says so")
+
+
+func test_a_locked_act_names_the_tier_to_reach():
+	# [R7.1] "long dark disabled and I don't know why" — now it names the tier.
+	var panel := _panel()
+	panel.refresh(_colony_at_dbar(0.0, 10))  # tier I
+	var long_dark: Button = panel.buttons["long_dark"]
+	assert_true(long_dark.disabled, "a higher-tier act is locked at tier I")
+	assert_true("Tier" in long_dark.text, "the lock names the tier to reach")
+	assert_true("devotion" in long_dark.tooltip_text, "…and the unlock path (deepen devotion)")
+
+
 func test_arming_respects_the_gate():
 	var panel := _panel()
 	panel.refresh(_colony_at_dbar(0.0, 10))

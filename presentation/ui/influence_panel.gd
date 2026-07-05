@@ -35,6 +35,8 @@ const SELECTION_KEY := {
 	"region-edge": "edge",
 	"individual": "gnome",
 }
+## Devotion tiers as numerals, for the lock label [R7.1].
+const TIER_NUMERALS := ["", "I", "II", "III", "IV", "V", "VI"]
 
 ## act id → Button; category int → its container. Public for the tests
 ## and for the input layer to decorate.
@@ -43,6 +45,10 @@ var category_boxes := {}
 
 var _defs := {}
 var _tier := 1
+## R7.1 [leg §L-acts] — world affordance requirements currently satisfiable
+## somewhere (RunView feeds these from WorldState). An unlocked act whose
+## precondition isn't in here paints MUTED — armable, but it will be refused.
+var _met := []
 var _armed := ""
 
 
@@ -70,9 +76,11 @@ func build(defs: Dictionary) -> void:
 	_apply_gate()
 
 
-## Re-read the sim's earned tier (never re-derive the ladder here).
-func refresh(colony: Colony) -> void:
+## Re-read the sim's earned tier (never re-derive the ladder here) and which
+## world preconditions are currently met [R7.1]; met defaults empty (nothing met).
+func refresh(colony: Colony, met_affordances: Array = []) -> void:
 	_tier = colony.unlocked_tier
+	_met = met_affordances
 	_apply_gate()
 
 
@@ -133,7 +141,13 @@ func _target_from(kind: String, selection: Dictionary) -> String:
 
 func _apply_gate() -> void:
 	for id in buttons:
-		buttons[id].disabled = not unlocked(id)
+		var button: Button = buttons[id]
+		# Tier-locked acts are disabled (can't arm); an unlocked act whose world
+		# precondition isn't met stays castable but paints muted [R7.1, leg §L-acts].
+		button.disabled = not unlocked(id)
+		button.text = _act_label(id)
+		button.tooltip_text = _act_tooltip(id)
+		button.modulate = Color(0.55, 0.55, 0.6) if _is_muted(id) else Color.WHITE
 	for category in category_boxes:
 		var any_open := false
 		for id in _defs:
@@ -141,3 +155,44 @@ func _apply_gate() -> void:
 				any_open = true
 				break
 		category_boxes[category].visible = any_open
+
+
+## The act's world precondition ("" when it needs none / "any").
+func _precondition(act_id: String) -> String:
+	var req: String = _defs[act_id].get("affordance_req", "any")
+	return "" if req == "any" else req
+
+
+## An UNLOCKED act whose world precondition isn't currently met — dim, but armable
+## (so casting it lands the reject-with-feedback of R7.2). Locked acts show the
+## lock instead, not muting.
+func _is_muted(act_id: String) -> bool:
+	if not unlocked(act_id):
+		return false
+	var req := _precondition(act_id)
+	return req != "" and not (req in _met)
+
+
+func _act_label(act_id: String) -> String:
+	var label := act_id.replace("_", " ")
+	if not unlocked(act_id):
+		return "%s  🔒 %s" % [label, _tier_label(act_id)]
+	var req := _precondition(act_id)
+	return "%s — needs %s" % [label, req.replace("_", " ")] if req != "" else label
+
+
+func _act_tooltip(act_id: String) -> String:
+	if not unlocked(act_id):
+		return "Locked — reach %s. Deepen the flock's devotion." % _tier_label(act_id)
+	var req := _precondition(act_id)
+	if req == "":
+		return "Ready to cast."
+	var pretty := req.replace("_", " ")
+	if req in _met:
+		return "Needs %s — present now, so it will land." % pretty
+	return "Needs %s — none active now, so a cast here will be refused." % pretty
+
+
+func _tier_label(act_id: String) -> String:
+	var tier: int = _defs[act_id]["tier"]
+	return "Tier %s" % TIER_NUMERALS[clampi(tier, 1, TIER_NUMERALS.size() - 1)]

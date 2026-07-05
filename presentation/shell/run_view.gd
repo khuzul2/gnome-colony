@@ -190,7 +190,7 @@ func _ready() -> void:
 	_build_hud()
 	_build_controls()
 	days_per_sec = settings.get_value("gameplay", "default_speed")
-	influence_panel.refresh(run.runner.colony)
+	influence_panel.refresh(run.runner.colony, _met_affordances())
 	_refresh_puppets()
 	_refresh_motifs()
 	# R6.3 [leg §L-hud]: the life pulse counts births/deaths within a season.
@@ -505,7 +505,7 @@ func _advance_one_day() -> void:
 		if mode == "season" or (mode == "year" and year_wrapped):
 			save_requested.emit("auto")
 	# Discoveries reach the chronicle feed via EventBus.discovery_made (R6.4).
-	influence_panel.refresh(run.runner.colony)
+	influence_panel.refresh(run.runner.colony, _met_affordances())
 	_refresh_puppets()
 	_refresh_motifs()
 	if heatmap_overlay.visible:
@@ -576,7 +576,7 @@ func _on_cast_requested(act_id: String, target: String, _selection: Dictionary) 
 	# The landed stimuli reach the chronicle feed via EventBus.phenomenon (R6.4);
 	# the diegetic story-beat channel, not a re-summary of the request (T14.4).
 	run.cast(act_id, target)
-	influence_panel.refresh(run.runner.colony)
+	influence_panel.refresh(run.runner.colony, _met_affordances())
 	_refresh_hud()
 
 
@@ -627,6 +627,17 @@ func _roster_rows() -> Array:
 
 func _pretty_place(place_id: String) -> String:
 	return place_id.capitalize()
+
+
+## R7.1 [leg §L-acts] — the world affordance requirements currently satisfiable
+## somewhere (any place's lived tags), so the influence panel can show which acts'
+## preconditions are met and mute the rest. Read-only over WorldState.
+func _met_affordances() -> Array:
+	var met := {}
+	for place in run.world.affordances:
+		for tag in run.world.affordances[place]:
+			met[tag] = true
+	return met.keys()
 
 
 ## Population-only display tier for the home row (the §R-set pop thresholds).
