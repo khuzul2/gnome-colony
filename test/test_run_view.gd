@@ -122,14 +122,18 @@ func test_bindings_drive_the_camera():
 	# [T23.2] WASD from Settings pans the rig; E/Q and the wheel zoom it.
 	var view := _view()
 	view.set_speed(0.0)
+	# [R8.2] W drives the pan TARGET north (−Z); the camera EASES toward it.
 	var before := view.camera.position
+	var before_target := view._cam_target
 	view._unhandled_input(_key("W", true))
 	view._process(0.1)
-	assert_lt(view.camera.position.z, before.z, "W pans north (−Z)")
-	var held := view.camera.position
+	assert_lt(view._cam_target.z, before_target.z, "W drives the target north (−Z)")
+	assert_lt(view.camera.position.z, before.z, "…and the camera eases that way")
+	# Releasing the key stops the TARGET (the camera then settles onto it).
 	view._unhandled_input(_key("W", false))
+	var stopped := view._cam_target
 	view._process(0.1)
-	assert_eq(view.camera.position, held, "releasing the key stops the pan")
+	assert_eq(view._cam_target, stopped, "releasing the key stops the pan")
 	assert_eq(view.camera.level, CameraRig.Zoom.SETTLEMENT)
 	view._unhandled_input(_key("E", true))
 	assert_eq(view.camera.level, CameraRig.Zoom.INDIVIDUAL, "E zooms in")
@@ -145,13 +149,13 @@ func test_bindings_drive_the_camera():
 		0.001,
 		"the camera keeps its clearance over uneven terrain"
 	)
-	# …and a diagonal pan is normalized, not ~1.41× faster.
+	# …and a diagonal pan is normalized, not ~1.41× faster (measured on the target).
+	var t0 := Vector2(view._cam_target.x, view._cam_target.z)
 	view._unhandled_input(_key("A", true))
 	view._unhandled_input(_key("W", true))
-	var flat := Vector2(view.camera.position.x, view.camera.position.z)
 	view._process(0.1)
-	var moved := Vector2(view.camera.position.x, view.camera.position.z).distance_to(flat)
-	assert_almost_eq(moved, RunView.PAN_SPEED * 0.1, 0.01, "diagonal pan speed matches one axis")
+	var moved := Vector2(view._cam_target.x, view._cam_target.z).distance_to(t0)
+	assert_almost_eq(moved, RunView.PAN_SPEED * 0.1, 0.01, "diagonal target speed matches one axis")
 
 
 func test_a_click_targets_the_basin_under_the_cursor():

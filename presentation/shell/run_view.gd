@@ -83,6 +83,10 @@ const REJECT_MSG_SECONDS := 2.0
 ## Camera control [T23.2] — presentation numbers: km/sec panned across
 ## the ground at sensitivity 1.
 const PAN_SPEED := 12.0
+## R8.2 [leg §L-ui] — camera-feel smoothing: the pan target moves precisely, and
+## the camera EASES toward it framerate-independently (pos = lerp(pos, target,
+## 1 − exp(−PAN_SMOOTH·dt))) so pan/settle read smooth, not clunky. Tuned Gate A2.
+const PAN_SMOOTH := 12.0
 ## Lighting & mood [R1.4] live in StageLighting (Ravenna gold-on-lapis),
 ## replacing T23.1's plain daylight.
 
@@ -146,6 +150,9 @@ var _pulse_season := -1
 var _pan_keys := {}
 var _zoom_keys := {}
 var _pan_held := {}
+## R8.2 [leg §L-ui] — the destination the camera eases toward (pan moves it; a
+## roster/initial focus sets it and snaps). xz drive the ease; y is re-derived.
+var _cam_target := Vector3.ZERO
 var _pick_plane_y := 0.0
 var _highlight: MeshInstance3D
 ## R7.2 [leg §L-acts] — the refusal banner + its fade countdown.
@@ -183,7 +190,8 @@ func _ready() -> void:
 	# R6.1 [leg §L-hud]: rescale the figures for legibility whenever the zoom changes.
 	camera.zoom_changed.connect(func(_level: int) -> void: _apply_puppet_view_scale())
 	stage_world.add_child(camera)
-	camera.focus(place_positions[run.home])
+	_cam_target = place_positions[run.home]
+	camera.focus(_cam_target)
 	attention = AttentionInput.new()
 	add_child(attention)
 	pool = PuppetPool.new()
@@ -306,6 +314,7 @@ func _process(delta: float) -> void:
 		_advance_one_day()
 	_advance_walkers(delta)
 	_apply_pan(delta)
+	_ease_camera(delta)
 	ambience.update(delta)
 	if _reject_timer > 0.0:
 		_reject_timer -= delta
@@ -384,14 +393,24 @@ func _apply_pan(delta: float) -> void:
 	if dir == Vector2.ZERO:
 		return
 	# Normalize so a diagonal (W+D) doesn't pan ~1.41× faster than an axis
-	# [T23 review]; the rig rides the terrain height at its new spot so the
-	# camera keeps its per-zoom clearance over uneven ground.
+	# [T23 review]. R8.2: move the TARGET (the camera eases toward it in _process);
+	# pan faster when the eye is higher, so a zoomed-out sweep covers ground.
 	dir = dir.normalized()
 	var sensitivity: float = settings.get_value("controls", "pan_sensitivity")
-	var step := PAN_SPEED * sensitivity * delta
-	var target := camera.position + Vector3(dir.x * step, 0.0, dir.y * step)
-	target.y = world_view.height_at(Vector2(target.x, target.z))
-	camera.focus(target)
+	var zoom_scale: float = (
+		CameraRig.HEIGHTS[camera.level] / CameraRig.HEIGHTS[CameraRig.Zoom.SETTLEMENT]
+	)
+	var step := PAN_SPEED * sensitivity * zoom_scale * delta
+	_cam_target += Vector3(dir.x * step, 0.0, dir.y * step)
+
+
+## R8.2 [leg §L-ui] — ease the camera toward its target framerate-independently, so
+## pan and settle read smooth. The rig rides the terrain height at the eased spot.
+func _ease_camera(delta: float) -> void:
+	var t := 1.0 - exp(-PAN_SMOOTH * delta)
+	var eased := camera.position.lerp(_cam_target, t)
+	eased.y = world_view.height_at(Vector2(eased.x, eased.z))
+	camera.focus(eased)
 
 
 ## Cast the armed act where the cursor points [T23.3]: a ray to the pick
@@ -602,7 +621,9 @@ func _show_reject(reason: String) -> void:
 func _on_focus_settlement(sid: int) -> void:
 	var place: String = sid_places.get(sid, run.home)
 	if place_positions.has(place):
-		camera.focus(place_positions[place])
+		# A roster jump snaps (and re-anchors the ease target); only pan smooths [R8.2].
+		_cam_target = place_positions[place]
+		camera.focus(_cam_target)
 
 
 ## R6.2 [leg §L-hud] — the roster row models: the home colony first (it lives at

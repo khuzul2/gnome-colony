@@ -3,7 +3,37 @@ extends GutTest
 ## R8 [leg §L-ui] — menu & camera feel. R8.1: the chrome wears the Ravenna skin
 ## and the New-Game wizard fills its screen instead of collapsing to a zero-size
 ## Control that overflowed onto the action buttons (the Gate-A "Quick Start over
-## Balanced Saga" overlap). R8.2 adds the camera-feel checks here.
+## Balanced Saga" overlap). R8.2: pan/zoom feel — the camera eases toward its pan
+## target framerate-independently instead of snapping (the Gate-A "clunky" feel).
+
+var _runs: Array = []
+
+
+func after_each() -> void:
+	for run in _runs:
+		run.shutdown()
+	_runs.clear()
+
+
+func _view(seed_value := 1861) -> RunView:
+	Rng.seed_with(seed_value)
+	var cfg := WorldConfig.new()
+	cfg.seed = seed_value
+	cfg.normalize()
+	var run := GameRun.new_game(cfg)
+	_runs.append(run)
+	var view := RunView.new()
+	view.run = run
+	view.settings = GameSettings.new()
+	add_child_autofree(view)
+	return view
+
+
+func _key(name: String, pressed: bool) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = OS.find_keycode_from_string(name)
+	event.pressed = pressed
+	return event
 
 
 func test_the_menu_wears_the_ravenna_skin():
@@ -81,4 +111,46 @@ func test_the_mounted_wizard_screen_can_give_the_pages_space():
 		shell.wizard_view.size_flags_vertical,
 		Control.SIZE_EXPAND_FILL,
 		"the mounted wizard view expand-fills, so the pages can't overflow the buttons"
+	)
+
+
+func test_the_camera_eases_rather_than_teleporting():
+	# [R8.2] the Gate-A "clunky" pan: the camera now EASES toward the target — it
+	# moves toward it but lags it in a single frame, instead of snapping.
+	var view := _view()
+	view.set_speed(0.0)
+	var start := Vector2(view.camera.position.x, view.camera.position.z)
+	view._unhandled_input(_key("D", true))
+	view._process(0.1)
+	var cam := Vector2(view.camera.position.x, view.camera.position.z)
+	var target := Vector2(view._cam_target.x, view._cam_target.z)
+	assert_gt(cam.distance_to(start), 0.0, "the camera moves toward the aim")
+	assert_gt(
+		target.distance_to(start),
+		cam.distance_to(start),
+		"…but lags the target in one frame (eased, not teleported)"
+	)
+
+
+func test_pan_easing_is_framerate_independent():
+	# Holding pan the same TOTAL time reaches the same place whether stepped in one
+	# big frame or many small ones (linear target integration + exponential ease).
+	var coarse := _view(1862)
+	var fine := _view(1862)
+	for view in [coarse, fine]:
+		view.set_speed(0.0)
+		view._unhandled_input(_key("D", true))
+	coarse._process(1.0)
+	for i in 10:
+		fine._process(0.1)
+	# release and let both settle onto the (identical) target
+	coarse._unhandled_input(_key("D", false))
+	fine._unhandled_input(_key("D", false))
+	for i in 20:
+		coarse._process(0.1)
+		fine._process(0.1)
+	var cp := Vector2(coarse.camera.position.x, coarse.camera.position.z)
+	var fp := Vector2(fine.camera.position.x, fine.camera.position.z)
+	assert_almost_eq(
+		cp.distance_to(fp), 0.0, 0.02, "same total pan time → same place, any framerate"
 	)
