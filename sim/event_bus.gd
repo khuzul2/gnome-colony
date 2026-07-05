@@ -32,3 +32,9 @@ signal war_waged(payload: Dictionary)
 ## [T22.3] A §14 doctrinal schism split a settlement's faction into a
 ## free basin. Payload {"from": source sid, "to": new sid, "day": sim day}.
 signal schism_split(payload: Dictionary)
+## [rav §R-set] A settlement crossed a development tier. Payload
+## {"sid": settlement id, "from": old tier, "to": new tier}.
+signal settlement_tier_changed(payload: Dictionary)
+## [rav §R-set] A settlement finished building a structure. Payload
+## {"sid": settlement id, "building": id, "tier": current tier}.
+signal structure_built(payload: Dictionary)

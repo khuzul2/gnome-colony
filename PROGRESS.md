@@ -257,7 +257,7 @@ Autonomous buildings + hamlet→village→town→city, driven by existing pressu
 terrain.gd. Phase-Exit: test_settlement_development.gd (grow across tiers in order, one event per
 crossing, famine strips buildings & drops tier) + full suite green + lint.
 - [x] R2.1 Structures on the aggregate (Settlement.structures dict + structure_count(id); Settlement.tier default HAMLET; Enums.SettlementTier{HAMLET,VILLAGE,TOWN,CITY} stable; Settlement.BUILDING_IDS = §R-build catalog; serializer round-trips structures+tier with .get defaults for pre-feature saves). test: test_settlement_structures.gd (6) + settlement/serializer/enums regressions green. lint clean.
-- [ ] R2.2 Tier thresholds (settlement_sim.tier_of + settlement_tier_changed signal, hysteresis) [rav §R-set]. test: test_settlement_tier.gd. deps: R2.1.
+- [x] R2.2 Tier thresholds (SettlementSim.tier_of: pop AND structure/tech gates top-down [rav §R-set], ±10% pop hysteresis via relaxed gate when already at/above tier; update_tier writes + emits EventBus.settlement_tier_changed on change. Added VILLAGE/TOWN/CITY_POP + TIER_HYSTERESIS consts; EventBus.settlement_tier_changed + structure_built signals). test: test_settlement_tier.gd (5) + settlement/civilization/scale regressions green. lint clean.
 - [ ] R2.3 Autonomous construction flow (sim/systems/construction.gd: labor, priority, progress, structure_built) [rav §R-set/§R-infl]. test: test_construction.gd. deps: R2.1.
 - [ ] R2.4 Structure effects feed existing flows, no double-count [rav §R-build]. test: test_structure_effects.gd. deps: R2.3.
 - [ ] R2.5 Regression & abandonment (decay, tier drop, dark-age workshop loss) [rav §R-set]. test: test_construction_decay.gd. deps: R2.3.
