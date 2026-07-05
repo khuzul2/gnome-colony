@@ -331,6 +331,49 @@ Phase-Exit: test_settlement_view.gd + full suite green + lint.
 - [ ] R4.3 Perf re-check (test_scale with construction flows; tick budget holds). deps: R2.
 - [ ] R4.4 Lint, tag phase-R4-complete, DONE-ravenna.md handover. deps: R4.1, R4.2, R4.3.
 
+## Phases G0–G4 — Gaea procedural terrain (user request 2026-07-05) — plan: docs/terrain-gaea-plan.md
+Move terrain GENERATION to the Gaea framework (GDScript, vendored), keeping the Ravenna mosaic
+render. DECISION (user-confirmed): keep the mosaic — Gaea supplies GEOMETRY only; and Gaea-ONLY —
+Terrain3D dropped (compiled GDExtension → binary-vendoring + headless-test + 4.7-compat risk the
+offline, 100%-headless build can't absorb; a 28 km mosaic world needs no clipmap LOD). Presentation-
+ONLY: sim/ untouched, RegionGraph stays the world authority, the purity test governs. Terrain noise is
+seeded from WorldConfig.seed via Gaea's OWN generator and draws ZERO from the Rng singleton (else the
+sim byte-hash tests break) — the crux invariant, tested in G1.1. The swap is surgical: only
+WorldView._raw_height changes; height_at/walkable_faces/terrain_color/sync+version and all of R5's
+relief work are preserved. Numbers are presentation/structural (like WorldView.GRID + [rav §R-art]),
+NOT §17. Cite the new read-only spec as [gaea §X]. DEPS: G0–G1 start when the legibility loop's code
+(R5–R8) is COMMITTED — i.e. when that loop is done (it halts at 🎮 Gate A2 for a human); G0–G1 touch
+only new files and need neither the R5 code nor the gate. G2 onward ADDITIONALLY needs 🎮 Gate A2 GO
+(WorldView integration composes with R5's validated camera/relief — don't build on an unsigned base).
+
+### Phase G0 — Spec, vendoring & headless smoke — deps: R5–R8 committed (legibility loop done)
+- [ ] G0.1 Author docs/terrain-gaea.md (read-only spec; anchors §gaea-gen/§gaea-anchor/§gaea-det/§gaea-invariants; fix the Constant summary starting values, mark all tunable at Gate G; presentation numbers, not §17). test: test_terrain_spec_present.gd (anchors present, mirrors test_rav_spec_present.gd). deps: Gate A2.
+- [ ] G0.2 Vendor Gaea addon (human-in-loop; pin a Godot-4.7-compatible release into addons/gaea/, pure GDScript no binary; SOURCES.md origin+version+license; enable plugin in project.godot; lint-exclude like addons/gut/). NETWORK: GitHub blocked in build env — if unfetchable, write STUCK.md naming the version/files and HALT for a human to drop it in (never re-download). test: test_gaea_available.gd (Gaea generator class instantiates + produces a value HEADLESS). deps: G0.1.
+- [ ] Phase-Exit G0: both G0 tests green; suite unchanged; lint clean → tag phase-G0-complete.
+
+### Phase G1 — Deterministic, basin-anchored heightfield (presentation, headless) — deps: G0
+- [ ] G1.1 TerrainField generator (presentation/terrain/terrain_field.gd): generate(graph, seed) wrapping Gaea noise, seeded from WorldConfig.seed per §gaea-det — NEVER Rng; octaves/freq/amplitude per §gaea-gen. test: same seed identical / different seeds differ / Rng.get_state() byte-equal before vs after a generation (the Rng-independence tripwire). deps: G0.
+- [ ] G1.2 Basin-anchored composition (base IDW-over-basins field + Gaea detail; attenuate detail within ANCHOR_RADIUS_KM of each center so height_at(basin_center) ≈ region elevation, hi/lo order preserved; basins win at centers, Gaea fills gaps) [§gaea-anchor]. test: center height within ANCHOR_TOL; basin order preserved; between-basin sample beats a detail-present threshold vs pure IDW. deps: G1.1.
+- [ ] Phase-Exit G1: test_terrain_field.gd green (determinism + Rng-independence + anchoring + detail-present); suite green; lint clean → tag phase-G1-complete.
+
+### Phase G2 — WorldView integration (swap the source, keep the contract) — deps: G1, R5, 🎮 Gate A2 (GO)
+- [ ] G2.1 Route WorldView._raw_height through TerrainField (build the field in sync(), persist a seed from WorldConfig.seed so reshape re-bakes reproduce; KEEP _relief_t/_relief_y/height_at/terrain_color/sync+version as R5 left them; wire RunView to pass the seed). test: test_world_view + test_dimensional_terrain + test_puppet_tint regressions green; new leg — mesh has real sub-basin variance while height_at(center) still agrees. Note any sync() API change in Notes. deps: G1, R5, 🎮 Gate A2 (GO).
+- [ ] G2.2 Finer mesh grid + nav/pick consistency (raise bake GRID per §gaea-gen; keep walkable_faces in sync; ensure NavWorld CELL_SIZE/CELL_HEIGHT still divide the new face sizes — voxelizer rejects mismatched cells). test: test_nav_world + test_movement + test_phase13_exit green (route still found; buried-road refusal unchanged); walkable_faces scales with grid. deps: G2.1.
+- [ ] Phase-Exit G2: every terrain/nav/picking test green over Gaea geometry; height_at agrees with mesh; suite green; lint clean → tag phase-G2-complete.
+
+### Phase G3 — Biome & water detail under the mosaic (still on-palette) — deps: G2
+- [ ] G3.1 Biome-varied palette bands (region biome — meadow/forest/ridge/marsh — biases terrain_color's band, composed with elevation banding; output stays a Palette.COLORS entry) [§gaea-gen]. test: same region+seed same band; forest vs ridge at equal elevation differ but on-palette; all samples ∈ palette. deps: G2.
+- [ ] G3.2 Water bodies compose with the R5 sea clamp (Gaea detail below SEA_LEVEL_T reads as the flat lapis water plane so low ground forms coherent water). test: below-sea sample clamps to water y + lapis; test_render_pipeline + test_dimensional_terrain regressions green. deps: G3.1.
+- [ ] Phase-Exit G3: test_terrain_biomes.gd green; render-pipeline on-palette ratio > 95% holds; suite green; lint clean → tag phase-G3-complete.
+
+### Phase G4 — Determinism, perf, end-to-end & playtest gate — deps: G3
+- [ ] G4.1 Determinism envelope (test_terrain_determinism.gd): same seed+config ⇒ identical baked terrain (hash the sampled height+color grid); sim save-envelope hash byte-identical with vs without the Gaea path for a fixed scripted run (re-proves T15.4 render invariance now render owns a noise gen). deps: G3.
+- [ ] G4.2 Bake perf tripwire (test_terrain_perf.gd): one-time re-bake on a version bump under BAKE_BUDGET_MS (bakes on seed/reshape, NOT per tick — doesn't touch test_scale's per-tick budget); raw number printed + hardware-calibrated tripwire like test_scale (container ~2× reference desktop, Phase-Exit 11 ruling). deps: G3.
+- [ ] G4.3 End-to-end integration (test/integration/test_terrain_gaea_end_to_end.gd): bootstrap→graph→TerrainField→WorldView bake→nav route→click-pick→cast round-trips; a reshape bumps version and re-bakes deterministically; puppets place on the new ground. deps: G4.1, G4.2.
+- [ ] G4.4 Map-diversity guarantee — every new game a different map (test_map_diversity.gd): over distinct seeds, RegionGraph basin layouts differ AND TerrainField/terrain samples differ (no seed collision on the same map); blank WorldConfig.seed resolves to an entropy-derived value, not a fixed constant. VERIFIED: Godot 4.7 RandomNumberGenerator.new() auto-randomizes at boot, so blank seeds differ per launch today — this test pins it so a future boot-seed change can't silently break it. Typed seeds stay intentionally reproducible (shareable). Does NOT relax T15.2's reproducible-under-seeded-Rng contract. deps: G4.1.
+- [ ] 🎮 PLAYTEST GATE G — "Does the terrain read richer, and still Ravenna?" (HUMAN go/no-go — HALT): write AWAIT_PLAYTEST.md (believable rolling country/valleys/water; detail catches the gold key light; tesserae still mosaic; basins/settlements land where picking says; no shimmer/flat spots; framerate OK), commit, HALT. Human records GO (+ [gaea §…] tuning asks — all constants tunable) here. deps: G4.1–G4.4.
+- [ ] Phase-Exit G4: end-to-end + determinism + perf + map-diversity green; suite green; lint clean → tag phase-G4-complete; AWAIT_PLAYTEST.md written; HALT.
+
 ## Notes
 - T15.2 reviewer minors (informational, open): wizard setters silently no-op on typo'd keys (could push_warning); pages 2–4 are logic-first without widget chrome (same pattern as MainMenu); quicken_budget stays the WorldConfig ~300 constant — §3.6's per-scale INDIVIDUAL budget is already Tuning.resolve's SCALE_INDIVIDUAL_BUDGET (T12.3), and no spec number maps scale→quicken_budget.
 (The agent appends one-line notes here when checking tasks off, and records any public-API changes other tasks depend on.)
