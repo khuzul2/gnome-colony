@@ -169,6 +169,8 @@ func _build_stage() -> void:
 	stage.name = "pixel_stage"
 	add_child(stage)
 	stage_world = stage.world
+	# The mosaic post-process rides on the stage's screen [R1.3].
+	stage.set_screen_material(Mosaic.make_material())
 	if DisplayServer.get_name() != "headless":
 		var vp := get_viewport()
 		stage.fit_to(vp.get_visible_rect().size)
