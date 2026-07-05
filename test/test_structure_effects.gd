@@ -79,6 +79,20 @@ func test_dwellings_ease_crowding_through_crowding():
 	assert_lt(s.crowding(c), bare, "dwellings add housing and ease crowding")
 
 
+func test_markets_lift_trade_mood_through_civilization():
+	var c := Colony.new()
+	var a := _settlement(50.0)
+	var b := _settlement(50.0)
+	b.sid = 10
+	c.settlement_knowledge[9] = {}
+	c.settlement_knowledge[10] = {}
+	a.mood = 0.5
+	b.mood = 0.5
+	a.structures["market"] = 1.0  # a has a market; b does not
+	Civilization.trade_route(c, a, b)
+	assert_gt(a.mood - 0.5, b.mood - 0.5, "the market settlement gains more trade mood")
+
+
 func test_walls_raise_war_strength_through_civilization():
 	var c := Colony.new()
 	c.settlement_knowledge[9] = {}

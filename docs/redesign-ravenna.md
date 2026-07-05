@@ -112,7 +112,11 @@ settlement below Town, promoted to basilica at Town+; wall count `≤ 4`; granar
 **Decay / regression.** Each season, per structure: `count −= 0.05 · max(0, 1 − labor / upkeep)`
 where `upkeep = 0.1 · count` (buildings need tending); floored at 0. Tier is re-derived each season
 and may drop. A regional dark age (§7 per-settlement extinction of the enabling craft) zeroes the
-workshop.
+workshop. *(Interpretive: `count` in `upkeep` is read as the settlement's **total** structure stock
+— one shared upkeep pool tended by the settlement's labor — and the same decay is applied to every
+structure type. The per-building-type reading would make upkeep trivially small (0.1 per lone
+building) and never bind; the total-stock reading is what makes a hollowed settlement shed its
+buildings.)*
 
 ---
 

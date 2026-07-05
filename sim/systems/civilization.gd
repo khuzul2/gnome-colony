@@ -98,8 +98,10 @@ static func migrate(colony: Colony, from_s: Settlement, to_s: Settlement, count:
 ## §14 trade: complementary partners — both moods rise, knowledge spreads
 ## (SettlementSim.trade), and belief drifts along the route.
 static func trade_route(colony: Colony, a: Settlement, b: Settlement) -> Array:
-	a.mood = clampf(a.mood + TRADE_MOOD_LIFT, 0.0, 1.0)
-	b.mood = clampf(b.mood + TRADE_MOOD_LIFT, 0.0, 1.0)
+	# A market lifts its settlement's trade mood ×1.5 [R2.4 §R-build]; inert
+	# without one, so a marketless route is exactly the §14 flow.
+	a.mood = clampf(a.mood + TRADE_MOOD_LIFT * StructureEffects.trade_mood_mult(a), 0.0, 1.0)
+	b.mood = clampf(b.mood + TRADE_MOOD_LIFT * StructureEffects.trade_mood_mult(b), 0.0, 1.0)
 	for axis in a.belief:
 		var mid: float = 0.5 * (a.belief[axis] + b.belief[axis])
 		a.belief[axis] = lerpf(a.belief[axis], mid, TRADE_BELIEF_BLEND)
