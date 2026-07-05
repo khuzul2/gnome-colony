@@ -219,6 +219,8 @@ static func settlement_to_dict(s: Settlement) -> Dictionary:
 		"mean_traits": s.mean_traits.duplicate(true),
 		"mood": s.mood,
 		"belief": s.belief.duplicate(true),
+		"structures": s.structures.duplicate(true),  # [rav §R-build]
+		"tier": s.tier,  # [rav §R-set]
 	}
 
 
@@ -228,6 +230,9 @@ static func settlement_from_dict(d: Dictionary) -> Settlement:
 	s.mean_traits = d["mean_traits"].duplicate(true)
 	s.mood = d["mood"]
 	s.belief = d["belief"].duplicate(true)
+	# .get defaults keep pre-feature saves loading (empty stock, hamlet).
+	s.structures = d.get("structures", {}).duplicate(true)
+	s.tier = d.get("tier", Enums.SettlementTier.HAMLET)
 	return s
 
 

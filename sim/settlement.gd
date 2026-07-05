@@ -6,6 +6,12 @@ extends RefCounted
 ## Plain data; SettlementSim owns the flow equations. Knowledge stays on
 ## Colony.settlement_knowledge (§7, per-settlement) — not duplicated here.
 
+## Building catalog [rav §R-build], canonical order — the ids a settlement can
+## hold in `structures`. Costs/prereqs/effects live in Construction (R2.3).
+const BUILDING_IDS := [
+	"dwelling", "farm", "well", "granary", "workshop", "shrine", "basilica", "wall", "market"
+]
+
 var sid: int
 var base_k: float
 var richness_sum: float
@@ -15,6 +21,10 @@ var mean_traits := {}
 var mood := 1.0
 ## Aggregate feelings toward Devotion.YOU [§9 scalars, settlement grain].
 var belief := {"faith": 0.0, "awe": 0.0, "fear": 0.0}
+## Building-id → fractional count [rav §R-build]; the autonomous build stock.
+var structures := {}
+## Development tier [rav §R-set], re-derived each season by SettlementSim (R2.2).
+var tier := Enums.SettlementTier.HAMLET
 
 
 func _init(settlement_id: int = 0, k_base: float = 0.0, richness: float = 0.0) -> void:
@@ -42,6 +52,11 @@ func pop() -> float:
 
 func adults() -> float:
 	return by_stage[Enums.LifeStage.ADULT]
+
+
+## Fractional count of a built structure (0 when never built) [rav §R-build].
+func structure_count(building_id: String) -> float:
+	return structures.get(building_id, 0.0)
 
 
 ## §17: K = base_K · Σrichness · (1 + 0.5·agriculture + 0.3·construction).

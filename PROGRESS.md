@@ -256,7 +256,7 @@ compiles, >95% pixels on-palette, click-through-viewport picking) + full suite g
 Autonomous buildings + hamlet→village→town→city, driven by existing pressures, consistent with
 terrain.gd. Phase-Exit: test_settlement_development.gd (grow across tiers in order, one event per
 crossing, famine strips buildings & drops tier) + full suite green + lint.
-- [ ] R2.1 Structures on the aggregate (Settlement.structures + tier accessor; serializer round-trip) [rav §R-build]. test: test_settlement_structures.gd. deps: R0.1.
+- [x] R2.1 Structures on the aggregate (Settlement.structures dict + structure_count(id); Settlement.tier default HAMLET; Enums.SettlementTier{HAMLET,VILLAGE,TOWN,CITY} stable; Settlement.BUILDING_IDS = §R-build catalog; serializer round-trips structures+tier with .get defaults for pre-feature saves). test: test_settlement_structures.gd (6) + settlement/serializer/enums regressions green. lint clean.
 - [ ] R2.2 Tier thresholds (settlement_sim.tier_of + settlement_tier_changed signal, hysteresis) [rav §R-set]. test: test_settlement_tier.gd. deps: R2.1.
 - [ ] R2.3 Autonomous construction flow (sim/systems/construction.gd: labor, priority, progress, structure_built) [rav §R-set/§R-infl]. test: test_construction.gd. deps: R2.1.
 - [ ] R2.4 Structure effects feed existing flows, no double-count [rav §R-build]. test: test_structure_effects.gd. deps: R2.3.
