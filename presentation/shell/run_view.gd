@@ -63,6 +63,16 @@ const PUPPET_ZOOM_SCALE := {
 	CameraRig.Zoom.SETTLEMENT: 2.2,
 	CameraRig.Zoom.INDIVIDUAL: 1.0,
 }
+## R6.3 [leg §L-hud] — on-world settlement locators: a floating name-plate + tier
+## glyph above each basin so colonies are findable on the map; alpha fades with
+## distance from the focus so distant plates don't clutter. Presentation numbers,
+## tuned at Gate A2.
+const LOCATOR_HEIGHT := 4.0
+const LOCATOR_PIXEL_SIZE := 0.05
+const LOCATOR_FADE_NEAR := 6.0
+const LOCATOR_FADE_FAR := 30.0
+const LOCATOR_FADE_FLOOR := 0.15
+const TIER_GLYPH := {"hamlet": "·", "village": "◦", "town": "◆", "city": "☩"}
 ## Presentation walk time [T21.2]: wall-clock seconds a puppet spends
 ## crossing to a new basin — a render flourish, never a sim number (the
 ## sim already wrote the location; the body just catches up on screen).
@@ -126,6 +136,12 @@ var _hud_label: Label
 ## R1.6 — place → its belief-tag medallion node (gold blessed / red cursed).
 var _motifs := {}
 var _motif_kinds := {}
+## R6.3 [leg §L-hud] — sid → floating settlement locator (Label3D).
+var _locators := {}
+## R6.3 [leg §L-hud] — the life pulse: births/deaths since the season turned.
+var _season_births := 0
+var _season_deaths := 0
+var _pulse_season := -1
 ## Input state [T23.2/T23.3/T23.4].
 var _pan_keys := {}
 var _zoom_keys := {}
@@ -177,7 +193,43 @@ func _ready() -> void:
 	influence_panel.refresh(run.runner.colony)
 	_refresh_puppets()
 	_refresh_motifs()
+	# R6.3 [leg §L-hud]: the life pulse counts births/deaths within a season.
+	_pulse_season = run.runner.time.season()
+	EventBus.born.connect(_on_born)
+	EventBus.gnome_died.connect(_on_died)
+	_refresh_locators()
 	_refresh_hud()
+
+
+## R6.3 [leg §L-hud] — roll the pulse to the current season BEFORE counting, so an
+## event on the day the season turns opens the NEW season's tally instead of being
+## added to the old one and then wiped (the reset must never race the count).
+func _roll_season() -> void:
+	var season := run.runner.time.season()
+	if season != _pulse_season:
+		_pulse_season = season
+		_season_births = 0
+		_season_deaths = 0
+
+
+func _on_born(_payload: Dictionary) -> void:
+	_roll_season()
+	_season_births += 1
+
+
+func _on_died(_payload: Dictionary) -> void:
+	_roll_season()
+	_season_deaths += 1
+
+
+func _exit_tree() -> void:
+	# The pulse listens on the global EventBus; drop the wiring when the run is
+	# torn down so a rebuilt RunView never double-counts (defensive — one run lives
+	# at a time today).
+	if EventBus.born.is_connected(_on_born):
+		EventBus.born.disconnect(_on_born)
+	if EventBus.gnome_died.is_connected(_on_died):
+		EventBus.gnome_died.disconnect(_on_died)
 
 
 ## The mosaic pixel stage [R1.2]: a low-res SubViewport (its own World3D)
@@ -484,6 +536,44 @@ func _refresh_motifs() -> void:
 			_motifs[place] = marker
 
 
+## R6.3 [leg §L-hud] — a floating name-plate + tier glyph above each colony's
+## basin (home + frontier), so the player can find settlements on the map. Reads
+## the roster models; billboarded and depth-test-off so it reads over the relief,
+## and fades with distance from the focus. Presentation-only.
+func _refresh_locators() -> void:
+	var wanted := {}
+	for model in _roster_rows():
+		wanted[model["sid"]] = model
+	for sid in _locators.keys():
+		if not wanted.has(sid):
+			_locators[sid].queue_free()
+			_locators.erase(sid)
+	for sid in wanted:
+		var model: Dictionary = wanted[sid]
+		var place: String = sid_places.get(sid, run.home)
+		if not place_positions.has(place):
+			continue
+		var label: Label3D = _locators.get(sid)
+		if label == null:
+			label = Label3D.new()
+			label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			label.no_depth_test = true
+			label.pixel_size = LOCATOR_PIXEL_SIZE
+			label.outline_size = 8
+			label.outline_modulate = Palette.COLORS[Palette.NIGHT_LAPIS]
+			stage_world.add_child(label)
+			_locators[sid] = label
+		var glyph: String = TIER_GLYPH.get(model["tier"], "·")
+		label.text = "%s %s" % [glyph, model["name"]]
+		var pos: Vector3 = place_positions[place] + Vector3(0.0, LOCATOR_HEIGHT, 0.0)
+		label.position = pos
+		var tint: Color = Palette.COLORS[Palette.GOLD_LIT if model["seat"] else Palette.GOLD]
+		var span := LOCATOR_FADE_FAR - LOCATOR_FADE_NEAR
+		var d := camera.position.distance_to(pos)
+		tint.a = clampf(1.0 - (d - LOCATOR_FADE_NEAR) / span, LOCATOR_FADE_FLOOR, 1.0)
+		label.modulate = tint
+
+
 func _on_cast_requested(act_id: String, target: String, _selection: Dictionary) -> void:
 	aftermath.begin(act_id)
 	var stimuli := run.cast(act_id, target)
@@ -764,6 +854,9 @@ func _build_hud() -> void:
 ## The slice's readout, promoted: the state a god actually watches.
 func _refresh_hud() -> void:
 	var colony := run.runner.colony
+	# R6.3 [leg §L-hud]: keep the pulse anchored to the current season (no-op when a
+	# born/died on the crossing tick already rolled it — see _roll_season).
+	_roll_season()
 	var vitals := colony.vitals()
 	var flavor := Devotion.flavor_balance(colony)
 	var mu := Magic.mu(colony, GameRun.HOME_SID)
@@ -800,6 +893,8 @@ func _refresh_hud() -> void:
 			"magic: %.3f (%s)%s"
 			% [mu, Magic.stage(mu), " · home warded" if run.world.wards.has(run.home) else ""]
 		),
+		# R6.3 [leg §L-hud] — the life pulse: is the colony growing or dying?
+		"this season · +%d born · −%d died" % [_season_births, _season_deaths],
 	]
 	# T22.4 — the run's civilization truth, no longer bare numbers.
 	if not run.settlements.is_empty():
@@ -838,5 +933,6 @@ func _refresh_hud() -> void:
 	var chronicle := run.runner.chronicle
 	lines.append_array(chronicle.slice(maxi(0, chronicle.size() - 5)))
 	_hud_label.text = "\n".join(PackedStringArray(lines))
-	# R6.2 [leg §L-hud]: keep the roster in step with the fold.
+	# R6.2/R6.3 [leg §L-hud]: keep the roster + locators in step with the fold.
 	settlement_roster.refresh(_roster_rows())
+	_refresh_locators()
