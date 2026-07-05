@@ -362,6 +362,13 @@ func _frontier_season() -> void:
 		if s.pop() >= Civilization.ALIVE_EPSILON:
 			SettlementSim.season_tick(colony, s, FRONTIER_FOOD_FACTOR)
 			SettlementSim.trade(colony, HOME_SID, sid)
+			# R2.6 — the settlement builds & decays in response to the world you
+			# shaped (drought→farms, ore→workshop, blessed→shrine); indirect only.
+			var pressures := Construction.pressures_from(
+				colony, world, _place_of(sid), FRONTIER_FOOD_FACTOR
+			)
+			Construction.season_tick(colony, s, pressures)
+			Construction.decay_tick(colony, s)
 	# T22.2 [RULED FIX] — fold EVERY quickened soul back BEFORE the
 	# conflict flows: war casualties, schism splits and the war's
 	# crowding reads all act on COMPLETE aggregates (one mechanism for

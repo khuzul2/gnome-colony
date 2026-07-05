@@ -36,10 +36,45 @@ const PAIR_CAP := 2.0  # granary / workshop / market
 const DECAY_RATE := 0.05
 const UPKEEP_PER_STRUCTURE := 0.1
 
+## Resource types that make a place worth a workshop [rav §R-infl].
+const ORE_TYPES := ["stone", "iron", "ore", "copper", "tin"]
+
 
 ## Surplus adult labor available this season [rav §R-set].
 static func labor(s: Settlement) -> float:
 	return maxf(0.0, s.adults() - MAINTENANCE_LOAD * s.pop()) * LABOR_SHARE
+
+
+## [rav §R-infl] Derive the construction pressures from the world the player
+## (or nature) shaped — never a build command (design §1.3). Drought affordance
+## → scarcity (farms/wells); revealed ore → workshop; a blessed place-tag →
+## a shrine there; a cursed tag → abandonment. Reads world/belief/tags only.
+static func pressures_from(
+	colony: Colony, world: WorldState, place: String, food_factor: float = 1.0
+) -> Dictionary:
+	var affordances: Array = world.affordances.get(place, [])
+	var place_tags: Dictionary = colony.place_tags.get(place, {})
+	var drought := 1.0 if "drought" in affordances else 0.0
+	return {
+		"hunger": drought,
+		"water": drought,
+		"has_ore": 1.0 if _has_ore(world, place) else 0.0,
+		"war_threat": 0.0,
+		"surplus": food_factor,
+		"blessed": float(place_tags.get("blessed", 0.0)),
+		"cursed": float(place_tags.get("cursed", 0.0)),
+		"trade_route": false,
+	}
+
+
+static func _has_ore(world: WorldState, place: String) -> bool:
+	if world.hidden_resources.has(place):
+		return true
+	for site_id in world.sites:
+		var node: ResourceNode = world.sites[site_id]
+		if String(site_id).begins_with(place) and node.type in ORE_TYPES:
+			return true
+	return false
 
 
 ## One season of building. `pressures` carries the world signals the player
@@ -91,6 +126,11 @@ static func decay_tick(colony: Colony, s: Settlement) -> void:
 ## The single highest-priority structure the settlement can build now
 ## (prereq met, under cap, priority > 0). Ties keep BUILDING_IDS order.
 static func _best_buildable(colony: Colony, s: Settlement, pressures: Dictionary) -> String:
+	# A cursed place is shunned — building appetite falls toward abandonment
+	# [rav §R-infl]; fully cursed ground builds nothing.
+	var damp := 1.0 - minf(1.0, pressures.get("cursed", 0.0))
+	if damp <= 0.0:
+		return ""
 	var best := ""
 	var best_priority := 0.0
 	for id in Settlement.BUILDING_IDS:
@@ -98,7 +138,7 @@ static func _best_buildable(colony: Colony, s: Settlement, pressures: Dictionary
 			continue
 		if s.structure_count(id) >= _cap(s, id):
 			continue
-		var priority := _priority(colony, s, id, pressures)
+		var priority := _priority(colony, s, id, pressures) * damp
 		if priority > best_priority:
 			best_priority = priority
 			best = id
@@ -162,7 +202,11 @@ static func _priority(colony: Colony, s: Settlement, id: String, pressures: Dict
 		"workshop":
 			return pressures.get("has_ore", 0.0) + s.mean_traits.get("curious", 0.5)
 		"shrine":
-			return faith * (1.0 - minf(1.0, s.structure_count("shrine")))
+			# Reverence — plus a blessed place-tag draws a shrine THERE [§R-infl].
+			return (
+				(faith + pressures.get("blessed", 0.0))
+				* (1.0 - minf(1.0, s.structure_count("shrine")))
+			)
 		"basilica":
 			return (
 				faith * float(colony.unlocked_tier)
