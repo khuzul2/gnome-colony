@@ -233,6 +233,51 @@ half is the one manual check only the human can sign.
 - [x] T23.4 Targeting affordance (unshaded hover ring at the picked basin while armed; clears on disarm) — hover highlight of the pick under the cursor while an act is armed (small, learnability). Test: hover updates the highlighted place; clears on disarm.
 - [x] Phase-Exit 23: headless input-sim green — lit+current camera, WASD/E-Q/wheel pan+zoom, click→ray→nearest-basin→cast round-trip, nearest-gnome, hover ring (test_run_view.gd 14→19); REVIEWER (no blockers) fixes folded in — terrain-height tracking + normalized diagonal pan + hover-clear on plane-miss (all tested); manual render/play checklist for the human written to README_DEV + DONE.md note 0. Suite 674/674, lint clean → tagged phase-23-complete. DEFERRED (reviewer, candidate Phase 24): keycode-validation on hand-edited settings, one-frame double-WorldEnvironment on run swap, and the inert camera_scheme/edge_scroll/zoom_sensitivity/rotate_sensitivity settings.
 
+## Phase R0 — Ravenna redesign spec (numeric source of truth) — plan: docs/redesign-plan-ravenna.md
+Adds docs/redesign-ravenna.md (read-only) — every new number for the mosaic render + living
+settlements. Extends algo §14/§17; no game code. Keep gnomes & "Gnome Colony"; late-antique
+Christian-like mood is a visual + light-copy reskin.
+- [x] R0.1 Author docs/redesign-ravenna.md (anchors §R-art/§R-set/§R-build/§R-infl; 16-color palette). test: test_rav_spec_present.gd (2 tests, green; lint clean).
+- [x] R0.2 Append the R-plan to PROGRESS.md (this block). deps: R0.1.
+
+## Phase R1 — Ravenna mosaic render (presentation-only; wrap RunView) — deps: R0
+Low-res pixelation + palette-map + tessera/grout + Christian-like iconography over the existing 3D
+scene. Must not edit sim/. Phase-Exit: test_render_pipeline.gd (viewport res, 16-entry LUT, shader
+compiles, >95% pixels on-palette, click-through-viewport picking) + full suite green + lint.
+- [ ] R1.1 Palette module (presentation/render/palette.gd + palette_lut.png, 16 colors [rav §R-art]). test: test_palette.gd. deps: R0.1.
+- [ ] R1.2 Pixel stage inside RunView (SubViewport 384×216 nearest, reparent 3D subtree, integer upscale, screen→viewport pick transform, camera pixel-snap). test: test_pixel_stage.gd. deps: R1.1.
+- [ ] R1.3 Mosaic post-process shader (palette-map + ordered dither + tessera grout + gold-leaf mask) [rav §R-art]. test: test_mosaic_shader.gd. deps: R1.1.
+- [ ] R1.4 Ravenna lighting & mood (replace RunView SKY/AMBIENT/sun with §R-art values). test: test_stage_lighting.gd. deps: R1.2.
+- [ ] R1.5 Material reskin + halos (terrain/water palette bands; gnome tint remap; gold nimbus for prophet/notability≥0.6). test: test_puppet_tint.gd. deps: R1.1.
+- [ ] R1.6 Mosaic motifs & Christian-like iconography (meander/wave/rosette/star-field + sacred monogram; blessed/cursed borders + gold mask). test: test_motifs.gd. deps: R1.3.
+- [ ] Phase-Exit R1 → 🎮 PLAYTEST GATE A (human): does it read as Ravenna? write AWAIT_PLAYTEST.md, HALT.
+
+## Phase R2 — Living settlements (sim logic; no presentation refs) — deps: R0
+Autonomous buildings + hamlet→village→town→city, driven by existing pressures, consistent with
+terrain.gd. Phase-Exit: test_settlement_development.gd (grow across tiers in order, one event per
+crossing, famine strips buildings & drops tier) + full suite green + lint.
+- [ ] R2.1 Structures on the aggregate (Settlement.structures + tier accessor; serializer round-trip) [rav §R-build]. test: test_settlement_structures.gd. deps: R0.1.
+- [ ] R2.2 Tier thresholds (settlement_sim.tier_of + settlement_tier_changed signal, hysteresis) [rav §R-set]. test: test_settlement_tier.gd. deps: R2.1.
+- [ ] R2.3 Autonomous construction flow (sim/systems/construction.gd: labor, priority, progress, structure_built) [rav §R-set/§R-infl]. test: test_construction.gd. deps: R2.1.
+- [ ] R2.4 Structure effects feed existing flows, no double-count [rav §R-build]. test: test_structure_effects.gd. deps: R2.3.
+- [ ] R2.5 Regression & abandonment (decay, tier drop, dark-age workshop loss) [rav §R-set]. test: test_construction_decay.gd. deps: R2.3.
+- [ ] R2.6 Player-influence → development wiring (need/belief/place-tag → priority; indirect only) [rav §R-infl]. test: test_influence_development.gd. deps: R2.3.
+
+## Phase R3 — Settlement visuals (presentation; plug into RunView) — deps: R1, R2
+Mosaic building props from run.settlements, growing on structure_built; medallions by tier.
+Phase-Exit: test_settlement_view.gd + full suite green + lint.
+- [ ] R3.1 Building prop library (presentation/settlement/props.gd + *.tscn; basilica w/ monogram). test: test_settlement_props.gd. deps: R2.1.
+- [ ] R3.2 Settlement renderer (settlement_view.gd child of RunView; props from structures at sid places; deterministic scatter). test: test_settlement_view.gd. deps: R3.1, R1.2.
+- [ ] R3.3 Growth & tier feedback (structure_built → prop; settlement_tier_changed → medallion + HUD line). test: test_settlement_growth.gd. deps: R3.2, R2.2.
+- [ ] R3.4 Chronicle & aftermath vocabulary (civic development; what they built & why). test: test_chronicle_settlement.gd. deps: R3.3.
+- [ ] Phase-Exit R3 → 🎮 PLAYTEST GATE B (human): does development read and feel earned? write AWAIT_PLAYTEST.md, HALT.
+
+## Phase R4 — Integration, determinism, polish — deps: R3
+- [ ] R4.1 test_ravenna_end_to_end.gd (drought→farms, landslide→walls+workshop, devotion→basilica, growth, dark-age regression). deps: R3.
+- [ ] R4.2 test_determinism redesign envelope (structures/tiers in state; reproducible or documented golden). deps: R2.
+- [ ] R4.3 Perf re-check (test_scale with construction flows; tick budget holds). deps: R2.
+- [ ] R4.4 Lint, tag phase-R4-complete, DONE-ravenna.md handover. deps: R4.1, R4.2, R4.3.
+
 ## Notes
 - T15.2 reviewer minors (informational, open): wizard setters silently no-op on typo'd keys (could push_warning); pages 2–4 are logic-first without widget chrome (same pattern as MainMenu); quicken_budget stays the WorldConfig ~300 constant — §3.6's per-scale INDIVIDUAL budget is already Tuning.resolve's SCALE_INDIVIDUAL_BUDGET (T12.3), and no spec number maps scale→quicken_budget.
 (The agent appends one-line notes here when checking tasks off, and records any public-API changes other tasks depend on.)
