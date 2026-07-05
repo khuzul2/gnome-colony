@@ -244,7 +244,7 @@ Christian-like mood is a visual + light-copy reskin.
 Low-res pixelation + palette-map + tessera/grout + Christian-like iconography over the existing 3D
 scene. Must not edit sim/. Phase-Exit: test_render_pipeline.gd (viewport res, 16-entry LUT, shader
 compiles, >95% pixels on-palette, click-through-viewport picking) + full suite green + lint.
-- [ ] R1.1 Palette module (presentation/render/palette.gd + palette_lut.png, 16 colors [rav §R-art]). test: test_palette.gd. deps: R0.1.
+- [x] R1.1 Palette module (presentation/render/palette.gd, 16 colors [rav §R-art]; LUT built in code from COLORS — single source of truth, no committed PNG binary; Palette.nearest = CPU mirror of the shader map). test: test_palette.gd (5, green; lint clean).
 - [ ] R1.2 Pixel stage inside RunView (SubViewport 384×216 nearest, reparent 3D subtree, integer upscale, screen→viewport pick transform, camera pixel-snap). test: test_pixel_stage.gd. deps: R1.1.
 - [ ] R1.3 Mosaic post-process shader (palette-map + ordered dither + tessera grout + gold-leaf mask) [rav §R-art]. test: test_mosaic_shader.gd. deps: R1.1.
 - [ ] R1.4 Ravenna lighting & mood (replace RunView SKY/AMBIENT/sun with §R-art values). test: test_stage_lighting.gd. deps: R1.2.
