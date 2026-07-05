@@ -9,6 +9,13 @@ extends Node3D
 const GRID := 24
 const EXTENT_KM := 14.0
 
+## R5.1 [leg §L-relief] — the raw region elevations (≈1–3 units) are ~0.1% of the
+## 28 km plane, so the terrain read flat at Gate A. Normalize the baked height to
+## a legible vertical relief and clamp sub-sea ground to a flat water plane, so the
+## ground reads as literal 3-D in the mosaic style. Both tuned at Gate A2.
+const RELIEF_KM := 2.6  ## peak-to-trough vertical span (≈9% of the 28 km plane)
+const SEA_LEVEL_T := 0.15  ## normalized heights below this clamp up to the sea plane
+
 var mesh_instance := MeshInstance3D.new()
 var baked_version := -1
 ## The raw walkable triangles of the last bake (CPU-side) — NavWorld
@@ -16,6 +23,10 @@ var baked_version := -1
 var walkable_faces := PackedVector3Array()
 
 var _graph: RegionGraph
+## Elevation bounds of the last bake — normalize raw IDW height into the relief
+## envelope so height_at (picking/nav) agrees with the baked mesh.
+var _min_e := 0.0
+var _span := 1.0
 ## R1.5 — a matte, vertex-colored terrain material (palette bands by
 ## elevation), so the ground reads as tesserae through the mosaic pass.
 var _material := StandardMaterial3D.new()
@@ -52,9 +63,9 @@ func sync(graph: RegionGraph) -> void:
 	baked_version = graph.version
 
 
-## Skin height at a world-plane point — IDW over the basins (the same
-## field the mesh is baked from, so tests and picking agree).
-func height_at(point: Vector2) -> float:
+## Raw IDW elevation over the basins (pre-relief) — the source field the
+## normalized skin height is mapped from.
+func _raw_height(point: Vector2) -> float:
 	var weight_sum := 0.0
 	var height := 0.0
 	for region in _graph.regions:
@@ -65,15 +76,34 @@ func height_at(point: Vector2) -> float:
 	return height / weight_sum if weight_sum > 0.0 else 0.0
 
 
+## R5.1 [leg §L-relief] — normalized elevation of a point in [0,1] over the bake's
+## elevation bounds; drives both the vertex height and the palette band.
+func _relief_t(point: Vector2) -> float:
+	return clampf((_raw_height(point) - _min_e) / _span, 0.0, 1.0)
+
+
+## R5.1 [leg §L-relief] — normalized elevation → mesh height: amplified to the
+## relief envelope, with sub-sea ground clamped up to the flat water plane.
+static func _relief_y(t: float) -> float:
+	return RELIEF_KM * maxf(t, SEA_LEVEL_T)
+
+
+## Skin height at a world-plane point — the relief-mapped mesh height (the SAME
+## field the mesh is baked from, so picking / nav / puppet placement agree).
+func height_at(point: Vector2) -> float:
+	return _relief_y(_relief_t(point))
+
+
 func _bake() -> void:
-	# Elevation bounds for the palette bands — the IDW height stays within the
-	# region elevations, so their min/max normalize the vertex colors [R1.5].
+	# Elevation bounds normalize the raw IDW height into the relief envelope; the
+	# same bounds drive the palette bands, so terraces and geometry agree [R5.1].
 	var min_e := INF
 	var max_e := -INF
 	for region in _graph.regions:
 		min_e = minf(min_e, region["elevation"])
 		max_e = maxf(max_e, region["elevation"])
-	var span := maxf(0.001, max_e - min_e)
+	_min_e = min_e
+	_span = maxf(0.001, max_e - min_e)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	walkable_faces = PackedVector3Array()
@@ -88,12 +118,16 @@ func _bake() -> void:
 				Vector2(x0 + step, z0 + step),
 				Vector2(x0, z0 + step),
 			]
+			# Relief-mapped height + its palette band per corner [R5.1, leg §L-relief].
 			var verts := []
+			var bands := []
 			for c in corners:
-				verts.append(Vector3(c.x, height_at(c), c.y))
+				var t := _relief_t(c)
+				bands.append(t)
+				verts.append(Vector3(c.x, _relief_y(t), c.y))
 			for index in [0, 1, 2, 0, 2, 3]:
 				var v: Vector3 = verts[index]
-				st.set_color(terrain_color((v.y - min_e) / span))
+				st.set_color(terrain_color(bands[index]))
 				st.add_vertex(v)
 				walkable_faces.append(v)
 	st.generate_normals()

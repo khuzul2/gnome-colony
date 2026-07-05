@@ -17,10 +17,13 @@ func test_bake_produces_a_mesh_that_reflects_the_graph():
 	add_child_autofree(view)
 	view.sync(graph)
 	assert_not_null(view.mesh_instance.mesh, "a baked ArrayMesh exists")
-	var peak: Dictionary = graph.regions[0]
-	var sampled: float = view.height_at(peak["center"])
-	assert_almost_eq(
-		sampled, peak["elevation"], 0.15, "the skin's height at a basin ≈ its elevation"
+	# R5.1 [leg §L-relief]: the skin is relief-mapped (not raw elevation) — a
+	# basin's height falls in the [SEA_LEVEL_T, 1]·RELIEF_KM envelope. Detailed
+	# relief legs live in test_dimensional_terrain.gd.
+	var floor_y := WorldView.RELIEF_KM * WorldView.SEA_LEVEL_T
+	var sampled: float = view.height_at(graph.regions[0]["center"])
+	assert_between(
+		sampled, floor_y - 0.01, WorldView.RELIEF_KM + 0.01, "the skin's height is relief-mapped"
 	)
 
 

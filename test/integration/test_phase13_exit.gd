@@ -13,13 +13,27 @@ func test_the_sim_becomes_visible_without_knowing():
 	var view := WorldView.new()
 	add_child_autofree(view)
 	view.sync(graph)
+	# R5.1 [leg §L-relief]: the skin is relief-mapped (amplified + water-clamped),
+	# not raw elevation. It still reflects the graph — every basin lands in the
+	# relief envelope and higher elevation reads at least as high.
+	var floor_y := WorldView.RELIEF_KM * WorldView.SEA_LEVEL_T
+	var lo: Dictionary = graph.regions[0]
+	var hi: Dictionary = graph.regions[0]
 	for region in graph.regions:
-		assert_almost_eq(
+		assert_between(
 			view.height_at(region["center"]),
-			region["elevation"],
-			0.2,
-			"the heightmap matches the region-graph at basin %d" % region["id"]
+			floor_y - 0.01,
+			WorldView.RELIEF_KM + 0.01,
+			"the heightmap reflects the region-graph at basin %d" % region["id"]
 		)
+		if region["elevation"] < lo["elevation"]:
+			lo = region
+		if region["elevation"] > hi["elevation"]:
+			hi = region
+	assert_true(
+		view.height_at(hi["center"]) >= view.height_at(lo["center"]),
+		"higher elevation reads at least as high on the skin"
+	)
 	# …a colony walks it…
 	var colony := Colony.new()
 	var pool := PuppetPool.new()
