@@ -70,10 +70,12 @@ func refresh() -> void:
 	# R1.5 — Ravenna tones: a warm cream base pulls toward gold with faith and
 	# toward oxblood-red with dread (fear still raises the red channel, read at
 	# a glance, same direction as the slice).
+	# Clamped so tint() is well-formed on its own terms (the mosaic shader also
+	# clamps before quantizing) [R1 review].
 	_material.albedo_color = Color(
-		0.62 + 0.30 * fear + 0.10 * faith,
-		0.55 + 0.30 * faith - 0.25 * fear,
-		0.42 - 0.20 * fear - 0.10 * faith
+		clampf(0.62 + 0.30 * fear + 0.10 * faith, 0.0, 1.0),
+		clampf(0.55 + 0.30 * faith - 0.25 * fear, 0.0, 1.0),
+		clampf(0.42 - 0.20 * fear - 0.10 * faith, 0.0, 1.0)
 	)
 	halo.visible = is_holy()
 

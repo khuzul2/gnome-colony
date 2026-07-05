@@ -20,7 +20,7 @@ static func border_color(kind: String) -> Color:
 		BLESSED:
 			return Palette.COLORS[Palette.GOLD]
 		CURSED:
-			return Palette.COLORS[10]  # terracotta
+			return Palette.COLORS[Palette.TERRACOTTA]
 	return Color(0.0, 0.0, 0.0, 0.0)
 
 

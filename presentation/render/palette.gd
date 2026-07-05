@@ -31,6 +31,7 @@ const COLORS: Array[Color] = [
 const NIGHT_LAPIS := 0
 const GOLD := 7
 const GOLD_LIT := 8
+const TERRACOTTA := 10
 const BONE_WHITE := 13
 const GROUT := 15
 
