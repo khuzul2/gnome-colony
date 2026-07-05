@@ -36,6 +36,13 @@ const CROWDING_COMFORT := 0.7
 const MOOD_FLOOR := 0.5
 const MOOD_WEIGHT := 0.5
 
+## Development tier population gates [rav §R-set]; structure/tech gates in
+## tier_of. Hysteresis: an earned tier is sticky until pop falls 10% below.
+const VILLAGE_POP := 12.0
+const TOWN_POP := 60.0
+const CITY_POP := 250.0
+const TIER_HYSTERESIS := 0.10
+
 ## Representative age per stage for Σ mortality(stage)·N_stage (mid-band;
 ## Elder is open-ended — 75 is the documented pick).
 const STAGE_MID_AGE := {
@@ -89,6 +96,45 @@ static func season_tick(
 		"migration_out": migration_out,
 		"discovered": discovered,
 	}
+
+
+## [rav §R-set] The development tier a settlement qualifies for — population
+## AND structure/tech gates, top-down (highest wins). Hysteresis: each pop gate
+## is relaxed 10% when the settlement is ALREADY at or above that tier, so an
+## earned tier is sticky through a shallow dip (structure/tech gates don't
+## flicker — buildings decay slowly and a dark age demote is intended).
+static func tier_of(colony: Colony, s: Settlement) -> int:
+	var pop := s.pop()
+	var relaxed := 1.0 - TIER_HYSTERESIS
+	var construction := TechEffects.level(colony, s.sid, "construction")
+	var city_pop: float = CITY_POP * (relaxed if s.tier >= Enums.SettlementTier.CITY else 1.0)
+	if (
+		pop >= city_pop
+		and s.structure_count("basilica") >= 1.0
+		and s.structure_count("wall") >= 1.0
+	):
+		return Enums.SettlementTier.CITY
+	var town_pop: float = TOWN_POP * (relaxed if s.tier >= Enums.SettlementTier.TOWN else 1.0)
+	if pop >= town_pop and construction >= 1.0 and s.structure_count("granary") >= 1.0:
+		return Enums.SettlementTier.TOWN
+	var village_pop: float = (
+		VILLAGE_POP * (relaxed if s.tier >= Enums.SettlementTier.VILLAGE else 1.0)
+	)
+	if pop >= village_pop and s.structure_count("farm") >= 1.0:
+		return Enums.SettlementTier.VILLAGE
+	return Enums.SettlementTier.HAMLET
+
+
+## Re-derive and write a settlement's tier; emits settlement_tier_changed on a
+## real change. Returns true when the tier moved.
+static func update_tier(colony: Colony, s: Settlement) -> bool:
+	var new_tier := tier_of(colony, s)
+	if new_tier == s.tier:
+		return false
+	var old := s.tier
+	s.tier = new_tier
+	EventBus.settlement_tier_changed.emit({"sid": s.sid, "from": old, "to": new_tier})
+	return true
 
 
 ## §14 trade: partners spread knowledge both ways — the re-spread path

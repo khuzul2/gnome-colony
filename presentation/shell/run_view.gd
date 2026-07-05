@@ -64,18 +64,19 @@ const UNREST_WARN_DIRE := 0.75
 ## Camera control [T23.2] — presentation numbers: km/sec panned across
 ## the ground at sensitivity 1.
 const PAN_SPEED := 12.0
-## Lighting [T23.1] — a low afternoon sun + a cool ambient fill so lit
-## materials (the puppets, the heightmap) are visible; the background is
-## a plain daylit sky colour (no HDRI dependency).
-const SUN_ANGLE_DEG := Vector3(-55.0, -35.0, 0.0)
-const SKY_COLOR := Color(0.42, 0.55, 0.68)
-const AMBIENT_COLOR := Color(0.60, 0.62, 0.68)
+## Lighting & mood [R1.4] live in StageLighting (Ravenna gold-on-lapis),
+## replacing T23.1's plain daylight.
 
 var run: GameRun
 var settings: GameSettings
 ## Optional music hook [T20.2]: the shell hands its director in.
 var music: MusicDirector = null
 
+## R1.2 — the mosaic pixel stage: the 3D world renders into stage.world (a
+## low-res SubViewport) and this container upscales it; the mosaic shader
+## (R1.3) rides on it. Window picking is scaled through stage.to_viewport.
+var stage: PixelStage
+var stage_world: SubViewport
 var world_view: WorldView
 var nav: NavWorld
 var camera: CameraRig
@@ -106,6 +107,9 @@ var _walkers := {}
 var _last_place := {}
 var _feed: Array = []
 var _hud_label: Label
+## R1.6 — place → its belief-tag medallion node (gold blessed / red cursed).
+var _motifs := {}
+var _motif_kinds := {}
 ## Input state [T23.2/T23.3/T23.4].
 var _pan_keys := {}
 var _zoom_keys := {}
@@ -115,9 +119,10 @@ var _highlight: MeshInstance3D
 
 
 func _ready() -> void:
+	_build_stage()
 	_build_environment()
 	world_view = WorldView.new()
-	add_child(world_view)
+	stage_world.add_child(world_view)
 	world_view.sync(run.graph)
 	var y_sum := 0.0
 	for region in run.graph.regions:
@@ -137,12 +142,12 @@ func _ready() -> void:
 	for place in place_positions:
 		nav.place_site(place, place_positions[place])
 	camera = CameraRig.new()
-	add_child(camera)
+	stage_world.add_child(camera)
 	camera.focus(place_positions[run.home])
 	attention = AttentionInput.new()
 	add_child(attention)
 	pool = PuppetPool.new()
-	add_child(pool)
+	stage_world.add_child(pool)
 	ambience = AmbienceDirector.new()
 	add_child(ambience)
 	_build_hud()
@@ -150,27 +155,39 @@ func _ready() -> void:
 	days_per_sec = settings.get_value("gameplay", "default_speed")
 	influence_panel.refresh(run.runner.colony)
 	_refresh_puppets()
+	_refresh_motifs()
 	_refresh_hud()
 
 
-## Light the world [T23.1]: a directional sun plus an ambient/sky
-## WorldEnvironment. Without them the lit puppet/heightmap materials
-## render black and the player sees only the HUD.
+## The mosaic pixel stage [R1.2]: a low-res SubViewport (its own World3D)
+## that the 3D world renders into, upscaled to the window with nearest-
+## neighbor filtering. In real play the stage fills the window and tracks
+## resize; headless leaves it at size 0 (nothing to display) so the analytic
+## picking round-trip stays identity.
+func _build_stage() -> void:
+	stage = PixelStage.new()
+	stage.name = "pixel_stage"
+	add_child(stage)
+	stage_world = stage.world
+	# The mosaic post-process rides on the stage's screen [R1.3].
+	stage.set_screen_material(Mosaic.make_material())
+	if DisplayServer.get_name() != "headless":
+		var vp := get_viewport()
+		stage.fit_to(vp.get_visible_rect().size)
+		vp.size_changed.connect(
+			func() -> void: stage.fit_to(get_viewport().get_visible_rect().size)
+		)
+
+
+## Light the world [T23.1] in the Ravenna register [R1.4]: a low gold key
+## light + deep-lapis ambient (StageLighting), inside the pixel stage's world
+## [R1.2]. Without them the lit puppet/heightmap materials render black.
 func _build_environment() -> void:
-	var sun := DirectionalLight3D.new()
-	sun.name = "sun"
-	sun.rotation_degrees = SUN_ANGLE_DEG
-	add_child(sun)
-	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = SKY_COLOR
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = AMBIENT_COLOR
-	env.ambient_light_energy = 0.6
+	stage_world.add_child(StageLighting.build_sun())
 	var world_env := WorldEnvironment.new()
 	world_env.name = "environment"
-	world_env.environment = env
-	add_child(world_env)
+	world_env.environment = StageLighting.build_environment()
+	stage_world.add_child(world_env)
 	# A faint unshaded ring under the cursor while an act is armed [T23.4].
 	_highlight = MeshInstance3D.new()
 	_highlight.name = "target_highlight"
@@ -183,7 +200,7 @@ func _build_environment() -> void:
 	mat.albedo_color = Color(1.0, 0.9, 0.4)
 	_highlight.material_override = mat
 	_highlight.visible = false
-	add_child(_highlight)
+	stage_world.add_child(_highlight)
 
 
 ## Wall-clock frame beat: gaze → Eye → attention input, then the day
@@ -326,8 +343,11 @@ func _hover(screen_pos: Vector2) -> void:
 ## returns Vector3(INF,…) when the ray never meets it.
 func _ground_point(screen_pos: Vector2) -> Vector3:
 	var cam := camera.camera
-	var origin := cam.project_ray_origin(screen_pos)
-	var normal := cam.project_ray_normal(screen_pos)
+	# The camera renders into the low-res stage, so a window-space click must
+	# be scaled to viewport space before the ray [R1.2]; identity in headless.
+	var viewport_pos := stage.to_viewport(screen_pos)
+	var origin := cam.project_ray_origin(viewport_pos)
+	var normal := cam.project_ray_normal(viewport_pos)
 	var hit: Variant = Plane(Vector3.UP, _pick_plane_y).intersects_ray(origin, normal)
 	if hit == null:
 		return Vector3(INF, INF, INF)
@@ -412,9 +432,30 @@ func _advance_one_day() -> void:
 		_push_feed("💡 discovered: %s" % id)
 	influence_panel.refresh(run.runner.colony)
 	_refresh_puppets()
+	_refresh_motifs()
 	if heatmap_overlay.visible:
 		heatmap_overlay.refresh()
 	_refresh_hud()
+
+
+## R1.6 — mark each basin's blessed/cursed belief tag with its Ravenna
+## medallion (gold monogram / red ring), inside the pixel stage. Only rebuilds
+## a marker when a place's tag KIND changes (cheap; no per-day churn).
+func _refresh_motifs() -> void:
+	for place in place_positions:
+		var tags: Dictionary = run.runner.colony.place_tags.get(place, {})
+		var kind := Motifs.kind_for(tags)
+		if _motif_kinds.get(place, "") == kind:
+			continue
+		_motif_kinds[place] = kind
+		if _motifs.has(place):
+			_motifs[place].queue_free()
+			_motifs.erase(place)
+		var marker := Motifs.build_place_medallion(kind)
+		if marker != null:
+			marker.position = place_positions[place]
+			stage_world.add_child(marker)
+			_motifs[place] = marker
 
 
 func _on_cast_requested(act_id: String, target: String, _selection: Dictionary) -> void:

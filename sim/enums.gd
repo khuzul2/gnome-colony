@@ -6,6 +6,10 @@ extends RefCounted
 ## Life stages [algo §4]; DEAD is terminal.
 enum LifeStage { INFANT, CHILD, ADOLESCENT, ADULT, ELDER, DEAD }
 
+## Settlement development tiers [rav §R-set]; ordered, ascending. Values are
+## STABLE (serialized on Settlement.tier); never reorder.
+enum SettlementTier { HAMLET, VILLAGE, TOWN, CITY }
+
 ## Personality trait keys [algo §2] — starting catalog, each in [0,1].
 const TRAIT_KEYS := [
 	"industrious",

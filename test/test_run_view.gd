@@ -108,10 +108,12 @@ func _key(name: String, pressed: bool) -> InputEventKey:
 
 func test_the_world_is_lit_and_the_camera_renders():
 	# [T23.1] Without these the 3D viewport is a black void behind the HUD.
+	# [R1.2] The lights/camera now live inside the pixel stage's SubViewport.
 	var view := _view()
 	assert_true(view.camera.camera.current, "the rig camera renders the viewport")
-	assert_not_null(view.get_node("sun"), "a directional sun lights the world")
-	var env := view.get_node("environment") as WorldEnvironment
+	assert_eq(view.camera.camera.get_viewport(), view.stage_world, "…which is the pixel stage")
+	assert_not_null(view.stage_world.get_node("sun"), "a directional sun lights the world")
+	var env := view.stage_world.get_node("environment") as WorldEnvironment
 	assert_not_null(env, "a WorldEnvironment supplies ambient + sky")
 	assert_not_null(env.environment, "…with a real Environment resource")
 
