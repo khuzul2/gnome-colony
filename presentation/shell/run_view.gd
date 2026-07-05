@@ -107,6 +107,9 @@ var _walkers := {}
 var _last_place := {}
 var _feed: Array = []
 var _hud_label: Label
+## R1.6 — place → its belief-tag medallion node (gold blessed / red cursed).
+var _motifs := {}
+var _motif_kinds := {}
 ## Input state [T23.2/T23.3/T23.4].
 var _pan_keys := {}
 var _zoom_keys := {}
@@ -152,6 +155,7 @@ func _ready() -> void:
 	days_per_sec = settings.get_value("gameplay", "default_speed")
 	influence_panel.refresh(run.runner.colony)
 	_refresh_puppets()
+	_refresh_motifs()
 	_refresh_hud()
 
 
@@ -428,9 +432,30 @@ func _advance_one_day() -> void:
 		_push_feed("💡 discovered: %s" % id)
 	influence_panel.refresh(run.runner.colony)
 	_refresh_puppets()
+	_refresh_motifs()
 	if heatmap_overlay.visible:
 		heatmap_overlay.refresh()
 	_refresh_hud()
+
+
+## R1.6 — mark each basin's blessed/cursed belief tag with its Ravenna
+## medallion (gold monogram / red ring), inside the pixel stage. Only rebuilds
+## a marker when a place's tag KIND changes (cheap; no per-day churn).
+func _refresh_motifs() -> void:
+	for place in place_positions:
+		var tags: Dictionary = run.runner.colony.place_tags.get(place, {})
+		var kind := Motifs.kind_for(tags)
+		if _motif_kinds.get(place, "") == kind:
+			continue
+		_motif_kinds[place] = kind
+		if _motifs.has(place):
+			_motifs[place].queue_free()
+			_motifs.erase(place)
+		var marker := Motifs.build_place_medallion(kind)
+		if marker != null:
+			marker.position = place_positions[place]
+			stage_world.add_child(marker)
+			_motifs[place] = marker
 
 
 func _on_cast_requested(act_id: String, target: String, _selection: Dictionary) -> void:
