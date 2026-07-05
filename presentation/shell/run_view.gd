@@ -9,7 +9,7 @@ extends Node
 ## GameRun.cast with the AftermathPanel's page opened on the act, the
 ## AmbienceDirector keeps its diegetic params, and the HUD carries the
 ## slice's readout, speed buttons, Save and Menu. Pacing numbers
-## (speeds, steps/frame, feed cap) and the scatter angle/step are the
+## (speeds, steps/frame) and the scatter angle/step are the
 ## slice's presentation numbers promoted verbatim; SCATTER_BASE/SCALE
 ## re-derive its pixel ring for 3D km-space (render-only placement).
 ## The readout also carries the run's civilization truth [T22.4]:
@@ -43,7 +43,6 @@ signal menu_requested
 ## Slice presentation numbers, promoted verbatim.
 const SPEEDS := [["pause", 0.0], ["1 d/s", 1.0], ["7 d/s", 7.0], ["30 d/s", 30.0]]
 const MAX_STEPS_PER_FRAME := 60
-const FEED_CAP := 8
 const SCATTER_ANGLE := 2.399
 ## Scatter ring in world km (render-only placement around a basin).
 const SCATTER_BASE := 0.15
@@ -111,6 +110,8 @@ var aftermath: AftermathPanel
 var heatmap_overlay: HeatmapOverlay
 ## R6.2 [leg §L-hud] — the settlement roster (how many colonies, where, what tier).
 var settlement_roster: SettlementRoster
+## R6.4 [leg §L-hud] — the living chronicle feed (recent story beats).
+var chronicle_feed: ChronicleFeed
 var ambience: AmbienceDirector
 var hud: Control
 var place_positions := {}
@@ -131,7 +132,6 @@ var _walkers := {}
 ## Each puppet's last ACCEPTED place, to detect basin crossings; a
 ## refused crossing keeps the old place so next day re-checks the road.
 var _last_place := {}
-var _feed: Array = []
 var _hud_label: Label
 ## R1.6 — place → its belief-tag medallion node (gold blessed / red cursed).
 var _motifs := {}
@@ -223,13 +223,11 @@ func _on_died(_payload: Dictionary) -> void:
 
 
 func _exit_tree() -> void:
-	# The pulse listens on the global EventBus; drop the wiring when the run is
-	# torn down so a rebuilt RunView never double-counts (defensive — one run lives
-	# at a time today).
-	if EventBus.born.is_connected(_on_born):
-		EventBus.born.disconnect(_on_born)
-	if EventBus.gnome_died.is_connected(_on_died):
-		EventBus.gnome_died.disconnect(_on_died)
+	# Drop the life-pulse subscriptions when the run is torn down so a rebuilt
+	# RunView never double-counts (the chronicle feed disconnects its own wiring).
+	for pair in [[EventBus.born, _on_born], [EventBus.gnome_died, _on_died]]:
+		if pair[0].is_connected(pair[1]):
+			pair[0].disconnect(pair[1])
 
 
 ## The mosaic pixel stage [R1.2]: a low-res SubViewport (its own World3D)
@@ -506,8 +504,7 @@ func _advance_one_day() -> void:
 		var year_wrapped: bool = run.runner.time.season() == 0
 		if mode == "season" or (mode == "year" and year_wrapped):
 			save_requested.emit("auto")
-	for id in report["discovered"]:
-		_push_feed("💡 discovered: %s" % id)
+	# Discoveries reach the chronicle feed via EventBus.discovery_made (R6.4).
 	influence_panel.refresh(run.runner.colony)
 	_refresh_puppets()
 	_refresh_motifs()
@@ -576,9 +573,9 @@ func _refresh_locators() -> void:
 
 func _on_cast_requested(act_id: String, target: String, _selection: Dictionary) -> void:
 	aftermath.begin(act_id)
-	var stimuli := run.cast(act_id, target)
-	for stim in stimuli:
-		_push_feed("· %s at %s (intensity %.2f)" % [stim["type"], stim["place"], stim["intensity"]])
+	# The landed stimuli reach the chronicle feed via EventBus.phenomenon (R6.4);
+	# the diegetic story-beat channel, not a re-summary of the request (T14.4).
+	run.cast(act_id, target)
 	influence_panel.refresh(run.runner.colony)
 	_refresh_hud()
 
@@ -798,12 +795,6 @@ func _stage_position(g: GnomeData) -> Vector3:
 	return spot
 
 
-func _push_feed(line: String) -> void:
-	_feed.append(line)
-	while _feed.size() > FEED_CAP:
-		_feed.pop_front()
-
-
 func _build_hud() -> void:
 	hud = VBoxContainer.new()
 	hud.name = "run_hud"
@@ -849,6 +840,12 @@ func _build_hud() -> void:
 	menu_button.text = "Menu"
 	menu_button.pressed.connect(func() -> void: menu_requested.emit())
 	controls.add_child(menu_button)
+	# R6.4 [leg §L-hud]: the living chronicle closes the HUD (recent story beats).
+	# It owns its EventBus subscription and disconnects itself on teardown; we only
+	# feed it the sid → place names so events can name their settlement.
+	chronicle_feed = ChronicleFeed.new()
+	chronicle_feed.place_of = sid_places
+	hud.add_child(chronicle_feed)
 
 
 ## The slice's readout, promoted: the state a god actually watches.
@@ -926,13 +923,9 @@ func _refresh_hud() -> void:
 		)
 	elif colony.unrest >= UNREST_WARN:
 		lines.append("⚠ unrest nears the fracture line (%.1f)" % Devotion.FRACTURE_LINE)
-	if not _feed.is_empty():
-		lines.append("— acts & signs —")
-		lines.append_array(_feed)
-	lines.append("— chronicle —")
-	var chronicle := run.runner.chronicle
-	lines.append_array(chronicle.slice(maxi(0, chronicle.size() - 5)))
 	_hud_label.text = "\n".join(PackedStringArray(lines))
-	# R6.2/R6.3 [leg §L-hud]: keep the roster + locators in step with the fold.
+	# R6.2/R6.3 [leg §L-hud]: keep the roster + locators in step with the fold. The
+	# recent story beats (acts, buildings, tiers, wars) live in the chronicle feed
+	# (R6.4), which subscribes to the events directly — no longer dumped here.
 	settlement_roster.refresh(_roster_rows())
 	_refresh_locators()
