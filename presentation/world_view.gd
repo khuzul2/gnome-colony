@@ -178,26 +178,42 @@ func _bake() -> void:
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	walkable_faces = PackedVector3Array()
 	var step := 2.0 * EXTENT_KM / GRID
+	# G4.2 [gaea §gaea-gen] — sample each UNIQUE grid vertex once. Adjacent quads share ~3/4 of
+	# their corners, and the per-corner height (_relief_t → idw + Gaea detail) and biome scan are
+	# the bake's dominant cost, so caching the (GRID+1)² grid points cuts that ~4× (was ~80 ms,
+	# now well under BAKE_BUDGET_MS). Behavior-preserving: each vertex is built from the SAME
+	# point its height was sampled at, so height_at still agrees with the mesh; the full suite +
+	# test_walkable_faces_agree_with_height_at confirm the geometry is unchanged.
+	var pts := GRID + 1
+	var pos := []
+	var vy := []
+	var col := []
+	pos.resize(pts * pts)
+	vy.resize(pts * pts)
+	col.resize(pts * pts)
+	for iz in pts:
+		for ix in pts:
+			var p := Vector2(-EXTENT_KM + ix * step, -EXTENT_KM + iz * step)
+			var t := _relief_t(p)
+			var idx := iz * pts + ix
+			pos[idx] = p
+			vy[idx] = _relief_y(t)
+			col[idx] = terrain_color_biomed(t, _biome_at(p))
 	for gz in GRID:
 		for gx in GRID:
-			var x0 := -EXTENT_KM + gx * step
-			var z0 := -EXTENT_KM + gz * step
-			var corners := [
-				Vector2(x0, z0),
-				Vector2(x0 + step, z0),
-				Vector2(x0 + step, z0 + step),
-				Vector2(x0, z0 + step),
+			# The quad's four corner grid indices: (gx,gz) (gx+1,gz) (gx+1,gz+1) (gx,gz+1).
+			var ci := [
+				gz * pts + gx,
+				gz * pts + gx + 1,
+				(gz + 1) * pts + gx + 1,
+				(gz + 1) * pts + gx,
 			]
-			# Relief-mapped height + its palette band per corner [R5.1, leg §L-relief];
-			# plus the nearest-basin biome that tints the band [G3.1, gaea §gaea-gen].
-			var verts := []
-			var bands := []
-			var biomes := []
-			for c in corners:
-				var t := _relief_t(c)
-				bands.append(t)
-				biomes.append(_biome_at(c))
-				verts.append(Vector3(c.x, _relief_y(t), c.y))
+			var verts := [
+				Vector3(pos[ci[0]].x, vy[ci[0]], pos[ci[0]].y),
+				Vector3(pos[ci[1]].x, vy[ci[1]], pos[ci[1]].y),
+				Vector3(pos[ci[2]].x, vy[ci[2]], pos[ci[2]].y),
+				Vector3(pos[ci[3]].x, vy[ci[3]], pos[ci[3]].y),
+			]
 			# Two triangles per quad; each is slope-shaded by its own face normal so
 			# relief reads dimensional in the tesserae [R5.3, leg §L-relief].
 			for tri in [[0, 1, 2], [0, 2, 3]]:
@@ -207,9 +223,7 @@ func _bake() -> void:
 				var face_normal := (b - a).cross(c2 - a).normalized()
 				var slope := 1.0 - absf(face_normal.y)
 				for index in tri:
-					st.set_color(
-						slope_shade(terrain_color_biomed(bands[index], biomes[index]), slope)
-					)
+					st.set_color(slope_shade(col[ci[index]], slope))
 					st.add_vertex(verts[index])
 					walkable_faces.append(verts[index])
 	st.generate_normals()
