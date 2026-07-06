@@ -72,3 +72,19 @@ func test_gaea_detail_varies_the_skin_between_basins_yet_anchors_centers():
 	assert_almost_eq(
 		a.height_at(center), b.height_at(center), 1e-4, "basin centers stay anchored across seeds"
 	)
+
+
+func test_bake_grid_is_fine_enough_to_show_detail():
+	# G2.2 [gaea §gaea-gen]: the old 24² grid was too coarse to tessellate the Gaea
+	# detail; raise it to 64² so sub-basin relief actually shows. walkable_faces (fed to
+	# NavWorld) stays consistent: GRID² quads × 2 triangles × 3 vertices.
+	assert_eq(WorldView.GRID, 64, "finer bake tessellation [gaea §gaea-gen]")
+	var graph := _graph()
+	var view := WorldView.new()
+	add_child_autofree(view)
+	view.sync(graph, 3)
+	assert_eq(
+		view.walkable_faces.size(),
+		WorldView.GRID * WorldView.GRID * 6,
+		"walkable faces scale with the finer grid"
+	)

@@ -6,7 +6,14 @@ extends Node3D
 ## a skin the sim never knows exists (presentation reads sim, never the
 ## reverse). GRID/EXTENT are render resolution: graphics, not sim.
 
-const GRID := 24
+## G2.2 [gaea §gaea-gen]: 64² tessellation — fine enough to show the Gaea sub-basin
+## detail (the old 24² was too coarse). walkable_faces scale with it (GRID²·6). NOTE the
+## step (28/64 ≈ 0.4375 km) does NOT divide NavWorld.CELL_SIZE (0.5) as §gaea-gen's prose
+## cautions, but the voxelizer rasterizes the terrain triangles at CELL_SIZE regardless —
+## the binding constraint is map cell_size == navmesh cell_size (both 0.5, satisfied) — so
+## routes are still found (test_nav_world/test_movement/test_phase13). PERF: this bake
+## measures ~65-69 ms, over BAKE_BUDGET_MS 50 — G4.2 owns bringing it under budget.
+const GRID := 64
 const EXTENT_KM := 14.0
 
 ## R5.1 [leg §L-relief] — the raw region elevations (≈1–3 units) are ~0.1% of the
