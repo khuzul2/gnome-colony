@@ -29,6 +29,7 @@ const COLORS: Array[Color] = [
 
 ## Named indices the render code references by role (readability only).
 const NIGHT_LAPIS := 0
+const GOLD_DEEP := 6
 const GOLD := 7
 const GOLD_LIT := 8
 const TERRACOTTA := 10

@@ -334,6 +334,9 @@ func _build_screens() -> void:
 		"run": Control.new(),
 	}
 	screens["run"].name = "run"
+	# The run screen hosts the anchored HUD frame [user request 2026-07-06], so it
+	# must fill the viewport for the HUD's edge-anchored panes to land correctly.
+	screens["run"].set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for key in screens:
 		if screens[key].get_parent() == null:
 			_ui.add_child(screens[key])

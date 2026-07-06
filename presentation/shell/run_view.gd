@@ -849,66 +849,64 @@ func _stage_position(g: GnomeData) -> Vector3:
 	return spot
 
 
+## Build the anchored Ravenna HUD [user request 2026-07-06]: HudFrame lays out the
+## four translucent panes (stats, left column, Historical Record, action bar);
+## RunView builds the live components and hands them to the frame to place and skin.
 func _build_hud() -> void:
-	hud = VBoxContainer.new()
-	hud.name = "run_hud"
+	hud = HudFrame.new()
 	add_child(hud)
-	# R7.2 [leg §L-acts]: the refusal banner leads the HUD so it's always on-screen
-	# (the HUD is a tall VBox reparented into the run screen, so a cursor-float would
-	# need a separate overlay layer — a Gate-A2 polish; a top banner reads fine).
-	_reject_label = Label.new()
-	_reject_label.name = "reject"
-	_reject_label.add_theme_color_override("font_color", Palette.COLORS[Palette.TERRACOTTA])
-	_reject_label.add_theme_font_size_override("font_size", 16)
-	_reject_label.visible = false
-	hud.add_child(_reject_label)
-	# R6.2 [leg §L-hud]: the roster leads the HUD — colonies, where, what tier.
+	_reject_label = hud.reject_label
 	settlement_roster = SettlementRoster.new()
 	settlement_roster.focus_settlement.connect(_on_focus_settlement)
-	hud.add_child(settlement_roster)
 	_hud_label = Label.new()
 	_hud_label.name = "readout"
-	_hud_label.add_theme_font_size_override("font_size", 12)
-	hud.add_child(_hud_label)
+	_hud_label.add_theme_font_size_override("font_size", 13)
+	_hud_label.add_theme_color_override("font_color", Palette.COLORS[Palette.CREAM])
 	influence_panel = InfluencePanel.new()
 	influence_panel.build(Catalog.defs())
 	influence_panel.cast_requested.connect(_on_cast_requested)
-	hud.add_child(influence_panel)
 	aftermath = AftermathPanel.new()
-	hud.add_child(aftermath)
 	heatmap_overlay = HeatmapOverlay.new()
 	heatmap_overlay.build(run.runner.colony, run.settlements, sid_places)
 	heatmap_overlay.visible = false
-	hud.add_child(heatmap_overlay)
+	var parts := {
+		"roster": settlement_roster,
+		"readout": _hud_label,
+		"influence": influence_panel,
+		"controls": _build_speed_controls(),
+		"aftermath": aftermath,
+		"heatmap": heatmap_overlay,
+	}
+	hud.mount(parts)
+	# R6.4 [leg §L-hud]: the living chronicle now fills the collapsible Historical
+	# Record (HistoryPanel, owned by the frame). It still owns its EventBus
+	# subscription and disconnects on teardown; we only feed it the sid → place names.
+	chronicle_feed = hud.history.feed
+	chronicle_feed.place_of = sid_places
+
+
+## The bottom bar's game controls [T17.4]: speed steps, the heat toggle, Save, Menu.
+## Named "controls" with save/menu children so the shell reaches them.
+func _build_speed_controls() -> HBoxContainer:
 	var controls := HBoxContainer.new()
 	controls.name = "controls"
-	hud.add_child(controls)
 	for entry in SPEEDS:
-		var speed_button := Button.new()
-		speed_button.text = entry[0]
-		speed_button.pressed.connect(set_speed.bind(entry[1]))
-		controls.add_child(speed_button)
-	var heat_button := Button.new()
-	heat_button.name = "heatmap"
-	heat_button.text = "Heat"
-	heat_button.pressed.connect(func() -> void: heatmap_overlay.toggle())
-	controls.add_child(heat_button)
-	var save_button := Button.new()
-	save_button.name = "save"
-	save_button.text = "Save"
-	save_button.pressed.connect(func() -> void: save_requested.emit("manual"))
-	controls.add_child(save_button)
-	var menu_button := Button.new()
-	menu_button.name = "menu"
-	menu_button.text = "Menu"
-	menu_button.pressed.connect(func() -> void: menu_requested.emit())
-	controls.add_child(menu_button)
-	# R6.4 [leg §L-hud]: the living chronicle closes the HUD (recent story beats).
-	# It owns its EventBus subscription and disconnects itself on teardown; we only
-	# feed it the sid → place names so events can name their settlement.
-	chronicle_feed = ChronicleFeed.new()
-	chronicle_feed.place_of = sid_places
-	hud.add_child(chronicle_feed)
+		controls.add_child(_bar_button(entry[0], "", set_speed.bind(entry[1])))
+	controls.add_child(_bar_button("Heat", "heatmap", func() -> void: heatmap_overlay.toggle()))
+	controls.add_child(_bar_button("Save", "save", func() -> void: save_requested.emit("manual")))
+	controls.add_child(_bar_button("Menu", "menu", func() -> void: menu_requested.emit()))
+	return controls
+
+
+## One Ravenna-skinned action-bar button.
+func _bar_button(label: String, node_name: String, action: Callable) -> Button:
+	var button := Button.new()
+	if node_name != "":
+		button.name = node_name
+	button.text = label
+	RavennaUI.skin_button(button)
+	button.pressed.connect(action)
+	return button
 
 
 ## The slice's readout, promoted: the state a god actually watches.

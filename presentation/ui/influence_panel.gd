@@ -52,15 +52,18 @@ var _met := []
 var _armed := ""
 
 
-## Raise the seven roofs and a button per act from the catalog dicts.
+## Raise the seven roofs and a button per act from the catalog dicts. The root is
+## a HORIZONTAL row [user request 2026-07-06]: each category is a column (its gold
+## roof label over its act buttons), so the panel reads as a bottom ACTION BAR that
+## widens rightward as the toolbox unlocks, rather than a tall vertical list.
 func build(defs: Dictionary) -> void:
-	var root := VBoxContainer.new()
+	var root := HBoxContainer.new()
+	root.add_theme_constant_override("separation", 12)
 	add_child(root)
 	for category in Phenomenon.CATEGORIES:
 		var box := VBoxContainer.new()
 		box.name = "category_%d" % category
-		var header := Label.new()
-		header.text = CATEGORY_NAMES[category]
+		var header := RavennaUI.hud_heading(CATEGORY_NAMES[category])
 		box.add_child(header)
 		root.add_child(box)
 		category_boxes[category] = box
@@ -70,6 +73,7 @@ func build(defs: Dictionary) -> void:
 		var button := Button.new()
 		button.name = id
 		button.text = id.replace("_", " ")
+		RavennaUI.skin_button(button)
 		button.pressed.connect(arm.bind(id))
 		category_boxes[def["category"]].add_child(button)
 		buttons[id] = button

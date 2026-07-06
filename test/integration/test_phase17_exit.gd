@@ -64,8 +64,10 @@ func test_the_whole_game_flows_from_boot_to_chronicle():
 	# 5 · save, leave, Continue — the same world wakes
 	var day: int = shell.run.runner.time.day()
 	var pop: int = shell.run.runner.colony.population()
-	shell.run_view.hud.get_node("controls/save").pressed.emit()
-	shell.run_view.hud.get_node("controls/menu").pressed.emit()
+	# Controls now live in the bottom action bar [user request 2026-07-06]; find them
+	# by name (layout-independent) — the behaviour (buttons emit save/menu) is unchanged.
+	shell.run_view.hud.find_child("save", true, false).pressed.emit()
+	shell.run_view.hud.find_child("menu", true, false).pressed.emit()
 	assert_true(shell.screens["menu"].visible)
 	assert_null(shell.run)
 	shell.menu.selected.emit("continue")

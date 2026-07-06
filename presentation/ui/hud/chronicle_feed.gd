@@ -12,10 +12,17 @@ extends PanelContainer
 ## target THIS node, so there is no stale-push onto a freed feed. RunView only
 ## feeds it `place_of` (sid → place id) so events can name their settlement.
 
-const MAX_LINES := 8  ## CHRONICLE_LINES [leg §L-hud]
+## Emitted whenever a line lands, so a hosting scroll view can follow the newest.
+signal line_added
+
+const MAX_LINES := 8  ## CHRONICLE_LINES [leg §L-hud] — the compact-feed default
 const FADE_STEP := 0.11  ## each older line dims by this
 const FADE_FLOOR := 0.35
 
+## How many lines the feed retains. Defaults to the compact MAX_LINES, but the
+## Historical Record side panel (HistoryPanel) raises it so the full colony story
+## is kept and scrolled through [leg §L-hud, user request 2026-07-06].
+var max_lines := MAX_LINES
 ## The lines shown, oldest first / newest last — the test-facing view.
 var lines: Array[String] = []
 ## sid → place id, set by RunView so the feed can name settlements.
@@ -33,6 +40,7 @@ func _init() -> void:
 	var box := VBoxContainer.new()
 	add_child(box)
 	var title := Label.new()
+	title.name = "title"
 	title.text = "Chronicle"
 	title.add_theme_font_size_override("font_size", 15)
 	title.add_theme_color_override("font_color", Palette.COLORS[Palette.GOLD])
@@ -67,12 +75,13 @@ func _signals() -> Array:
 	]
 
 
-## Append one diegetic line; the oldest scroll off past MAX_LINES.
+## Append one diegetic line; the oldest scroll off past max_lines.
 func push(line: String) -> void:
 	lines.append(line)
-	while lines.size() > MAX_LINES:
+	while lines.size() > max_lines:
 		lines.pop_front()
 	_render()
+	line_added.emit()
 
 
 func _render() -> void:

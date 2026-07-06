@@ -168,7 +168,7 @@ func test_manual_save_button_writes_a_named_slot():
 	shell.start_run(_cfg(17309))
 	for day in 3:
 		shell.run.advance_day()
-	shell.run_view.hud.get_node("controls/save").pressed.emit()
+	shell.run_view.hud.find_child("save", true, false).pressed.emit()
 	var saves := shell.store.list_saves("manual")
 	assert_eq(saves.size(), 1, "the Save button writes one manual slot")
 	assert_eq(saves[0]["slot"], "Shelltest_day3", "…named after the colony and its day")
@@ -193,7 +193,7 @@ func test_menu_button_exit_autosaves_and_returns():
 	var shell := _shell()
 	shell.start_run(_cfg(17311))
 	shell.run.advance_day()
-	shell.run_view.hud.get_node("controls/menu").pressed.emit()
+	shell.run_view.hud.find_child("menu", true, false).pressed.emit()
 	assert_null(shell.run, "back at the menu, no live run")
 	assert_true(shell.screens["menu"].visible)
 	var kinds := []

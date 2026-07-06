@@ -255,9 +255,11 @@ func test_autosave_off_stays_silent():
 func test_hud_buttons_request_save_and_menu():
 	var view := _view()
 	watch_signals(view)
-	view.hud.get_node("controls/save").pressed.emit()
+	# The controls now live in the bottom action bar [user request 2026-07-06]; find
+	# them by name (layout-independent) — the behaviour (buttons emit) is unchanged.
+	view.hud.find_child("save", true, false).pressed.emit()
 	assert_signal_emitted_with_parameters(view, "save_requested", ["manual"])
-	view.hud.get_node("controls/menu").pressed.emit()
+	view.hud.find_child("menu", true, false).pressed.emit()
 	assert_signal_emitted(view, "menu_requested")
 
 
