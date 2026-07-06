@@ -118,6 +118,8 @@ var settlement_locators: SettlementLocators
 var cast_markers: CastMarkers
 ## R7.4 [leg §L-acts] — a faint ring at each place the Eye is attending.
 var attention_eye: AttentionEye
+## R3.2 [rav §R-build] — settlements as mosaic building clusters.
+var settlement_view: SettlementView
 var ambience: AmbienceDirector
 var hud: Control
 var place_positions := {}
@@ -208,6 +210,9 @@ func _ready() -> void:
 	# R7.4 [leg §L-acts]: a faint ring shows where the Eye is quickening souls.
 	attention_eye = AttentionEye.new()
 	stage_world.add_child(attention_eye)
+	# R3.2 [rav §R-build]: settlements appear as mosaic building clusters.
+	settlement_view = SettlementView.new()
+	stage_world.add_child(settlement_view)
 	ambience = AmbienceDirector.new()
 	add_child(ambience)
 	_build_hud()
@@ -987,3 +992,8 @@ func _refresh_hud() -> void:
 	# (R6.4), which subscribes to the events directly — no longer dumped here.
 	settlement_roster.refresh(_roster_rows())
 	_refresh_locators()
+	# R3.2 [rav §R-build]: settlement building clusters track the fold; props sit
+	# on the local relief via world_view.height_at.
+	settlement_view.refresh(
+		run.settlements, sid_places, place_positions, Callable(world_view, "height_at")
+	)
