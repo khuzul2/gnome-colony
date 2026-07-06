@@ -28,7 +28,12 @@ var baked_version := -1
 var walkable_faces := PackedVector3Array()
 
 var _graph: RegionGraph
-## Elevation bounds of the last bake — normalize raw IDW height into the relief
+## G2.1 [gaea §gaea-gen]: the Gaea-detailed height source. _raw_height delegates to it
+## so the baked skin, height_at, and walkable_faces all read the same anchored field
+## (basin field + attenuated Gaea detail). Built in sync() from WorldConfig.seed.
+var _field: TerrainField
+var _seed := 0
+## Elevation bounds of the last bake — normalize the raw height into the relief
 ## envelope so height_at (picking/nav) agrees with the baked mesh.
 var _min_e := 0.0
 var _span := 1.0
@@ -66,26 +71,25 @@ static func slope_shade(color: Color, slope: float) -> Color:
 	return Color(color.r * f, color.g * f, color.b * f, color.a)
 
 
-## Lazy re-bake: only when the graph's version moved since the last bake.
-func sync(graph: RegionGraph) -> void:
+## Lazy re-bake: rebuild the Gaea field + mesh only when the graph's version moved or
+## the seed changed. `seed` is WorldConfig.seed (default 0 keeps bare-graph test callers
+## working); a reshape bumps graph.version so the field regenerates on the new elevations.
+func sync(graph: RegionGraph, world_seed := 0) -> void:
 	_graph = graph
-	if graph.version == baked_version:
+	if graph.version == baked_version and _field != null and world_seed == _seed:
 		return
+	_seed = world_seed
+	_field = TerrainField.new()
+	_field.generate(graph, world_seed)
 	_bake()
 	baked_version = graph.version
 
 
-## Raw IDW elevation over the basins (pre-relief) — the source field the
-## normalized skin height is mapped from.
+## The anchored raw height (pre-relief) — the basin field plus attenuated Gaea detail
+## [gaea §gaea-anchor], the source field the normalized skin height is mapped from. Same
+## units and (at basin centers) the same values as the old IDW, so relief/picking agree.
 func _raw_height(point: Vector2) -> float:
-	var weight_sum := 0.0
-	var height := 0.0
-	for region in _graph.regions:
-		var d2: float = maxf(0.01, point.distance_squared_to(region["center"]))
-		var w := 1.0 / d2
-		weight_sum += w
-		height += w * region["elevation"]
-	return height / weight_sum if weight_sum > 0.0 else 0.0
+	return _field.raw_height(point)
 
 
 ## R5.1 [leg §L-relief] — normalized elevation of a point in [0,1] over the bake's

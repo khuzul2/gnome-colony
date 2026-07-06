@@ -167,7 +167,8 @@ func _ready() -> void:
 	_build_environment()
 	world_view = WorldView.new()
 	stage_world.add_child(world_view)
-	world_view.sync(run.graph)
+	# G2.1: pass the world seed so the Gaea terrain detail is deterministic per run.
+	world_view.sync(run.graph, run.config.seed)
 	var y_sum := 0.0
 	for region in run.graph.regions:
 		var center: Vector2 = region["center"]

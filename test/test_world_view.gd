@@ -47,3 +47,28 @@ func test_sync_is_lazy():
 	var baked_version := view.baked_version
 	view.sync(graph)
 	assert_eq(view.baked_version, baked_version, "no version change, no re-bake")
+
+
+func test_gaea_detail_varies_the_skin_between_basins_yet_anchors_centers():
+	# G2.1 [gaea §gaea-gen, §gaea-anchor]: WorldView now bakes the Gaea-detailed field
+	# (TerrainField) instead of flat IDW. Between basins the skin varies with the seed —
+	# real sub-basin relief is present — while the basin-anchoring zeroes the detail at a
+	# center, so height_at (picking/nav/puppet placement) stays seed-independent there.
+	var graph := _graph()
+	var a := WorldView.new()
+	add_child_autofree(a)
+	a.sync(graph, 1)
+	var b := WorldView.new()
+	add_child_autofree(b)
+	b.sync(graph, 2)
+	var n := graph.regions.size()
+	var any_diff := false
+	for i in n:
+		var mid: Vector2 = (graph.regions[i]["center"] + graph.regions[(i + 1) % n]["center"]) * 0.5
+		if a.height_at(mid) != b.height_at(mid):
+			any_diff = true
+	assert_true(any_diff, "Gaea detail makes the skin seed-dependent between basins")
+	var center: Vector2 = graph.regions[0]["center"]
+	assert_almost_eq(
+		a.height_at(center), b.height_at(center), 1e-4, "basin centers stay anchored across seeds"
+	)
