@@ -35,16 +35,34 @@ const DETAIL_LACUNARITY := 2.0
 ## world seed.
 const DETAIL_SALT := 0x7A11
 
+## [gaea §gaea-gen] — detail height as a fraction of the relief span; STARTING value.
+const DETAIL_AMPLITUDE_T := 0.35
+## [gaea §gaea-anchor] — within this radius of a basin center the detail is attenuated
+## toward 0, so the center keeps its authored elevation; beyond it, full detail.
+const ANCHOR_RADIUS_KM := 3.0
+## [gaea §gaea-anchor] — max normalized-height error allowed at a basin center.
+const ANCHOR_TOL := 0.05
+
 var _noise: FastNoiseLite
-## Held for G1.2's basin anchoring (attenuate detail near basin centers); unused by the
-## raw detail field in G1.1.
+## Read read-only for the IDW base and the basin-anchor attenuation (never mutated).
 var _graph: RegionGraph
+## Elevation bounds of the graph's basins — the span the detail amplitude scales by and
+## normalize_elevation maps over (the same bounds WorldView bakes its palette bands on).
+var _min_e := 0.0
+var _span := 1.0
 
 
-## Build the detail field for a world. `seed_value` is WorldConfig.seed (or any int) —
-## the field is a pure function of it; no Rng/Time is consulted.
+## Build the field for a world. `seed_value` is WorldConfig.seed (or any int) — the field
+## is a pure function of it; no Rng/Time is consulted.
 func generate(graph: RegionGraph, seed_value: int) -> void:
 	_graph = graph
+	var min_e := INF
+	var max_e := -INF
+	for region in graph.regions:
+		min_e = minf(min_e, region["elevation"])
+		max_e = maxf(max_e, region["elevation"])
+	_min_e = min_e
+	_span = maxf(0.001, max_e - min_e)
 	_noise = FastNoiseLite.new()
 	_noise.seed = seed_value + DETAIL_SALT
 	_noise.noise_type = NOISE_TYPE
@@ -58,3 +76,40 @@ func generate(graph: RegionGraph, seed_value: int) -> void:
 func detail_at(point: Vector2) -> float:
 	var raw := _noise.get_noise_2d(point.x, point.y)
 	return (raw + 1.0) * 0.5
+
+
+## The large-scale basin field: inverse-distance-weighted region elevation (the same
+## authority WorldView baked before Gaea — G2 routes WorldView._raw_height through this).
+func idw_base(point: Vector2) -> float:
+	var weight_sum := 0.0
+	var height := 0.0
+	for region in _graph.regions:
+		var d2: float = maxf(0.01, point.distance_squared_to(region["center"]))
+		var w := 1.0 / d2
+		weight_sum += w
+		height += w * region["elevation"]
+	return height / weight_sum if weight_sum > 0.0 else 0.0
+
+
+## [gaea §gaea-anchor] — 0 at a basin center, ramping to 1 beyond ANCHOR_RADIUS_KM of the
+## NEAREST basin center, so centers keep their elevation and open ground gets full detail.
+func _attenuation(point: Vector2) -> float:
+	var nearest_km := INF
+	for region in _graph.regions:
+		nearest_km = minf(nearest_km, point.distance_to(region["center"]))
+	return smoothstep(0.0, ANCHOR_RADIUS_KM, nearest_km)
+
+
+## [gaea §gaea-anchor] — the anchored raw height: basin field + attenuated Gaea detail,
+## the detail scaled to DETAIL_AMPLITUDE_T of the elevation span and centered on 0 so it
+## lifts and lowers the ground symmetrically. Same units as idw_base (so WorldView's R5
+## relief normalization applies unchanged in G2).
+func raw_height(point: Vector2) -> float:
+	var detail := (detail_at(point) - 0.5) * DETAIL_AMPLITUDE_T * _span
+	return idw_base(point) + _attenuation(point) * detail
+
+
+## Map a raw elevation to [0,1] over the graph's basin bounds (WorldView's _relief_t uses
+## the same bounds); the space the ANCHOR_TOL guarantee is stated in.
+func normalize_elevation(elevation: float) -> float:
+	return clampf((elevation - _min_e) / _span, 0.0, 1.0)

@@ -67,3 +67,65 @@ func test_generation_draws_nothing_from_the_rng_singleton():
 	for p in SAMPLES:
 		f.detail_at(p)
 	assert_eq(Rng.get_state(), before, "TerrainField must draw ZERO values from the Rng singleton")
+
+
+# --- G1.2: basin anchoring [gaea §gaea-anchor] ---
+
+
+func _hi_lo(graph: RegionGraph) -> Dictionary:
+	var hi: Dictionary = graph.regions[0]
+	var lo: Dictionary = graph.regions[0]
+	for r in graph.regions:
+		if r["elevation"] > hi["elevation"]:
+			hi = r
+		if r["elevation"] < lo["elevation"]:
+			lo = r
+	return {"hi": hi, "lo": lo}
+
+
+func test_basin_centers_read_their_region_elevation():
+	# Detail is attenuated to ~0 at a basin center, so the center still reads (within
+	# ANCHOR_TOL, normalized) the region's authored elevation — picking/nav stay right.
+	var g := _graph(3)
+	var f := TerrainField.new()
+	f.generate(g, 555)
+	for r in g.regions:
+		var got := f.normalize_elevation(f.raw_height(r["center"]))
+		var want := f.normalize_elevation(r["elevation"])
+		assert_almost_eq(
+			got, want, TerrainField.ANCHOR_TOL, "center of basin %d reads its elevation" % r["id"]
+		)
+
+
+func test_basin_ordering_is_preserved():
+	# Gaea detail never overrides which basin is higher. hi-vs-lo is a safe proxy for
+	# §gaea-anchor's "any two regions": basins sit on a ~10 km ring, far beyond
+	# ANCHOR_RADIUS_KM (3.0), so attenuation is 0 at every center and center height =
+	# idw_base = the authored elevation order. If ring spacing ever drops below the
+	# anchor radius this proxy would need an all-pairs check.
+	var g := _graph(4)
+	var f := TerrainField.new()
+	f.generate(g, 555)
+	var ex := _hi_lo(g)
+	assert_gt(
+		f.raw_height(ex["hi"]["center"]),
+		f.raw_height(ex["lo"]["center"]),
+		"highest basin stays above lowest"
+	)
+
+
+func test_detail_is_present_between_basins():
+	# Between basins (attenuation ~1) the anchored height must differ from the pure-IDW
+	# baseline — relief is real, not the old flat interpolation.
+	var g := _graph(5)
+	var f := TerrainField.new()
+	f.generate(g, 555)
+	var any_detail := false
+	var n := g.regions.size()
+	for i in n:
+		var a: Vector2 = g.regions[i]["center"]
+		var b: Vector2 = g.regions[(i + 1) % n]["center"]
+		var mid := (a + b) * 0.5
+		if absf(f.raw_height(mid) - f.idw_base(mid)) > 0.0001:
+			any_detail = true
+	assert_true(any_detail, "detail perturbs the field between basins")
