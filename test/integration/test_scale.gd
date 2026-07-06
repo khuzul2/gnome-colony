@@ -14,6 +14,12 @@ extends GutTest
 ## carries the reminder). Raw numbers print every run. Wall-clock is
 ## measured HERE in test code (Time is banned in sim logic only).
 ## Save/load and RAM budget legs belong to T12.1 and T16.
+## R4.3 [rav §R-set]: the per-season loop now also runs the redesign's
+## Construction.season_tick + decay_tick on every basin, so the perf budget is
+## re-verified WITH the full settlement build-out. Construction is per-season
+## aggregate (4 seasons × 20 basins = 80 calls/year) — negligible against the
+## 365 per-day individual-grain ticks; measured ~13–15 ms/tick, headroom under
+## the 24 ms tripwire unchanged.
 
 const WORLD_POP := 10_000
 const SETTLEMENT_COUNT := 20
@@ -21,6 +27,19 @@ const QUICKENED := 300
 const DAYS := TimeService.DAYS_PER_YEAR
 const TICK_BUDGET_MS := 12.0
 const REGRESSION_TRIPWIRE_MS := 24.0
+## R4.3 [rav §R-set] — representative construction pressures the whole world
+## builds under each season, so the perf run exercises the real §R-build path
+## (priority scan + build + tier re-derive + decay) rather than a no-op.
+const PRESSURES := {
+	"hunger": 0.5,
+	"water": 0.3,
+	"has_ore": 1.0,
+	"war_threat": 0.2,
+	"surplus": 1.0,
+	"blessed": 0.0,
+	"cursed": 0.0,
+	"trade_route": false,
+}
 
 
 func test_ten_thousand_souls_advance_a_year_in_budget():
@@ -39,6 +58,16 @@ func test_ten_thousand_souls_advance_a_year_in_budget():
 		s.by_stage[Enums.LifeStage.INFANT] = per_settlement * 0.15
 		s.by_stage[Enums.LifeStage.ELDER] = per_settlement * 0.1
 		settlements.append(s)
+	# R4.3: give every basin the crafts + devotion + faith/fear so the season
+	# construction actually raises structures — the perf run must carry the real
+	# §R-build cost, not skip it as an unbuildable no-op.
+	for i in SETTLEMENT_COUNT:
+		runner.colony.settlement_knowledge[i] = {
+			"agriculture": true, "smithing": true, "construction": true
+		}
+		settlements[i].belief["faith"] = 0.6
+		settlements[i].belief["fear"] = 0.3
+	runner.colony.unlocked_tier = 3
 	# …while the quicken budget's worth of individuals live under the Eye.
 	Promotion.materialize(runner.colony, settlements[0], QUICKENED - runner.colony.population())
 	assert_eq(runner.colony.population(), QUICKENED)
@@ -53,6 +82,9 @@ func test_ten_thousand_souls_advance_a_year_in_budget():
 			last_season = runner.time.season()
 			for s in settlements:
 				SettlementSim.season_tick(runner.colony, s, 1.0)
+				# R4.3: the redesign's per-season construction & decay, in-budget.
+				Construction.season_tick(runner.colony, s, PRESSURES)
+				Construction.decay_tick(runner.colony, s)
 			Civilization.trade_route(runner.colony, settlements[0], settlements[1])
 	var elapsed_ms := (Time.get_ticks_usec() - start) / 1000.0
 	runner.shutdown()
