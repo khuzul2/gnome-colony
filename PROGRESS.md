@@ -326,7 +326,7 @@ still lands).
 ## Phase R3 — Settlement visuals (presentation; plug into RunView) — deps: R1, R2, 🎮 Gate A2 (do NOT start until Gate A2 records GO)
 Mosaic building props from run.settlements, growing on structure_built; medallions by tier.
 Phase-Exit: test_settlement_view.gd + full suite green + lint.
-- [ ] R3.1 Building prop library (presentation/settlement/props.gd + *.tscn; basilica w/ monogram). test: test_settlement_props.gd. deps: R2.1, Gate A2.
+- [x] R3.1 Building prop library (Props static factory: build(id)→Node3D per Settlement.BUILDING_IDS — gabled dwelling, furrowed field, well, granary, colonnaded workshop, shrine aedicula, BASILICA w/ the sacred monogram on its pediment (reuses Motifs.monogram_image on an unshaded billboard), wall segment, market stoa; matte palette albedos read through the R1 mosaic. PROCEDURAL — no binary .tscn, matching the Motifs precedent (network-blocked build; palette skins it); build()→Node3D gives R3.2 the same contract PackedScene.instantiate() would. null for unknown id). test: test_settlement_props.gd (4: every id has a prop w/ geometry, unknown→null, basilica-has-monogram, plain-prop-none). reviewer no blockers (dead BUILDING_IDS re-export removed). lint clean. deps: R2.1, Gate A2.
 - [ ] R3.2 Settlement renderer (settlement_view.gd child of RunView; props from structures at sid places; deterministic scatter). test: test_settlement_view.gd. deps: R3.1, R1.2.
 - [ ] R3.3 Growth & tier feedback (structure_built → prop; settlement_tier_changed → medallion + HUD line). test: test_settlement_growth.gd. deps: R3.2, R2.2.
 - [ ] R3.4 Chronicle & aftermath vocabulary (civic development; what they built & why). test: test_chronicle_settlement.gd. deps: R3.3.
