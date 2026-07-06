@@ -367,8 +367,38 @@ func _frontier_season() -> void:
 			var pressures := Construction.pressures_from(
 				colony, world, _place_of(sid), FRONTIER_FOOD_FACTOR
 			)
-			Construction.season_tick(colony, s, pressures)
+			# R3.4 — feed the civic story into telemetry so the end-of-run Chronicle
+			# reads as development: what they built and the tier they crossed this
+			# season (net of construction & decay). The live feed/aftermath already
+			# hear the EventBus beats; this is the persisted end-of-run record.
+			var tier_before: int = s.tier
+			var built: String = Construction.season_tick(colony, s, pressures)
 			Construction.decay_tick(colony, s)
+			if built != "":
+				(
+					telemetry
+					. record(
+						{
+							"type": "structure_built",
+							"day": runner.time.day(),
+							"sid": sid,
+							"building": built,
+						}
+					)
+				)
+			if s.tier != tier_before:
+				(
+					telemetry
+					. record(
+						{
+							"type": "settlement_tier_changed",
+							"day": runner.time.day(),
+							"sid": sid,
+							"from": tier_before,
+							"to": s.tier,
+						}
+					)
+				)
 	# T22.2 [RULED FIX] — fold EVERY quickened soul back BEFORE the
 	# conflict flows: war casualties, schism splits and the war's
 	# crowding reads all act on COMPLETE aggregates (one mechanism for

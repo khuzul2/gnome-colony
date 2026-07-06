@@ -19,12 +19,22 @@ var act_id := ""
 var timeline: Array = []
 ## Crystallized-belief payloads since begin().
 var new_beliefs: Array = []
+## R3.4 [rav §R-build] — "what they built, and why": structures raised since
+## begin(), each tagged with `after` = the cast's ROOT phenomenon type (the
+## act's manifestation) or "" — so the §R-infl loop (your act → their build) is
+## legible in hindsight. [{sid, building, after}].
+var built: Array = []
 
 var timeline_box: VBoxContainer
 var beliefs_box: VBoxContainer
+## R3.4 — the rendered "line of works" (one row per raised structure).
+var works_box: VBoxContainer
 
 var _title: Label
 var _places: Array = []
+## R3.4 — the first phenomenon type seen this cast (the root cause a build is
+## attributed to); "" until one lands.
+var _root_phenomenon := ""
 
 
 func _ready() -> void:
@@ -34,10 +44,13 @@ func _ready() -> void:
 	root.add_child(_title)
 	timeline_box = VBoxContainer.new()
 	root.add_child(timeline_box)
+	works_box = VBoxContainer.new()
+	root.add_child(works_box)
 	beliefs_box = VBoxContainer.new()
 	root.add_child(beliefs_box)
 	EventBus.phenomenon.connect(_on_phenomenon)
 	EventBus.belief_formed.connect(_on_belief_formed)
+	EventBus.structure_built.connect(_on_structure_built)
 
 
 ## A new act opens a blank page — hindsight is per-cast [design §2.7].
@@ -45,8 +58,10 @@ func begin(id: String) -> void:
 	act_id = id
 	timeline.clear()
 	new_beliefs.clear()
+	built.clear()
 	_places.clear()
-	for box in [timeline_box, beliefs_box]:
+	_root_phenomenon = ""
+	for box in [timeline_box, works_box, beliefs_box]:
 		for child in box.get_children():
 			box.remove_child(child)
 			child.queue_free()
@@ -84,6 +99,10 @@ func who_they_think_you_are(colony: Colony) -> Dictionary:
 
 func _on_phenomenon(payload: Dictionary) -> void:
 	timeline.append(payload.duplicate(true))
+	# The ROOT phenomenon (first this cast) is the cause a later build is credited
+	# to — not a late cascade domino [R3.4, §R-infl].
+	if _root_phenomenon == "":
+		_root_phenomenon = str(payload.get("type", ""))
 	var place: String = payload.get("place", "")
 	if place != "" and not place in _places:
 		_places.append(place)
@@ -109,3 +128,19 @@ func _on_belief_formed(payload: Dictionary) -> void:
 		% [payload.get("kind", "?"), str(payload.get("subject", "?")).replace("_", " ")]
 	)
 	beliefs_box.add_child(row)
+
+
+## R3.4 — a structure raised in this cast's wake: "what they built, and why".
+## The build is credited to the cast's root phenomenon (the act's manifestation),
+## making the §R-infl loop legible in hindsight [design §2.7].
+func _on_structure_built(payload: Dictionary) -> void:
+	var building: String = payload.get("building", "structure")
+	built.append({"sid": payload.get("sid", -1), "building": building, "after": _root_phenomenon})
+	var row := Label.new()
+	if _root_phenomenon != "":
+		row.text = (
+			"they raised a %s — after the %s" % [building, _root_phenomenon.replace("_", " ")]
+		)
+	else:
+		row.text = "they raised a %s" % building
+	works_box.add_child(row)

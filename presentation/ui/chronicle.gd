@@ -36,6 +36,10 @@ func update(dt_seconds: float) -> void:
 ##  · faiths — the theology creeds that named you (flavors)
 ##  · prophets — gnomes the calling ever touched
 ##  · wars, discoveries — from the telemetry stream
+##  · structures — R3.4 [rav §R-build]: what they built, tallied by kind, so the
+##    history reads as CIVIC DEVELOPMENT and not just survival
+##  · peak_tier — R3.4: the height they reached (top tier crossed; a colony that
+##    never crossed one stayed a "hamlet")
 ##  · how_it_ended — always total extinction (§14: the only world-end)
 func compose(colony: Colony, telemetry: Array, run_meta: Dictionary) -> Dictionary:
 	var generations := 0
@@ -51,6 +55,8 @@ func compose(colony: Colony, telemetry: Array, run_meta: Dictionary) -> Dictiona
 	var wars := 0
 	var settlements := 0
 	var discoveries := []
+	var structures := {}
+	var peak_tier: int = Enums.SettlementTier.HAMLET
 	for event in telemetry:
 		match event.get("type", ""):
 			"war":
@@ -59,6 +65,11 @@ func compose(colony: Colony, telemetry: Array, run_meta: Dictionary) -> Dictiona
 				settlements += 1
 			"discovery":
 				discoveries.append(event.get("id", "?"))
+			"structure_built":
+				var id: String = event.get("building", "structure")
+				structures[id] = int(structures.get(id, 0)) + 1
+			"settlement_tier_changed":
+				peak_tier = maxi(peak_tier, int(event.get("to", Enums.SettlementTier.HAMLET)))
 	return {
 		"colony_name": run_meta.get("colony_name", ""),
 		"seed": run_meta.get("seed", 0),
@@ -69,6 +80,8 @@ func compose(colony: Colony, telemetry: Array, run_meta: Dictionary) -> Dictiona
 		"prophets": prophets,
 		"wars": wars,
 		"discoveries": discoveries,
+		"structures": structures,
+		"peak_tier": SettlementRoster.TIER_NAMES.get(peak_tier, "hamlet"),
 		"how_it_ended": "total extinction",
 	}
 
