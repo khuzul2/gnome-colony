@@ -88,6 +88,18 @@ func test_each_new_game_begins_a_fresh_world():
 	assert_ne(shell.run.config.colony_name, first_name, "…and a new name (blank fields re-roll)")
 
 
+func test_reminting_the_wizard_leaks_no_orphans():
+	# [orphan-leak fix]: each New Game entry mints a fresh WizardView and
+	# must free the old one whole. A detached queue_free never runs without
+	# a frame, so two remints in a row must not grow the orphan count.
+	var shell := _shell()
+	var before := Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)
+	shell._remint_wizard()
+	shell._remint_wizard()
+	var after := Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)
+	assert_eq(after, before, "remint frees the old WizardView subtree — no orphan growth")
+
+
 func test_save_then_continue_restores_the_exact_day():
 	Rng.seed_with(17301)
 	var shell := _shell()
