@@ -69,22 +69,39 @@ func _build_stats_pane() -> void:
 	add_child(pane)
 
 
+## The Historical Record hugs the RIGHT edge at a fixed width, spanning from the top
+## margin down to the action bar's clearance. Both horizontal anchors sit at 1.0 and
+## grow_horizontal = BEGIN, so the pane extends LEFT from the right edge (the default
+## END grow would push it off-screen); offset_left sets the width and the collapse
+## toggle narrows it (HistoryPanel.set_collapsed).
 func _build_history() -> void:
 	history = HistoryPanel.new()
-	history.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
+	history.anchor_left = 1.0
+	history.anchor_top = 0.0
+	history.anchor_right = 1.0
+	history.anchor_bottom = 1.0
+	history.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	history.offset_left = -HistoryPanel.EXPANDED_WIDTH
 	history.offset_right = -MARGIN
 	history.offset_top = MARGIN
 	history.offset_bottom = -ACTION_CLEAR
 	add_child(history)
 
 
+## The action bar spans the bottom edge full-width and grows UPWARD to fit its
+## content (grow_vertical = BEGIN; the default END would push it off the bottom).
 func _build_action_bar() -> void:
 	var pane := PanelContainer.new()
 	pane.name = "action_panel"
 	RavennaUI.skin_hud_panel(pane)
-	pane.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	pane.anchor_left = 0.0
+	pane.anchor_top = 1.0
+	pane.anchor_right = 1.0
+	pane.anchor_bottom = 1.0
+	pane.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	pane.offset_left = MARGIN
 	pane.offset_right = -MARGIN
+	pane.offset_top = 0.0
 	pane.offset_bottom = -MARGIN
 	_action_slot = HBoxContainer.new()
 	_action_slot.name = "action_slot"

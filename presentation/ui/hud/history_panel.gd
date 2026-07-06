@@ -18,6 +18,11 @@ const HISTORY_LINES := 400
 ## Arrows for the collapse toggle: « folds the open panel, » unfolds the strip.
 const FOLD_MARK := "«"
 const UNFOLD_MARK := "»"
+## The panel's on-screen width, open vs folded [user request 2026-07-06]. The HUD
+## frame anchors the RIGHT edge; the panel spans leftward by one of these widths,
+## so collapsing genuinely narrows it to a gutter strip. Presentation numbers.
+const EXPANDED_WIDTH := 340.0
+const COLLAPSED_WIDTH := 44.0
 
 ## The wrapped feed — the test-facing renderer; RunView feeds it `place_of`.
 var feed: ChronicleFeed
@@ -32,6 +37,8 @@ var _toggle: Button
 func _init() -> void:
 	name = "history_panel"
 	RavennaUI.skin_hud_panel(self)
+	# Clip so long chronicle lines can't force the pane wider than its fixed width.
+	clip_contents = true
 	var column := VBoxContainer.new()
 	column.name = "column"
 	column.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -69,15 +76,23 @@ func _init() -> void:
 	# The feed's own solid ground would double the pane's opacity, and its inline
 	# "Chronicle" title would double this panel's heading — clear both.
 	feed.add_theme_stylebox_override("panel", RavennaUI.clear_style())
+	# The panel carries its own "Historical Record" heading, so drop the feed's
+	# inline "Chronicle" title to avoid a double heading.
+	var inner_title: Node = feed.find_child("title", true, false)
+	if inner_title != null:
+		(inner_title as CanvasItem).visible = false
 	_scroll.add_child(feed)
 	feed.line_added.connect(_follow_to_newest)
 
 
 ## Collapse to a thin strip (only the toggle shows) or expand back to the record.
+## The HUD frame anchors the panel's RIGHT edge; narrowing offset_left folds it to
+## a gutter strip (grow_horizontal BEGIN keeps it hugging the right edge).
 func set_collapsed(value: bool) -> void:
 	collapsed = value
 	_heading.visible = not value
 	_body.visible = not value
+	offset_left = -(COLLAPSED_WIDTH if value else EXPANDED_WIDTH)
 	_toggle.text = UNFOLD_MARK if value else FOLD_MARK
 	_toggle.tooltip_text = "Show the record" if value else "Collapse the record"
 	collapsed_changed.emit(collapsed)

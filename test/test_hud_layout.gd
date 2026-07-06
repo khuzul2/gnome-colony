@@ -46,6 +46,28 @@ func test_the_four_panes_and_banner_exist():
 	assert_not_null(frame.reject_label, "a refusal banner")
 
 
+func test_bottom_and_right_panes_grow_on_screen():
+	# Regression: the action bar and the record must grow INWARD from their edges,
+	# not off-screen (the default GROW_DIRECTION_END pushed them out of view).
+	var frame := _frame()
+	var action := frame.get_node("action_panel")
+	assert_eq(action.anchor_top, 1.0, "the action bar anchors to the bottom edge")
+	assert_eq(
+		action.grow_vertical,
+		Control.GROW_DIRECTION_BEGIN,
+		"…and grows UP into view, not down off-screen"
+	)
+	assert_eq(frame.history.anchor_right, 1.0, "the record anchors to the right edge")
+	assert_eq(
+		frame.history.grow_horizontal,
+		Control.GROW_DIRECTION_BEGIN,
+		"…and grows LEFT into view, not right off-screen"
+	)
+	assert_eq(
+		frame.history.offset_left, -HistoryPanel.EXPANDED_WIDTH, "…at a bounded expanded width"
+	)
+
+
 func test_the_panes_are_translucent_ravenna():
 	var frame := _frame()
 	for pane_name in ["stats_panel", "action_panel"]:
@@ -137,9 +159,11 @@ func test_the_record_collapses_and_expands():
 	assert_true(panel.collapsed, "the toggle folds it to a strip")
 	assert_false(panel.get_node("column/body").visible, "…hiding the record")
 	assert_eq(panel._toggle.text, HistoryPanel.UNFOLD_MARK, "the arrow flips to unfold")
+	assert_eq(panel.offset_left, -HistoryPanel.COLLAPSED_WIDTH, "…and narrows to the gutter width")
 	panel.toggle()
 	assert_false(panel.collapsed, "…and back open")
 	assert_true(panel.get_node("column/body").visible)
+	assert_eq(panel.offset_left, -HistoryPanel.EXPANDED_WIDTH, "…restoring the full width")
 
 
 func test_collapse_emits_its_signal():

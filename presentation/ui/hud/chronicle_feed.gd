@@ -92,6 +92,9 @@ func _render() -> void:
 	for i in count:
 		var label := Label.new()
 		label.text = lines[i]
+		# Wrap long lines to the panel width (rather than forcing the panel wider) so
+		# the record stays a fixed-width side panel [user request 2026-07-06].
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		# Oldest (top) dimmest, newest (bottom) full — a gentle fade into memory.
 		var tint: Color = Palette.COLORS[Palette.BONE_WHITE]
 		tint.a = clampf(1.0 - FADE_STEP * (count - 1 - i), FADE_FLOOR, 1.0)
