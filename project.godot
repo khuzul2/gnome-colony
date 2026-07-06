@@ -21,4 +21,4 @@ gdscript/warnings/untyped_declaration=1
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/gut/plugin.cfg")
+enabled=PackedStringArray("res://addons/gut/plugin.cfg", "res://addons/gaea/plugin.cfg")
