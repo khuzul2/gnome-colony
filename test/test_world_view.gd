@@ -88,3 +88,25 @@ func test_bake_grid_is_fine_enough_to_show_detail():
 		WorldView.GRID * WorldView.GRID * 6,
 		"walkable faces scale with the finer grid"
 	)
+
+
+func test_walkable_faces_agree_with_height_at():
+	# Phase-Exit G2 invariant [docs/terrain-gaea.md §gaea-invariants]: the navmesh bakes
+	# from the SAME detailed field height_at reports, so nav geometry and the visible skin
+	# never diverge (nav-safety over the Gaea detail is handled by NavWorld's ledge-span
+	# filter, NOT by stripping detail from nav). A detail-heavy seed is deliberately used so
+	# the check bites where detail is active — a decouple would fail this here.
+	var graph := _graph()
+	var view := WorldView.new()
+	add_child_autofree(view)
+	view.sync(graph, 7)
+	var faces := view.walkable_faces
+	assert_gt(faces.size(), 0, "faces baked")
+	for i in range(0, faces.size(), 337):
+		var v: Vector3 = faces[i]
+		assert_almost_eq(
+			v.y,
+			view.height_at(Vector2(v.x, v.z)),
+			1e-4,
+			"nav vertex height == height_at (one field)"
+		)

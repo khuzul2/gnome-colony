@@ -53,6 +53,14 @@ func bake(view: WorldView) -> void:
 	nav_mesh.agent_radius = 0.5
 	nav_mesh.agent_height = 1.25
 	nav_mesh.agent_max_climb = 0.75
+	# G2 nav-safety: the Gaea sub-basin detail jitters the waterline where the flat sea
+	# plane meets sloped land, spawning ledge spans whose contours collapse into coincident
+	# navmesh edges (test_cast_markers regressed the moment G2 added detail). filter_ledge_spans
+	# is Recast's general remedy — it drops those ledge voxels. Verified warning-free + routing
+	# intact across a 12-seed sweep incl. the regressing 1831 (empirical, not proven for every
+	# future Gate-G detail tuning). Travel is still gated by the sim's buried-path truth
+	# (WorldState.paths), never by geometry [T13.3]. Presentation number.
+	nav_mesh.filter_ledge_spans = true
 	var source := NavigationMeshSourceGeometryData3D.new()
 	# Raw CPU faces from the skin — never re-read GPU mesh data at runtime.
 	source.add_faces(view.walkable_faces, Transform3D.IDENTITY)
