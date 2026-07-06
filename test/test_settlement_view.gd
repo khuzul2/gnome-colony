@@ -93,3 +93,44 @@ func test_runview_shows_a_settlements_buildings_on_stage():
 	view._refresh_hud()
 	assert_true(view.settlement_view.has_cluster(sid), "the settlement's buildings appear on stage")
 	assert_eq(view.settlement_view.cluster_prop_count(sid), 3, "…one prop per structure")
+
+
+# --- R3.3: growth & tier medallions ----------------------------------------
+
+
+func test_a_new_structure_grows_in():
+	var view := _view()
+	var s := _settlement(2, {"dwelling": 1.0})
+	view.refresh({2: s}, {2: "h"}, {"h": Vector3.ZERO}, Callable(self, "_flat"))
+	var prop: Node3D = view._clusters[2].get_child(0)
+	assert_lt(prop.scale.x, 1.0, "a raised building grows in, not popped full-size")
+	view._process(SettlementView.GROW_SECONDS + 0.1)
+	assert_almost_eq(prop.scale.x, 1.0, 0.01, "…and settles at full size")
+
+
+func test_the_tier_medallion_swaps_on_a_tier_change():
+	var view := _view()
+	var s := _settlement(2, {"dwelling": 1.0})
+	s.tier = Enums.SettlementTier.VILLAGE
+	view.refresh({2: s}, {2: "h"}, {"h": Vector3.ZERO}, Callable(self, "_flat"))
+	assert_true(view.has_medallion(2), "a village wears a civ-map medallion")
+	assert_eq(
+		view.medallion_glyph(2),
+		SettlementView.TIER_MEDALLION[Enums.SettlementTier.VILLAGE],
+		"…the rosette"
+	)
+	# Promote to city — the structure stock is UNCHANGED, but the medallion updates.
+	s.tier = Enums.SettlementTier.CITY
+	view.refresh({2: s}, {2: "h"}, {"h": Vector3.ZERO}, Callable(self, "_flat"))
+	assert_eq(
+		view.medallion_glyph(2),
+		SettlementView.TIER_MEDALLION[Enums.SettlementTier.CITY],
+		"the medallion swaps to the city monogram on the tier change"
+	)
+
+
+func test_a_hamlet_wears_no_medallion():
+	var view := _view()
+	var s := _settlement(2, {"dwelling": 1.0})  # tier defaults HAMLET
+	view.refresh({2: s}, {2: "h"}, {"h": Vector3.ZERO}, Callable(self, "_flat"))
+	assert_false(view.has_medallion(2), "a hamlet wears no medallion")
