@@ -251,8 +251,15 @@ func _on_menu_requested() -> void:
 func _remint_wizard() -> void:
 	var box: Control = screens["wizard"]
 	if wizard_view != null:
+		# Free the old view WHOLE and now, not deferred: a detached node's
+		# queue_free never runs without a frame, orphaning the ~400-node
+		# WizardView subtree (its reparented `wizard` + preset cards + page
+		# widgets). Immediate free() — the tested pattern (chronicle_feed,
+		# settlement_roster) — is safe here: _remint_wizard is only ever
+		# reached from the menu signal or _build_screens, never from inside
+		# wizard_view's own callbacks.
 		box.remove_child(wizard_view)
-		wizard_view.queue_free()
+		wizard_view.free()
 	wizard = NewGameWizard.new()
 	wizard_view = WizardView.new()
 	wizard_view.wizard = wizard
