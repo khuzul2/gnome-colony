@@ -321,7 +321,7 @@ still lands).
 - [x] Phase-Exit R8 (menu & camera feel): full suite 800/800 on a clean box (test_scale 11.3 ms, under budget), lint clean. Gate-A menu overlap fixed + Ravenna skin (R8.1), pan eases smoothly (R8.2). → tag phase-R8-complete. THE R5–R8 GATE-A REMEDIATION IS CODE-COMPLETE.
 
 ### 🎮 PLAYTEST GATE A2 — "Now can you read it, and does the terrain read as 3-D?" (HUMAN go/no-go — HALT) — deps: R5, R6, R7, R8
-- [x] AWAIT_PLAYTEST.md written (Gate A2), loop HALTED for human GO. R5–R8 all committed+tagged; full suite 800/800. Human re-judges the six Gate-A points + the four remediation tracks; records GO (+ tuning asks — every [leg §X] number is tunable) before R3.
+- [x] Human GO recorded — 2026-07-06, user: "GO for now. We will do another pass later to improve further." PROVISIONAL GO: the R5–R8 remediation reads well enough to proceed; a later polish/tuning pass is expected (documented deferrals — wizard two-pane, zoom-transition ease, full-screen bless_mask — plus any [leg §X] tuning stay open for it). Loop clear to continue to R3 (settlement visuals). Full suite 800/800, R5–R8 tagged.
 
 ## Phase R3 — Settlement visuals (presentation; plug into RunView) — deps: R1, R2, 🎮 Gate A2 (do NOT start until Gate A2 records GO)
 Mosaic building props from run.settlements, growing on structure_built; medallions by tier.
