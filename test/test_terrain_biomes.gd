@@ -81,3 +81,59 @@ func test_unknown_biome_falls_back_to_meadow():
 		WorldView.terrain_color_biomed(0.5, "meadow"),
 		"unknown biome falls back to meadow"
 	)
+
+
+# --- G3.2: water bodies compose with the R5 sea clamp ---
+
+
+func test_below_sea_relief_is_the_flat_water_plane():
+	# R5.1's clamp: any normalized height below SEA_LEVEL_T maps to the single flat water y,
+	# so low ground — including Gaea detail that dips under — forms a coherent water surface
+	# rather than noisy mud.
+	var water_y := WorldView.RELIEF_KM * WorldView.SEA_LEVEL_T
+	assert_almost_eq(WorldView._relief_y(0.0), water_y, 1e-5, "the deepest maps to the water plane")
+	assert_almost_eq(
+		WorldView._relief_y(WorldView.SEA_LEVEL_T * 0.5),
+		water_y,
+		1e-5,
+		"sub-sea ground is flat water"
+	)
+	assert_gt(
+		WorldView._relief_y(WorldView.SEA_LEVEL_T + 0.2),
+		water_y,
+		"above sea level rises off the water plane"
+	)
+
+
+func test_below_sea_reads_lapis_for_every_biome():
+	# Water is water regardless of the surrounding country's biome.
+	for biome in RegionGraph.BIOMES:
+		assert_eq(
+			WorldView.terrain_color_biomed(WorldView.SEA_LEVEL_T * 0.5, biome),
+			Palette.COLORS[1],
+			"%s sub-sea reads lapis water" % biome
+		)
+
+
+func test_the_lowest_basin_reads_as_flat_lapis_water():
+	# Integration over a real Gaea bake: the lowest basin center normalizes to ~0 (< the
+	# SEA_LEVEL_T threshold), so it must sit on the flat water plane AND read lapis — coherent
+	# water at the bottom of the world, composed with the biome bands and Gaea detail.
+	Rng.seed_with(31337)
+	var graph := RegionGraph.generate(Tuning.resolve(WorldConfig.new())["world"])
+	var view := WorldView.new()
+	add_child_autofree(view)
+	view.sync(graph, 5)
+	var low: Dictionary = graph.regions[0]
+	for r in graph.regions:
+		if r["elevation"] < low["elevation"]:
+			low = r
+	var center: Vector2 = low["center"]
+	var water_y := WorldView.RELIEF_KM * WorldView.SEA_LEVEL_T
+	assert_lt(view._relief_t(center), WorldView.SEA_LEVEL_T, "the lowest basin center is below sea")
+	assert_almost_eq(view.height_at(center), water_y, 1e-4, "…sits on the flat water plane")
+	assert_eq(
+		WorldView.terrain_color_biomed(view._relief_t(center), view._biome_at(center)),
+		Palette.COLORS[1],
+		"…and reads lapis water"
+	)
