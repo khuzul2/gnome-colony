@@ -344,6 +344,12 @@ func _build_screens() -> void:
 	# The run screen hosts the anchored HUD frame [user request 2026-07-06], so it
 	# must fill the viewport for the HUD's edge-anchored panes to land correctly.
 	screens["run"].set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# CRITICAL [regression fix 2026-07-06]: a full-rect Control defaults to
+	# MOUSE_FILTER_STOP, which would swallow EVERY click over the whole screen —
+	# killing world-targeting so no act can ever be cast (the HUD redesign's
+	# steering-broken regression). IGNORE lets clicks on open ground fall through to
+	# RunView._unhandled_input; the HUD panes (descendants) still consume their own.
+	screens["run"].mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for key in screens:
 		if screens[key].get_parent() == null:
 			_ui.add_child(screens[key])

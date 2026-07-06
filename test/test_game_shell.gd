@@ -170,6 +170,20 @@ func test_the_run_view_mounts_with_the_run():
 		"the HUD lives in the run screen so show_screen governs it"
 	)
 	assert_eq(shell.run_view.puppet_count(), 4, "the band is on stage")
+	# [regression fix 2026-07-06] The full-rect run screen must pass mouse events
+	# through, or it swallows every click before RunView._unhandled_input sees it —
+	# world-targeting dies and NO act can be cast (the steering-broken regression). The
+	# HUD panes (its descendants) still consume their own clicks.
+	assert_eq(
+		shell.screens["run"].mouse_filter,
+		Control.MOUSE_FILTER_IGNORE,
+		"open-ground clicks fall through to the world picker, not the run screen"
+	)
+	assert_eq(
+		shell.run_view.hud.mouse_filter,
+		Control.MOUSE_FILTER_IGNORE,
+		"…and through the HUD frame too"
+	)
 	shell.close_run_to_menu()
 	assert_null(shell.run_view, "leaving the run drops its view")
 

@@ -37,6 +37,28 @@ const SELECTION_KEY := {
 }
 ## Devotion tiers as numerals, for the lock label [R7.1].
 const TIER_NUMERALS := ["", "I", "II", "III", "IV", "V", "VI"]
+## A brief, diegetic hover hint per act [user request 2026-07-06] — what the god-
+## deed DOES, in the game's register. Presentation flavor (sim/ stays pure); the
+## §18 catalog `mundane` line is the non-believer's cover, this is the intent.
+const ACT_HINTS := {
+	"still_air": "Becalm the winds — an eerie, unnatural stillness over the land.",
+	"weeping_sky": "Send rain to break a drought and green the fields (a mercy that can flood).",
+	"long_dark": "Veil the sun — a long, cold, hungry season across the whole region.",
+	"ground_remembers": "Stir the earth to give up what it holds — old bones, ore, buried memory.",
+	"standing_stones": "Raise stones that were always there — a place of shelter and quiet wonder.",
+	"the_swallowing": "Open the ground beneath a built place and swallow it whole.",
+	"landslide": "Loose a slope — burying what stood there, baring what lay beneath.",
+	"the_quickening": "Quicken the fields to a bountiful year (abundance that exhausts the soil).",
+	"the_blight": "Rot the crops where they stand — hunger follows the harvest.",
+	"wrongness_blood":
+	"Loose a sickness through a crowded settlement — a fever that thins the living.",
+	"coming_herd": "Draw game from the wilds — a season of plenty at the frontier.",
+	"thing_in_dark": "Send a predator out of the wilds to stalk the edge of the world.",
+	"birds_silent": "Still the birds — a silent, ill-omened day the flock will not forget.",
+	"shared_dream":
+	"Send one dream to a whole settlement — a strange night that may harden into a rite.",
+	"day_twice": "Make the day break twice — an impossible wonder that breaks minds and creeds.",
+}
 
 ## act id → Button; category int → its container. Public for the tests
 ## and for the input layer to decorate.
@@ -73,7 +95,7 @@ func build(defs: Dictionary) -> void:
 		var button := Button.new()
 		button.name = id
 		button.text = id.replace("_", " ")
-		RavennaUI.skin_button(button)
+		RavennaUI.skin_action_button(button)
 		button.pressed.connect(arm.bind(id))
 		category_boxes[def["category"]].add_child(button)
 		buttons[id] = button
@@ -185,7 +207,14 @@ func _act_label(act_id: String) -> String:
 	return "%s — needs %s" % [label, req.replace("_", " ")] if req != "" else label
 
 
+## The hover hint [user request 2026-07-06]: what the act DOES, then its status
+## (locked tier / precondition / ready) on the next line.
 func _act_tooltip(act_id: String) -> String:
+	var hint: String = ACT_HINTS.get(act_id, act_id.replace("_", " "))
+	return "%s\n\n%s" % [hint, _act_status(act_id)]
+
+
+func _act_status(act_id: String) -> String:
 	if not unlocked(act_id):
 		return "Locked — reach %s. Deepen the flock's devotion." % _tier_label(act_id)
 	var req := _precondition(act_id)

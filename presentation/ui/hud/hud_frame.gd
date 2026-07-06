@@ -19,6 +19,9 @@ const MARGIN := 8.0
 ## Historical Record doesn't run under it. A presentation estimate (the bar's
 ## height is dynamic); the panes are translucent so a small overlap is harmless.
 const ACTION_CLEAR := 168.0
+## Vertical clearance the Historical Record leaves at the top for the control strip
+## (pause/speed/save/menu), which shares the top-right corner. Presentation number.
+const CONTROL_CLEAR := 46.0
 
 ## The collapsible Historical Record — the frame owns it; RunView reads .feed.
 var history: HistoryPanel
@@ -30,6 +33,9 @@ var reject_label: Label
 var _stats_slot: VBoxContainer
 var _left_slot: VBoxContainer
 var _action_slot: HBoxContainer
+## The top-right system-control strip [user request 2026-07-06]: pace/save/menu live
+## HERE, so the bottom action bar is dedicated to phenomenon acts ALONE.
+var _controls_slot: HBoxContainer
 
 
 func _init() -> void:
@@ -40,6 +46,7 @@ func _init() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_build_left_column()
 	_build_stats_pane()
+	_build_control_strip()
 	_build_history()
 	_build_action_bar()
 	_build_reject_banner()
@@ -69,11 +76,33 @@ func _build_stats_pane() -> void:
 	add_child(pane)
 
 
-## The Historical Record hugs the RIGHT edge at a fixed width, spanning from the top
-## margin down to the action bar's clearance. Both horizontal anchors sit at 1.0 and
-## grow_horizontal = BEGIN, so the pane extends LEFT from the right edge (the default
-## END grow would push it off-screen); offset_left sets the width and the collapse
-## toggle narrows it (HistoryPanel.set_collapsed).
+## The top-right system-control strip [user request 2026-07-06]: game pace, the heat
+## toggle, Save and Menu — deliberately SEPARATE from the action bar so the bottom is
+## acts only. Anchored to the top-right corner, growing left/down into view.
+func _build_control_strip() -> void:
+	var pane := PanelContainer.new()
+	pane.name = "control_strip"
+	RavennaUI.skin_hud_panel(pane, 6.0)
+	pane.anchor_left = 1.0
+	pane.anchor_top = 0.0
+	pane.anchor_right = 1.0
+	pane.anchor_bottom = 0.0
+	pane.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	pane.grow_vertical = Control.GROW_DIRECTION_END
+	pane.offset_right = -MARGIN
+	pane.offset_top = MARGIN
+	_controls_slot = HBoxContainer.new()
+	_controls_slot.name = "controls_slot"
+	_controls_slot.add_theme_constant_override("separation", int(MARGIN))
+	pane.add_child(_controls_slot)
+	add_child(pane)
+
+
+## The Historical Record hugs the RIGHT edge at a fixed width, spanning from below the
+## control strip down to the action bar's clearance. Both horizontal anchors sit at
+## 1.0 and grow_horizontal = BEGIN, so the pane extends LEFT from the right edge (the
+## default END grow would push it off-screen); offset_left sets the width and the
+## collapse toggle narrows it (HistoryPanel.set_collapsed).
 func _build_history() -> void:
 	history = HistoryPanel.new()
 	history.anchor_left = 1.0
@@ -83,7 +112,7 @@ func _build_history() -> void:
 	history.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	history.offset_left = -HistoryPanel.EXPANDED_WIDTH
 	history.offset_right = -MARGIN
-	history.offset_top = MARGIN
+	history.offset_top = CONTROL_CLEAR
 	history.offset_bottom = -ACTION_CLEAR
 	add_child(history)
 
@@ -136,10 +165,10 @@ func mount(parts: Dictionary) -> void:
 	# until shown; it reads directly over the mosaic.
 	_left_slot.add_child(parts["heatmap"])
 	_stats_slot.add_child(parts["readout"])
-	# The action bar: the acts scroll horizontally in the middle (the toolbox widens
-	# as tiers unlock), the speed/save/menu controls stay pinned to the right. The
-	# InfluencePanel is itself a PanelContainer INSIDE this translucent pane, so its
-	# own ground is cleared (else it would double the opacity) — same as the feed.
+	# The action bar holds ONLY the phenomenon acts [user request 2026-07-06], scrolling
+	# horizontally as the toolbox widens with each tier. The InfluencePanel is itself a
+	# PanelContainer INSIDE this translucent pane, so its own ground is cleared (else it
+	# would double the opacity) — same as the feed.
 	var influence: Control = parts["influence"]
 	if influence is PanelContainer:
 		influence.add_theme_stylebox_override("panel", RavennaUI.clear_style())
@@ -149,7 +178,8 @@ func mount(parts: Dictionary) -> void:
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(influence)
 	_action_slot.add_child(scroll)
-	_action_slot.add_child(parts["controls"])
+	# The pace/heat/save/menu controls live in the top-right strip, NOT the action bar.
+	_controls_slot.add_child(parts["controls"])
 
 
 ## Re-skin a HUD component into the translucent pane register so its own opaque

@@ -41,6 +41,7 @@ func test_the_four_panes_and_banner_exist():
 	var frame := _frame()
 	assert_not_null(frame.get_node("stats_panel"), "a top-centre stats pane")
 	assert_not_null(frame.get_node("action_panel"), "a bottom action bar")
+	assert_not_null(frame.get_node("control_strip"), "a top-right system-control strip")
 	assert_not_null(frame.get_node("left_column"), "a top-left column")
 	assert_not_null(frame.history, "a right-side Historical Record")
 	assert_not_null(frame.reject_label, "a refusal banner")
@@ -101,9 +102,16 @@ func test_mount_places_each_component_in_its_region():
 		)
 	)
 	assert_eq(readout.get_parent().name, "stats_slot", "the readout fills the stats pane")
-	assert_eq(frame.find_child("controls", true, false), controls, "the controls are on the bar")
+	# The pace/save/menu controls live in the top-right strip, NOT the action bar, which
+	# is dedicated to the acts alone [user request 2026-07-06].
+	assert_eq(controls.get_parent().name, "controls_slot", "the controls sit in the control strip")
 	assert_true(
-		influence.get_parent() is ScrollContainer, "the acts scroll horizontally on the bar"
+		influence.get_parent() is ScrollContainer, "the acts scroll horizontally on the action bar"
+	)
+	assert_eq(
+		influence.get_parent().get_parent().name,
+		"action_slot",
+		"…and the acts are the only thing on the action bar"
 	)
 	assert_eq(roster.get_parent().name, "left_column", "the roster leads the left column")
 	assert_eq(aftermath.get_parent().name, "left_column", "…with the act hindsight beneath it")

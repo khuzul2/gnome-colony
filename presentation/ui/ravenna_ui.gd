@@ -59,6 +59,46 @@ static func clear_style() -> StyleBoxEmpty:
 	return StyleBoxEmpty.new()
 
 
+## One filled, bordered tessera-style box for an action button state.
+static func _action_box(bg: int, bg_alpha: float, border: int) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	var fill: Color = Palette.COLORS[bg]
+	fill.a = bg_alpha
+	style.bg_color = fill
+	style.set_corner_radius_all(2)
+	style.set_border_width_all(1)
+	style.border_color = Palette.COLORS[border]
+	style.content_margin_left = 9.0
+	style.content_margin_right = 9.0
+	style.content_margin_top = 5.0
+	style.content_margin_bottom = 5.0
+	return style
+
+
+## Skin a phenomenon ACT button [user request 2026-07-06]: a real, distinct
+## gold-edged tessera (not flat text) so each act reads as its own button, gold-lit
+## on hover, dimmed-with-a-slate-edge when tier-locked. Cream label, gold on press.
+static func skin_action_button(button: Button) -> void:
+	button.add_theme_font_size_override("font_size", 14)
+	button.add_theme_color_override("font_color", Palette.COLORS[Palette.CREAM])
+	button.add_theme_color_override("font_hover_color", Palette.COLORS[Palette.GOLD_LIT])
+	button.add_theme_color_override("font_pressed_color", Palette.COLORS[Palette.GOLD])
+	button.add_theme_color_override("font_disabled_color", Palette.COLORS[Palette.SLATE_GREY])
+	button.add_theme_stylebox_override(
+		"normal", _action_box(Palette.DEEP_LAPIS, 0.85, Palette.GOLD_DEEP)
+	)
+	button.add_theme_stylebox_override(
+		"hover", _action_box(Palette.MID_BLUE, 0.9, Palette.GOLD_LIT)
+	)
+	button.add_theme_stylebox_override(
+		"pressed", _action_box(Palette.GOLD_DEEP, 0.85, Palette.GOLD)
+	)
+	button.add_theme_stylebox_override(
+		"disabled", _action_box(Palette.NIGHT_LAPIS, 0.55, Palette.SLATE_GREY)
+	)
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
+
 ## Skin a Control as a full-bleed night-lapis ground (a PanelContainer wrapper the
 ## caller fills). Returns the wrapper; add content to it.
 static func ground() -> PanelContainer:
