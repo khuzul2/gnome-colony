@@ -27,6 +27,17 @@ const SEA_LEVEL_T := 0.15  ## normalized heights below this clamp up to the sea 
 ## so hillsides read dimensional. The shader then quantizes toward a darker palette
 ## entry. Tuned at Gate A2.
 const SLOPE_SHADE := 0.28
+## G3.1 [gaea §gaea-gen] — biome-varied palette bands (5 elevation bands per biome), COMPOSED
+## with the elevation banding, every entry one of the 16 Palette.COLORS (mosaic discipline).
+## meadow == the base terrain_color (neutral, so Uniform-variety worlds are unchanged); forest
+## skews uplands greener, ridge ochre/gold, marsh wet-verdigris; the lowest band is always
+## lapis (water). Presentation numbers, tunable at Gate G.
+const BIOME_BANDS := {
+	"meadow": [1, 4, 5, 9, 8],
+	"forest": [1, 4, 5, 5, 8],
+	"ridge": [1, 9, 9, 6, 8],
+	"marsh": [1, 3, 4, 4, 9],
+}
 
 var mesh_instance := MeshInstance3D.new()
 var baked_version := -1
@@ -69,6 +80,28 @@ static func terrain_color(t: float) -> Color:
 	if t < 0.88:
 		return Palette.COLORS[9]  # ochre
 	return Palette.COLORS[8]  # gold-lit peaks
+
+
+## G3.1 — elevation → band index (0 water … 4 peak), the SAME thresholds terrain_color uses;
+## shared by the biome bands (BIOME_BANDS) so meadow reproduces terrain_color exactly.
+static func _band_index(t: float) -> int:
+	t = clampf(t, 0.0, 1.0)
+	if t < 0.20:
+		return 0
+	if t < 0.45:
+		return 1
+	if t < 0.70:
+		return 2
+	if t < 0.88:
+		return 3
+	return 4
+
+
+## G3.1 [gaea §gaea-gen] — the biome-biased band colour for a normalized elevation; unknown
+## biomes fall back to the neutral meadow bands. Always a Palette.COLORS entry.
+static func terrain_color_biomed(t: float, biome: String) -> Color:
+	var bands: Array = BIOME_BANDS.get(biome, BIOME_BANDS["meadow"])
+	return Palette.COLORS[bands[_band_index(t)]]
 
 
 ## R5.3 [leg §L-relief] — darken a tessera color by its face slope (0 flat, 1
@@ -117,6 +150,20 @@ func height_at(point: Vector2) -> float:
 	return _relief_y(_relief_t(point))
 
 
+## G3.1 — the biome of the basin nearest a world point (Voronoi): the skin tints its bands
+## by which region's country the ground sits in. Read-only over the sim's RegionGraph.
+## (O(regions) per call — folded into the bake's per-corner scan; G4.2 owns bake perf.)
+func _biome_at(point: Vector2) -> String:
+	var nearest := ""
+	var best := INF
+	for region in _graph.regions:
+		var d2: float = point.distance_squared_to(region["center"])
+		if d2 < best:
+			best = d2
+			nearest = region["biome"]
+	return nearest
+
+
 func _bake() -> void:
 	# Elevation bounds normalize the raw IDW height into the relief envelope; the
 	# same bounds drive the palette bands, so terraces and geometry agree [R5.1].
@@ -141,12 +188,15 @@ func _bake() -> void:
 				Vector2(x0 + step, z0 + step),
 				Vector2(x0, z0 + step),
 			]
-			# Relief-mapped height + its palette band per corner [R5.1, leg §L-relief].
+			# Relief-mapped height + its palette band per corner [R5.1, leg §L-relief];
+			# plus the nearest-basin biome that tints the band [G3.1, gaea §gaea-gen].
 			var verts := []
 			var bands := []
+			var biomes := []
 			for c in corners:
 				var t := _relief_t(c)
 				bands.append(t)
+				biomes.append(_biome_at(c))
 				verts.append(Vector3(c.x, _relief_y(t), c.y))
 			# Two triangles per quad; each is slope-shaded by its own face normal so
 			# relief reads dimensional in the tesserae [R5.3, leg §L-relief].
@@ -157,7 +207,9 @@ func _bake() -> void:
 				var face_normal := (b - a).cross(c2 - a).normalized()
 				var slope := 1.0 - absf(face_normal.y)
 				for index in tri:
-					st.set_color(slope_shade(terrain_color(bands[index]), slope))
+					st.set_color(
+						slope_shade(terrain_color_biomed(bands[index], biomes[index]), slope)
+					)
 					st.add_vertex(verts[index])
 					walkable_faces.append(verts[index])
 	st.generate_normals()
